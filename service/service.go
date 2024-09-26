@@ -3,12 +3,12 @@ package service
 import (
 	"fmt"
 
+	"github.com/VladimirDronik/touchon-server/config"
+	"github.com/VladimirDronik/touchon-server/helpers"
+	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"object-manager/internal/touchon-server/config"
-	"object-manager/internal/touchon-server/helpers"
-	"object-manager/internal/touchon-server/mqtt/messages"
 )
 
 func Prolog(banner string, configDefaults map[string]string, version, buildAt string) (map[string]string, *logrus.Logger, fmt.Stringer, *gorm.DB, error) {
