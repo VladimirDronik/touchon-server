@@ -1,8 +1,8 @@
 package events
 
 import (
+	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pkg/errors"
-	"touchon-server/mqtt/messages"
 )
 
 func NewOnSensorCheck(objectID int, values map[string]float32) (messages.Message, error) {

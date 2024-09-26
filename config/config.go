@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/pkg/errors"
-	"touchon-server/helpers"
 )
 
 // New Загружает настройки сервиса из toml-файла, переопределяет их из ENV,

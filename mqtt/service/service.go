@@ -3,11 +3,11 @@ package service
 import (
 	"sync"
 
+	"github.com/VladimirDronik/touchon-server/mqtt/client"
+	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"touchon-server/mqtt/client"
-	"touchon-server/mqtt/messages"
 )
 
 func New(client *client.Client, bufferSize int, threads int, logger *logrus.Logger) (*Service, error) {

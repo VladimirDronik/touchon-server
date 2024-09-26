@@ -1,4 +1,4 @@
-module touchon-server
+module github.com/VladimirDronik/touchon-server
 
 go 1.21.1
 
