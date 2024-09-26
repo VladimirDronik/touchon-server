@@ -1,0 +1,265 @@
+package messages
+
+import (
+	"encoding/json"
+	"strings"
+	"time"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/pkg/errors"
+)
+
+func NewFromMQTT(msg mqtt.Message) (Message, error) {
+	m := &MessageImpl{}
+
+	if err := json.Unmarshal(msg.Payload(), m); err != nil {
+		return nil, errors.Wrap(err, "NewFromMQTT")
+	}
+	m.SetTopic(msg.Topic())
+	m.SetQoS(QoS(msg.Qos()))
+
+	return m, nil
+}
+
+func NewMessage(msgType MessageType, name string, objectID int, payload map[string]interface{}) (Message, error) {
+	switch {
+	case msgType != MessageTypeCommand && msgType != MessageTypeEvent:
+		return nil, errors.Wrap(errors.Errorf("unknown message type %q", msgType), "NewMessage")
+	case name == "":
+		return nil, errors.Wrap(errors.New("name is empty"), "NewMessage")
+	case objectID < 0:
+		return nil, errors.Wrap(errors.New("object ID < 0"), "NewMessage")
+	}
+
+	if payload == nil {
+		payload = make(map[string]interface{})
+	}
+
+	return &MessageImpl{
+		publisher: Publisher,
+		msgType:   msgType,
+		name:      name,
+		objectID:  objectID,
+		payload:   payload,
+	}, nil
+}
+
+type MessageImpl struct {
+	retained  bool
+	publisher string
+	delay     time.Duration
+	topic     string
+	msgType   MessageType            // event,command
+	name      string                 // onChange,check
+	objectID  int                    // 82
+	payload   map[string]interface{} //
+	qos       QoS
+}
+
+func (o *MessageImpl) GetRetained() bool {
+	return o.retained
+}
+
+func (o *MessageImpl) GetPublisher() string {
+	return o.publisher
+}
+
+func (o *MessageImpl) GetDelay() int {
+	return int(o.delay.Milliseconds())
+}
+
+func (o *MessageImpl) GetTopic() string {
+	return o.topic
+}
+
+func (o *MessageImpl) GetType() MessageType {
+	return o.msgType
+}
+
+func (o *MessageImpl) GetName() string {
+	return o.name
+}
+
+func (o *MessageImpl) GetObjectID() int {
+	return o.objectID
+}
+
+func (o *MessageImpl) GetPayload() map[string]interface{} {
+	return o.payload
+}
+
+func (o *MessageImpl) GetQoS() QoS {
+	return o.qos
+}
+
+func (o *MessageImpl) GetTopicPublisher() string {
+	items := strings.Split(o.GetTopic(), "/")
+	if len(items) > 0 {
+		return items[0]
+	}
+
+	return ""
+}
+
+func (o *MessageImpl) GetTopicType() string {
+	items := strings.Split(o.GetTopic(), "/")
+	if len(items) > 1 {
+		return items[1]
+	}
+
+	return ""
+}
+
+func (o *MessageImpl) GetTopicAction() string {
+	items := strings.Split(o.GetTopic(), "/")
+	if len(items) > 2 {
+		return items[2]
+	}
+
+	return ""
+}
+
+func (o *MessageImpl) SetRetained(v bool) {
+	o.retained = v
+}
+
+func (o *MessageImpl) SetPublisher(v string) {
+	o.publisher = v
+}
+
+func (o *MessageImpl) SetDelay(v int) {
+	o.delay = time.Duration(v) * time.Millisecond
+}
+
+func (o *MessageImpl) SetTopic(v string) {
+	o.topic = v
+}
+
+func (o *MessageImpl) SetType(v MessageType) {
+	o.msgType = v
+}
+
+func (o *MessageImpl) SetName(v string) {
+	o.name = v
+}
+
+func (o *MessageImpl) SetObjectID(v int) {
+	o.objectID = v
+}
+
+func (o *MessageImpl) SetPayload(v map[string]interface{}) {
+	if o.payload == nil {
+		o.payload = make(map[string]interface{}, len(v))
+	}
+
+	for k, v := range v {
+		o.payload[k] = v
+	}
+}
+
+func (o *MessageImpl) SetQoS(v QoS) {
+	o.qos = v
+}
+
+func (o *MessageImpl) GetFloatValue(name string) (float32, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return 0, errors.Wrap(errors.Errorf("%s not found", name), "GetFloatValue")
+	}
+
+	switch v := v.(type) {
+	case float32:
+		return v, nil
+	case float64:
+		return float32(v), nil
+	case int:
+		return float32(v), nil
+	default:
+		return 0, errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetFloatValue")
+	}
+}
+
+func (o *MessageImpl) GetStringValue(name string) (string, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return "", errors.Wrap(errors.Errorf("%s not found", name), "GetStringValue")
+	}
+
+	switch v := v.(type) {
+	case string:
+		return v, nil
+	default:
+		return "", errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetStringValue")
+	}
+}
+
+func (o *MessageImpl) GetIntValue(name string) (int, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return 0, errors.Wrap(errors.Errorf("%s not found", name), "GetIntValue")
+	}
+
+	switch v := v.(type) {
+	case float32:
+		return int(v), nil
+	case float64:
+		return int(v), nil
+	case int:
+		return v, nil
+	default:
+		return 0, errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetIntValue")
+	}
+}
+
+func (o *MessageImpl) GetBoolValue(name string) (bool, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return false, errors.Wrap(errors.Errorf("%s not found", name), "GetBoolValue")
+	}
+
+	switch v := v.(type) {
+	case bool:
+		return v, nil
+	default:
+		return false, errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetBoolValue")
+	}
+}
+
+func (o *MessageImpl) MarshalJSON() ([]byte, error) {
+	m := &message{
+		Publisher: o.GetPublisher(),
+		Delay:     o.GetDelay(),
+		Type:      o.GetType(),
+		Name:      o.GetName(),
+		ObjectID:  o.GetObjectID(),
+		Payload:   o.GetPayload(),
+	}
+
+	return json.Marshal(m)
+}
+
+func (o *MessageImpl) UnmarshalJSON(data []byte) error {
+	m := &message{}
+
+	if err := json.Unmarshal(data, m); err != nil {
+		return err
+	}
+
+	o.SetPublisher(m.Publisher)
+	o.SetDelay(m.Delay)
+	o.SetType(m.Type)
+	o.SetName(m.Name)
+	o.SetObjectID(m.ObjectID)
+	o.SetPayload(m.Payload)
+
+	return nil
+}
+
+type message struct {
+	Publisher string                 `json:"publisher"`
+	Delay     int                    `json:"delay"`
+	Type      MessageType            `json:"type"`
+	Name      string                 `json:"name"`
+	ObjectID  int                    `json:"object_id"`
+	Payload   map[string]interface{} `json:"payload"`
+}
