@@ -9,7 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
-	"object-manager/internal/touchon-server/helpers"
+	"touchon-server/helpers"
 )
 
 // New Загружает настройки сервиса из toml-файла, переопределяет их из ENV,

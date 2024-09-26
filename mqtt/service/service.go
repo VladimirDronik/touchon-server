@@ -6,8 +6,8 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"object-manager/internal/touchon-server/mqtt/client"
-	"object-manager/internal/touchon-server/mqtt/messages"
+	"touchon-server/mqtt/client"
+	"touchon-server/mqtt/messages"
 )
 
 func New(client *client.Client, bufferSize int, threads int, logger *logrus.Logger) (*Service, error) {

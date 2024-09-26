@@ -11,7 +11,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"object-manager/internal/touchon-server/mqtt/messages"
+	"touchon-server/mqtt/messages"
 )
 
 func New(clientID, connString string, timeout time.Duration, tries int, logger *logrus.Logger) (*Client, error) {

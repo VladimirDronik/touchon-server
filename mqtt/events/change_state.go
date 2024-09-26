@@ -2,7 +2,7 @@ package events
 
 import (
 	"github.com/pkg/errors"
-	"object-manager/internal/touchon-server/mqtt/messages"
+	"touchon-server/mqtt/messages"
 )
 
 func NewOnChangeState(objectID int, state, value string) (messages.Message, error) {
