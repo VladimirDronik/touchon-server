@@ -5,10 +5,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewOnChangeState(objectID int, state, value string) (messages.Message, error) {
+func NewOnChangeState(targetID int, targetType messages.TargetType, state, value string) (messages.Message, error) {
 	payload := map[string]interface{}{"state": state, "value": value}
 
-	impl, err := NewEvent("onChangeState", objectID, payload)
+	impl, err := NewEvent("onChangeState", targetID, targetType, payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnChangeState")
 	}

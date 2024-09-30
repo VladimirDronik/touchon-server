@@ -5,10 +5,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewOnPortCheck(objectID int, state, value string) (messages.Message, error) {
+func NewOnPortCheck(targetID int, targetType messages.TargetType, state, value string) (messages.Message, error) {
 	payload := map[string]interface{}{"state": state, "value": value}
 
-	impl, err := NewEvent("onPortCheck", objectID, payload)
+	impl, err := NewEvent("onPortCheck", targetID, targetType, payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnPortCheck")
 	}

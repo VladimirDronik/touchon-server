@@ -23,6 +23,13 @@ const (
 	QoSGuaranteedOne            // Гарантировано один раз
 )
 
+type TargetType string
+
+const (
+	TargetTypeObject TargetType = "object"
+	TargetTypeItem   TargetType = "item"
+)
+
 type Message interface {
 	GetRetained() bool
 	GetPublisher() string
@@ -30,7 +37,8 @@ type Message interface {
 	GetTopic() string                   // action_router/object/method
 	GetType() MessageType               // event,command
 	GetName() string                    // onChange,check
-	GetObjectID() int                   // 82
+	GetTargetID() int                   // 82
+	GetTargetType() TargetType          // object,item
 	GetPayload() map[string]interface{} //
 	GetQoS() QoS                        //
 	GetTopicPublisher() string          // action_router
@@ -43,7 +51,8 @@ type Message interface {
 	SetTopic(string)
 	SetType(MessageType)
 	SetName(string)
-	SetObjectID(int)
+	SetTargetID(int)
+	SetTargetType(TargetType)
 	SetPayload(map[string]interface{})
 	SetQoS(QoS)
 
@@ -56,8 +65,8 @@ type Message interface {
 	json.Unmarshaler
 }
 
-func NewCommand(method string, objectID int, methodArgs map[string]interface{}) (Message, error) {
-	m, err := NewMessage(MessageTypeCommand, method, objectID, methodArgs)
+func NewCommand(method string, targetID int, targetType TargetType, methodArgs map[string]interface{}) (Message, error) {
+	m, err := NewMessage(MessageTypeCommand, method, targetID, targetType, methodArgs)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewCommand")
 	}

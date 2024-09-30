@@ -21,13 +21,13 @@ func NewFromMQTT(msg mqtt.Message) (Message, error) {
 	return m, nil
 }
 
-func NewMessage(msgType MessageType, name string, objectID int, payload map[string]interface{}) (Message, error) {
+func NewMessage(msgType MessageType, name string, targetID int, targetType TargetType, payload map[string]interface{}) (Message, error) {
 	switch {
 	case msgType != MessageTypeCommand && msgType != MessageTypeEvent:
 		return nil, errors.Wrap(errors.Errorf("unknown message type %q", msgType), "NewMessage")
 	case name == "":
 		return nil, errors.Wrap(errors.New("name is empty"), "NewMessage")
-	case objectID < 0:
+	case targetID < 0:
 		return nil, errors.Wrap(errors.New("object ID < 0"), "NewMessage")
 	}
 
@@ -36,24 +36,26 @@ func NewMessage(msgType MessageType, name string, objectID int, payload map[stri
 	}
 
 	return &MessageImpl{
-		publisher: Publisher,
-		msgType:   msgType,
-		name:      name,
-		objectID:  objectID,
-		payload:   payload,
+		publisher:  Publisher,
+		msgType:    msgType,
+		name:       name,
+		targetID:   targetID,
+		targetType: targetType,
+		payload:    payload,
 	}, nil
 }
 
 type MessageImpl struct {
-	retained  bool
-	publisher string
-	delay     time.Duration
-	topic     string
-	msgType   MessageType            // event,command
-	name      string                 // onChange,check
-	objectID  int                    // 82
-	payload   map[string]interface{} //
-	qos       QoS
+	retained   bool
+	publisher  string
+	delay      time.Duration
+	topic      string
+	msgType    MessageType // event,command
+	name       string      // onChange,check
+	targetID   int         // 82
+	targetType TargetType
+	payload    map[string]interface{} //
+	qos        QoS
 }
 
 func (o *MessageImpl) GetRetained() bool {
@@ -80,8 +82,12 @@ func (o *MessageImpl) GetName() string {
 	return o.name
 }
 
-func (o *MessageImpl) GetObjectID() int {
-	return o.objectID
+func (o *MessageImpl) GetTargetID() int {
+	return o.targetID
+}
+
+func (o *MessageImpl) GetTargetType() TargetType {
+	return o.targetType
 }
 
 func (o *MessageImpl) GetPayload() map[string]interface{} {
@@ -143,8 +149,12 @@ func (o *MessageImpl) SetName(v string) {
 	o.name = v
 }
 
-func (o *MessageImpl) SetObjectID(v int) {
-	o.objectID = v
+func (o *MessageImpl) SetTargetID(v int) {
+	o.targetID = v
+}
+
+func (o *MessageImpl) SetTargetType(v TargetType) {
+	o.targetType = v
 }
 
 func (o *MessageImpl) SetPayload(v map[string]interface{}) {
@@ -227,12 +237,13 @@ func (o *MessageImpl) GetBoolValue(name string) (bool, error) {
 
 func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 	m := &message{
-		Publisher: o.GetPublisher(),
-		Delay:     o.GetDelay(),
-		Type:      o.GetType(),
-		Name:      o.GetName(),
-		ObjectID:  o.GetObjectID(),
-		Payload:   o.GetPayload(),
+		Publisher:  o.GetPublisher(),
+		Delay:      o.GetDelay(),
+		Type:       o.GetType(),
+		Name:       o.GetName(),
+		TargetID:   o.GetTargetID(),
+		TargetType: o.GetTargetType(),
+		Payload:    o.GetPayload(),
 	}
 
 	return json.Marshal(m)
@@ -249,17 +260,19 @@ func (o *MessageImpl) UnmarshalJSON(data []byte) error {
 	o.SetDelay(m.Delay)
 	o.SetType(m.Type)
 	o.SetName(m.Name)
-	o.SetObjectID(m.ObjectID)
+	o.SetTargetID(m.TargetID)
+	o.SetTargetType(m.TargetType)
 	o.SetPayload(m.Payload)
 
 	return nil
 }
 
 type message struct {
-	Publisher string                 `json:"publisher"`
-	Delay     int                    `json:"delay"`
-	Type      MessageType            `json:"type"`
-	Name      string                 `json:"name"`
-	ObjectID  int                    `json:"object_id"`
-	Payload   map[string]interface{} `json:"payload"`
+	Publisher  string                 `json:"publisher"`
+	Delay      int                    `json:"delay"`
+	Type       MessageType            `json:"type"`
+	Name       string                 `json:"name"`
+	TargetID   int                    `json:"target_id"`
+	TargetType TargetType             `json:"target_type"`
+	Payload    map[string]interface{} `json:"payload"`
 }

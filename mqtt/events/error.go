@@ -7,14 +7,14 @@ import (
 
 const topicError = "object_manager/error"
 
-func NewOnError(topic string, objectID int, err error) (messages.Message, error) {
+func NewOnError(topic string, targetID int, targetType messages.TargetType, err error) (messages.Message, error) {
 	if err == nil {
 		return nil, errors.Wrap(errors.New("err is nil"), "NewOnError")
 	}
 
 	payload := map[string]interface{}{"error": err.Error()}
 
-	impl, err := NewEvent("onError", objectID, payload)
+	impl, err := NewEvent("onError", targetID, targetType, payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnError")
 	}
