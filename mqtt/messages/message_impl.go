@@ -3,7 +3,6 @@ package messages
 import (
 	"encoding/json"
 	"strings"
-	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
@@ -48,7 +47,6 @@ func NewMessage(msgType MessageType, name string, targetID int, targetType Targe
 type MessageImpl struct {
 	retained   bool
 	publisher  string
-	delay      time.Duration
 	topic      string
 	msgType    MessageType // event,command
 	name       string      // onChange,check
@@ -64,10 +62,6 @@ func (o *MessageImpl) GetRetained() bool {
 
 func (o *MessageImpl) GetPublisher() string {
 	return o.publisher
-}
-
-func (o *MessageImpl) GetDelay() int {
-	return int(o.delay.Milliseconds())
 }
 
 func (o *MessageImpl) GetTopic() string {
@@ -131,10 +125,6 @@ func (o *MessageImpl) SetRetained(v bool) {
 
 func (o *MessageImpl) SetPublisher(v string) {
 	o.publisher = v
-}
-
-func (o *MessageImpl) SetDelay(v int) {
-	o.delay = time.Duration(v) * time.Millisecond
 }
 
 func (o *MessageImpl) SetTopic(v string) {
@@ -238,7 +228,6 @@ func (o *MessageImpl) GetBoolValue(name string) (bool, error) {
 func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 	m := &message{
 		Publisher:  o.GetPublisher(),
-		Delay:      o.GetDelay(),
 		Type:       o.GetType(),
 		Name:       o.GetName(),
 		TargetID:   o.GetTargetID(),
@@ -257,7 +246,6 @@ func (o *MessageImpl) UnmarshalJSON(data []byte) error {
 	}
 
 	o.SetPublisher(m.Publisher)
-	o.SetDelay(m.Delay)
 	o.SetType(m.Type)
 	o.SetName(m.Name)
 	o.SetTargetID(m.TargetID)
@@ -269,7 +257,6 @@ func (o *MessageImpl) UnmarshalJSON(data []byte) error {
 
 type message struct {
 	Publisher  string                 `json:"publisher"`
-	Delay      int                    `json:"delay"`
 	Type       MessageType            `json:"type"`
 	Name       string                 `json:"name"`
 	TargetID   int                    `json:"target_id"`

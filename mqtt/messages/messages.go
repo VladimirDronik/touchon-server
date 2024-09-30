@@ -33,7 +33,6 @@ const (
 type Message interface {
 	GetRetained() bool
 	GetPublisher() string
-	GetDelay() int
 	GetTopic() string                   // action_router/object/method
 	GetType() MessageType               // event,command
 	GetName() string                    // onChange,check
@@ -47,7 +46,6 @@ type Message interface {
 
 	SetRetained(bool)
 	SetPublisher(string)
-	SetDelay(int)
 	SetTopic(string)
 	SetType(MessageType)
 	SetName(string)
