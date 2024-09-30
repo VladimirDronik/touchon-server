@@ -5,13 +5,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewOnSensorCheck(targetID int, targetType messages.TargetType, values map[string]float32) (messages.Message, error) {
+func NewOnSensorCheck(targetID int, values map[string]float32) (messages.Message, error) {
 	payload := make(map[string]interface{}, len(values))
 	for k, v := range values {
 		payload[k] = v
 	}
 
-	impl, err := NewEvent("onCheck", targetID, targetType, payload)
+	impl, err := NewEvent("onCheck", targetID, messages.TargetTypeObject, payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnSensorCheck")
 	}
