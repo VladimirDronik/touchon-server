@@ -127,7 +127,12 @@ func handlerWrapper(f RequestHandler) fasthttp.RequestHandler {
 
 		enc := json.NewEncoder(&buf)
 		enc.SetIndent("", "  ")
-		_ = enc.Encode(r)
+		if err := enc.Encode(r); err != nil {
+			buf.Reset()
+			r.Data = nil
+			r.Error = err.Error()
+			_ = enc.Encode(r)
+		}
 
 		// Выставляем размер ответа
 		contLength := buf.Len() - len(magic)
