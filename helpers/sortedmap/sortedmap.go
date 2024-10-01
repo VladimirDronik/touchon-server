@@ -12,9 +12,9 @@ type KeyType interface {
 	comparable
 }
 
-func New[K KeyType, V any]() *SortedMap[K, V] {
+func New[K KeyType, V any](cap int) *SortedMap[K, V] {
 	return &SortedMap[K, V]{
-		m: make(map[K]V, 0),
+		m: make(map[K]V, cap),
 	}
 }
 

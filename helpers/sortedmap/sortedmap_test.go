@@ -11,14 +11,14 @@ func ExampleSortedMap_MarshalJSON() {
 		Value string
 	}
 
-	m1 := New[string, *Item]()
+	m1 := New[string, *Item](0)
 	m1.Set("y", &Item{"y", "1"})
 	m1.Set("x", &Item{"x", "2"})
 
 	data, err := json.MarshalIndent(m1, "", "  ")
 	fmt.Println(string(data), err)
 
-	m2 := New[int, *Item]()
+	m2 := New[int, *Item](0)
 	m2.Set(2, &Item{"y", "2"})
 	m2.Set(1, &Item{"x", "1"})
 
@@ -53,7 +53,7 @@ func ExampleSortedMap_UnmarshalJSON() {
 	}
 
 	data := []byte(`{"a": {"v":1},"c": {"v":2},"b": {"v":3}}`)
-	m1 := New[string, Item]()
+	m1 := New[string, Item](0)
 	_ = json.Unmarshal(data, &m1)
 
 	data, _ = json.MarshalIndent(m1, "", "  ")
@@ -61,7 +61,7 @@ func ExampleSortedMap_UnmarshalJSON() {
 
 	// ----
 
-	m2 := New[string, *Item]()
+	m2 := New[string, *Item](0)
 	_ = json.Unmarshal(data, &m2)
 
 	data, _ = json.MarshalIndent(m2, "", "  ")
@@ -70,7 +70,7 @@ func ExampleSortedMap_UnmarshalJSON() {
 	// ----
 
 	data = []byte(`{"a": 1,"c": 2,"b": 3}`)
-	m3 := New[string, int]()
+	m3 := New[string, int](0)
 	_ = json.Unmarshal(data, &m3)
 
 	data, _ = json.MarshalIndent(m3, "", "  ")
