@@ -90,6 +90,10 @@ func (o *SortedMap[K, V]) GetUnorderedMap() map[K]V {
 	return r
 }
 
+func (o *SortedMap[K, V]) Len() int {
+	return len(o.m)
+}
+
 func (o *SortedMap[K, V]) Clear() {
 	for k := range o.m {
 		delete(o.m, k)
