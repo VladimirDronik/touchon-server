@@ -1,11 +1,11 @@
-package sortedmap
+package orderedmap
 
 import (
 	"encoding/json"
 	"fmt"
 )
 
-func ExampleSortedMap_MarshalJSON() {
+func ExampleOrderedMap_MarshalJSON() {
 	type Item struct {
 		Key   string
 		Value string
@@ -47,7 +47,7 @@ func ExampleSortedMap_MarshalJSON() {
 	// } <nil>
 }
 
-func ExampleSortedMap_UnmarshalJSON() {
+func ExampleOrderedMap_UnmarshalJSON() {
 	type Item struct {
 		Value int `json:"v"`
 	}

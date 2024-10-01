@@ -1,4 +1,4 @@
-package sortedmap
+package orderedmap
 
 import (
 	"bytes"
@@ -12,8 +12,8 @@ type KeyType interface {
 	comparable
 }
 
-func New[K KeyType, V any](cap int) *SortedMap[K, V] {
-	return &SortedMap[K, V]{
+func New[K KeyType, V any](cap int) *OrderedMap[K, V] {
+	return &OrderedMap[K, V]{
 		m: make(map[K]V, cap),
 	}
 }
@@ -23,12 +23,12 @@ type Item[K KeyType, V any] struct {
 	Value V
 }
 
-type SortedMap[K KeyType, V any] struct {
+type OrderedMap[K KeyType, V any] struct {
 	m     map[K]V
 	order []K
 }
 
-func (o *SortedMap[K, V]) Add(k K, v V) error {
+func (o *OrderedMap[K, V]) Add(k K, v V) error {
 	if _, ok := o.m[k]; ok {
 		return errors.Wrap(errors.Errorf("value with key %v is exists", k), "Add")
 	}
@@ -39,7 +39,7 @@ func (o *SortedMap[K, V]) Add(k K, v V) error {
 	return nil
 }
 
-func (o *SortedMap[K, V]) Set(k K, v V) {
+func (o *OrderedMap[K, V]) Set(k K, v V) {
 	if _, ok := o.m[k]; !ok {
 		_ = o.Add(k, v)
 		return
@@ -48,7 +48,7 @@ func (o *SortedMap[K, V]) Set(k K, v V) {
 	o.m[k] = v
 }
 
-func (o *SortedMap[K, V]) Get(k K) (V, error) {
+func (o *OrderedMap[K, V]) Get(k K) (V, error) {
 	var null V
 
 	v, ok := o.m[k]
@@ -59,7 +59,7 @@ func (o *SortedMap[K, V]) Get(k K) (V, error) {
 	return v, nil
 }
 
-func (o *SortedMap[K, V]) GetKeyValueList() []*Item[K, V] {
+func (o *OrderedMap[K, V]) GetKeyValueList() []*Item[K, V] {
 	r := make([]*Item[K, V], 0, len(o.m))
 
 	for _, k := range o.order {
@@ -69,7 +69,7 @@ func (o *SortedMap[K, V]) GetKeyValueList() []*Item[K, V] {
 	return r
 }
 
-func (o *SortedMap[K, V]) GetValueList() []V {
+func (o *OrderedMap[K, V]) GetValueList() []V {
 	r := make([]V, 0, len(o.m))
 
 	for _, k := range o.order {
@@ -79,7 +79,7 @@ func (o *SortedMap[K, V]) GetValueList() []V {
 	return r
 }
 
-func (o *SortedMap[K, V]) GetUnorderedMap() map[K]V {
+func (o *OrderedMap[K, V]) GetUnorderedMap() map[K]V {
 	r := make(map[K]V, len(o.m))
 
 	// copy map
@@ -90,18 +90,18 @@ func (o *SortedMap[K, V]) GetUnorderedMap() map[K]V {
 	return r
 }
 
-func (o *SortedMap[K, V]) Len() int {
+func (o *OrderedMap[K, V]) Len() int {
 	return len(o.m)
 }
 
-func (o *SortedMap[K, V]) Clear() {
+func (o *OrderedMap[K, V]) Clear() {
 	for k := range o.m {
 		delete(o.m, k)
 	}
 	o.order = o.order[:0]
 }
 
-func (o *SortedMap[K, V]) MarshalJSON() ([]byte, error) {
+func (o *OrderedMap[K, V]) MarshalJSON() ([]byte, error) {
 	keys := make([]json.RawMessage, 0, len(o.m))
 	values := make([]json.RawMessage, 0, len(o.m))
 
@@ -148,7 +148,7 @@ func (o *SortedMap[K, V]) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (o *SortedMap[K, V]) UnmarshalJSON(data []byte) error {
+func (o *OrderedMap[K, V]) UnmarshalJSON(data []byte) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 
 	// read {
