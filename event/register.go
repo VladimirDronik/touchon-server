@@ -37,3 +37,17 @@ func GetMaker(eventName string) (Maker, error) {
 
 	return maker, nil
 }
+
+func GetEvent(eventName string) (*Event, error) {
+	maker, ok := register[eventName]
+	if !ok {
+		return nil, errors.Wrap(errors.Errorf("event %q not registered", eventName), "GetEvent")
+	}
+
+	event, err := maker()
+	if err != nil {
+		return nil, errors.Wrap(err, "GetEvent")
+	}
+
+	return event, nil
+}
