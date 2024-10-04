@@ -20,7 +20,7 @@ func NewFromMQTT(msg mqtt.Message) (Message, error) {
 	return m, nil
 }
 
-func NewMessage(msgType MessageType, name string, targetID int, targetType TargetType, payload map[string]interface{}) (Message, error) {
+func NewMessage(msgType MessageType, name string, targetType TargetType, targetID int, payload map[string]interface{}) (Message, error) {
 	switch {
 	case msgType != MessageTypeCommand && msgType != MessageTypeEvent:
 		return nil, errors.Wrap(errors.Errorf("unknown message type %q", msgType), "NewMessage")

@@ -72,8 +72,8 @@ type Message interface {
 	json.Unmarshaler
 }
 
-func NewCommand(method string, targetID int, targetType TargetType, methodArgs map[string]interface{}) (Message, error) {
-	m, err := NewMessage(MessageTypeCommand, method, targetID, targetType, methodArgs)
+func NewCommand(method string, targetType TargetType, targetID int, methodArgs map[string]interface{}) (Message, error) {
+	m, err := NewMessage(MessageTypeCommand, method, targetType, targetID, methodArgs)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewCommand")
 	}
@@ -81,8 +81,8 @@ func NewCommand(method string, targetID int, targetType TargetType, methodArgs m
 	return m, nil
 }
 
-func NewEvent(name string, targetID int, targetType TargetType, payload map[string]interface{}) (Message, error) {
-	m, err := NewMessage(MessageTypeEvent, name, targetID, targetType, payload)
+func NewEvent(name string, targetType TargetType, targetID int, payload map[string]interface{}) (Message, error) {
+	m, err := NewMessage(MessageTypeEvent, name, targetType, targetID, payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewEvent")
 	}

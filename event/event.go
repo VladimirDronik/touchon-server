@@ -43,7 +43,7 @@ func (o *Event) ToMqttMessage(topic string) (messages.Message, error) {
 		payload[p.Code] = p.GetValue()
 	}
 
-	m, err := messages.NewMessage(messages.MessageTypeEvent, o.Code, o.TargetID, o.TargetType, payload)
+	m, err := messages.NewMessage(messages.MessageTypeEvent, o.Code, o.TargetType, o.TargetID, payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "ToMqttMessage")
 	}
