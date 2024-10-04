@@ -235,6 +235,10 @@ func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 		Payload:    o.GetPayload(),
 	}
 
+	if len(m.Payload) == 0 {
+		m.Payload = nil
+	}
+
 	return json.Marshal(m)
 }
 
