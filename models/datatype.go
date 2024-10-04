@@ -213,14 +213,26 @@ func (o *Item) StringValue() string {
 	return v
 }
 
-func (o *Item) UnmarshalJSON(data []byte) error {
-	type V struct {
-		Type       DataType          `json:"type"`
-		Values     map[string]string `json:"values,omitempty"`
-		RoundFloat bool              `json:"round_float"`
-		Value      interface{}       `json:"value"`
+type jsonItem struct {
+	Type       DataType          `json:"type"`
+	Values     map[string]string `json:"values,omitempty"`
+	RoundFloat bool              `json:"round_float"`
+	Value      interface{}       `json:"value"`
+}
+
+func (o *Item) MarshalJSON() ([]byte, error) {
+	item := jsonItem{
+		Type:       o.Type,
+		Values:     o.Values,
+		RoundFloat: o.RoundFloat,
+		Value:      o.value,
 	}
-	v := &V{}
+
+	return json.Marshal(item)
+}
+
+func (o *Item) UnmarshalJSON(data []byte) error {
+	v := &jsonItem{}
 
 	if err := json.Unmarshal(data, v); err != nil {
 		return err
