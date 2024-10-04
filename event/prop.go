@@ -59,7 +59,7 @@ func (o *Prop) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (o *Prop) CheckDefinition() error {
+func (o *Prop) Check() error {
 	switch {
 	case o.Code == "":
 		return errors.New("prop Code is empty")

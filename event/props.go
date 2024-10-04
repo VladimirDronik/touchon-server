@@ -21,7 +21,7 @@ func (o *Props) Len() int {
 	return o.m.Len()
 }
 
-func (o *Props) GetAll() *orderedmap.OrderedMap[string, *Prop] {
+func (o *Props) GetOrderedMap() *orderedmap.OrderedMap[string, *Prop] {
 	return o.m
 }
 
@@ -142,11 +142,11 @@ func (o *Props) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, o)
 }
 
-func (o *Props) CheckDefinition() error {
+func (o *Props) Check() error {
 	for _, p := range o.m.GetValueList() {
 		// Проверяем определение свойства
-		if err := p.CheckDefinition(); err != nil {
-			return errors.Wrap(err, "CheckDefinition")
+		if err := p.Check(); err != nil {
+			return errors.Wrap(err, "Check")
 		}
 	}
 

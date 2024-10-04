@@ -26,9 +26,16 @@ const (
 type TargetType string
 
 const (
-	TargetTypeObject TargetType = "object"
-	TargetTypeItem   TargetType = "item"
+	TargetTypeNotMatters TargetType = "not_matters" // Используется, например, в определении ошибки, относящейся к любому типу
+	TargetTypeObject     TargetType = "object"
+	TargetTypeItem       TargetType = "item"
 )
+
+var TargetTypes = map[TargetType]bool{
+	TargetTypeNotMatters: true,
+	TargetTypeObject:     true,
+	TargetTypeItem:       true,
+}
 
 type Message interface {
 	GetRetained() bool
@@ -67,6 +74,15 @@ func NewCommand(method string, targetID int, targetType TargetType, methodArgs m
 	m, err := NewMessage(MessageTypeCommand, method, targetID, targetType, methodArgs)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewCommand")
+	}
+
+	return m, nil
+}
+
+func NewEvent(name string, targetID int, targetType TargetType, payload map[string]interface{}) (Message, error) {
+	m, err := NewMessage(MessageTypeEvent, name, targetID, targetType, payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewEvent")
 	}
 
 	return m, nil
