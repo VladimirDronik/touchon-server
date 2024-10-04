@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -28,9 +27,9 @@ var DataTypeToGoType = map[DataType]string{
 }
 
 type Item struct {
-	Type       DataType          //
-	Values     map[string]string // Для DataTypeEnum
-	RoundFloat bool              // Для DataTypeFloat. Округлять вещественные числа до десятых долей
+	Type       DataType          `json:"type"`                  //
+	Values     map[string]string `json:"values,omitempty"`      // Для DataTypeEnum
+	RoundFloat bool              `json:"round_float,omitempty"` // Для DataTypeFloat. Округлять вещественные числа до десятых долей
 	value      interface{}       //
 }
 
@@ -100,17 +99,17 @@ func (o *Item) SetValue(value interface{}) error {
 	case DataTypeString:
 		s, ok := value.(string)
 		if !ok {
-			return errors.Wrap(errors.Errorf("value is not string (%T)", value), "SetValue")
+			return errors.Wrap(errors.Errorf("value is not string (%T)", value), "Item.SetValue")
 		}
 		o.value = s
 
 	case DataTypeEnum:
 		s, ok := value.(string)
 		if !ok {
-			return errors.Wrap(errors.Errorf("value is not string (%T)", value), "SetValue")
+			return errors.Wrap(errors.Errorf("value is not string (%T)", value), "Item.SetValue")
 		}
 		if _, ok := o.Values[s]; !ok {
-			return errors.Wrap(errors.Errorf("value %q not found in enum values %v", s, o.Values), "SetValue")
+			return errors.Wrap(errors.Errorf("value %q not found in enum values %v", s, o.Values), "Item.SetValue")
 		}
 		o.value = s
 
@@ -122,7 +121,7 @@ func (o *Item) SetValue(value interface{}) error {
 			}
 			b, err := strconv.ParseBool(v)
 			if err != nil {
-				return errors.Wrap(err, "SetValue")
+				return errors.Wrap(err, "Item.SetValue")
 			}
 			o.value = b
 
@@ -130,7 +129,7 @@ func (o *Item) SetValue(value interface{}) error {
 			o.value = v
 
 		default:
-			return errors.Wrap(errors.Errorf("value is not string or bool (%T)", value), "SetValue")
+			return errors.Wrap(errors.Errorf("value is not string or bool (%T)", value), "Item.SetValue")
 		}
 
 	case DataTypeInt:
@@ -143,13 +142,19 @@ func (o *Item) SetValue(value interface{}) error {
 			if err != nil {
 				return errors.Wrap(err, "SetValue")
 			}
-			o.value = i
+			o.value = int(i)
+
+		case float32:
+			o.value = int(v)
+
+		case float64:
+			o.value = int(v)
 
 		case int:
 			o.value = v
 
 		default:
-			return errors.Wrap(errors.Errorf("value is not string or int (%T)", value), "SetValue")
+			return errors.Wrap(errors.Errorf("value is not string or int (%T)", value), "Item.SetValue")
 		}
 
 	case DataTypeFloat:
@@ -165,7 +170,7 @@ func (o *Item) SetValue(value interface{}) error {
 			}
 			f, err := strconv.ParseFloat(v, 32)
 			if err != nil {
-				return errors.Wrap(err, "SetValue")
+				return errors.Wrap(err, "Item.SetValue")
 			}
 			o.value = round(float32(f))
 
@@ -177,11 +182,11 @@ func (o *Item) SetValue(value interface{}) error {
 			o.value = round(v)
 
 		default:
-			return errors.Wrap(errors.Errorf("value is not string, int or float (%T)", value), "SetValue")
+			return errors.Wrap(errors.Errorf("value is not string, int or float (%T)", value), "Item.SetValue")
 		}
 
 	default:
-		return errors.Wrap(errors.Errorf("unexpected prop data type %s", o.Type), "SetValue")
+		return errors.Wrap(errors.Errorf("unexpected prop data type %s", o.Type), "Item.SetValue")
 	}
 
 	return nil
@@ -211,38 +216,6 @@ func (o *Item) StringValue() string {
 		return ""
 	}
 	return v
-}
-
-type jsonItem struct {
-	Type       DataType          `json:"type"`
-	Values     map[string]string `json:"values,omitempty"`
-	RoundFloat bool              `json:"round_float,omitempty"`
-	Value      interface{}       `json:"value,omitempty"`
-}
-
-func (o *Item) MarshalJSON() ([]byte, error) {
-	item := jsonItem{
-		Type:   o.Type,
-		Values: o.Values,
-		Value:  o.value,
-	}
-
-	return json.Marshal(item)
-}
-
-func (o *Item) UnmarshalJSON(data []byte) error {
-	v := &jsonItem{}
-
-	if err := json.Unmarshal(data, v); err != nil {
-		return err
-	}
-
-	o.Type = v.Type
-	o.Values = v.Values
-	o.RoundFloat = v.RoundFloat
-	o.value = v.Value
-
-	return nil
 }
 
 func (o *Item) round(v float32) float32 {
