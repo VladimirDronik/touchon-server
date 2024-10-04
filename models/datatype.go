@@ -99,6 +99,10 @@ func (o *Item) GetFloatValue() (float32, error) {
 }
 
 func (o *Item) SetValue(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
 	switch o.Type {
 	case DataTypeString:
 		s, ok := value.(string)
