@@ -11,19 +11,21 @@ import (
 type DataType string
 
 const (
-	DataTypeString DataType = "string"
-	DataTypeEnum   DataType = "enum" // enum<string>
-	DataTypeBool   DataType = "bool"
-	DataTypeInt    DataType = "int"
-	DataTypeFloat  DataType = "float"
+	DataTypeString    DataType = "string"
+	DataTypeEnum      DataType = "enum" // enum<string>
+	DataTypeBool      DataType = "bool"
+	DataTypeInt       DataType = "int"
+	DataTypeFloat     DataType = "float"
+	DataTypeInterface DataType = "interface"
 )
 
 var DataTypeToGoType = map[DataType]string{
-	DataTypeString: "string",
-	DataTypeEnum:   "string",
-	DataTypeBool:   "bool",
-	DataTypeInt:    "int",
-	DataTypeFloat:  "float32",
+	DataTypeString:    "string",
+	DataTypeEnum:      "string",
+	DataTypeBool:      "bool",
+	DataTypeInt:       "int",
+	DataTypeFloat:     "float32",
+	DataTypeInterface: "interface",
 }
 
 type Item struct {
@@ -184,6 +186,9 @@ func (o *Item) SetValue(value interface{}) error {
 		default:
 			return errors.Wrap(errors.Errorf("value is not string, int or float (%T)", value), "Item.SetValue")
 		}
+
+	case DataTypeInterface:
+		o.value = value
 
 	default:
 		return errors.Wrap(errors.Errorf("unexpected prop data type %s", o.Type), "Item.SetValue")

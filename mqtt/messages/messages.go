@@ -29,12 +29,14 @@ const (
 	TargetTypeNotMatters TargetType = "not_matters" // Используется, например, в определении ошибки, относящейся к любому типу
 	TargetTypeObject     TargetType = "object"
 	TargetTypeItem       TargetType = "item"
+	TargetTypeScript     TargetType = "script"
 )
 
 var TargetTypes = map[TargetType]bool{
 	TargetTypeNotMatters: true,
 	TargetTypeObject:     true,
 	TargetTypeItem:       true,
+	TargetTypeScript:     true,
 }
 
 type Message interface {
