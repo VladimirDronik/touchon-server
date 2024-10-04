@@ -30,7 +30,7 @@ var DataTypeToGoType = map[DataType]string{
 type Item struct {
 	Type       DataType          `json:"type"`             //
 	Values     map[string]string `json:"values,omitempty"` // Для DataTypeEnum
-	RoundFloat bool              `json:"-"`                // Для DataTypeFloat. Округлять вещественные числа до десятых долей
+	RoundFloat bool              `json:"round_float-"`     // Для DataTypeFloat. Округлять вещественные числа до десятых долей
 	value      interface{}       //
 }
 
@@ -215,8 +215,10 @@ func (o *Item) StringValue() string {
 
 func (o *Item) UnmarshalJSON(data []byte) error {
 	type V struct {
-		Item
-		Value interface{} `json:"value"` //
+		Type       DataType          `json:"type"`
+		Values     map[string]string `json:"values,omitempty"`
+		RoundFloat bool              `json:"round_float"`
+		Value      interface{}       `json:"value"`
 	}
 	v := &V{}
 
@@ -224,7 +226,9 @@ func (o *Item) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	*o = v.Item
+	o.Type = v.Type
+	o.Values = v.Values
+	o.RoundFloat = v.RoundFloat
 	o.value = v.Value
 
 	return nil
