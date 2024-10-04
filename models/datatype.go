@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -25,14 +26,6 @@ var DataTypeToGoType = map[DataType]string{
 	DataTypeInt:    "int",
 	DataTypeFloat:  "float32",
 }
-
-//func NewItem(itemType DataType) *Item {
-//	return &Item{
-//		Type:       itemType,
-//		RoundFloat: false,
-//		value:      nil,
-//	}
-//}
 
 type Item struct {
 	Type       DataType          `json:"type"`             //
@@ -218,6 +211,23 @@ func (o *Item) StringValue() string {
 		return ""
 	}
 	return v
+}
+
+func (o *Item) UnmarshalJSON(data []byte) error {
+	type V struct {
+		Item
+		Value interface{} `json:"value"` //
+	}
+	v := &V{}
+
+	if err := json.Unmarshal(data, v); err != nil {
+		return err
+	}
+
+	*o = v.Item
+	o.value = v.Value
+
+	return nil
 }
 
 func (o *Item) round(v float32) float32 {
