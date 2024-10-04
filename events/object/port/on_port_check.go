@@ -1,4 +1,4 @@
-package events
+package port
 
 import (
 	"github.com/VladimirDronik/touchon-server/event"
@@ -10,11 +10,11 @@ import (
 func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
-			Code:        "on_change_state",
-			Name:        "Ошибка",
-			Description: "",
+			Code:        "object.port.on_check",
+			Name:        "Проверка состояние порта",
+			Description: "Событие возникает, когда проверяется состояние порта, но при этом новое пришедшее состояние порта не различается с тем, что хранится в БД",
 			Props:       event.NewProps(),
-			TargetType:  messages.TargetTypeNotMatters,
+			TargetType:  messages.TargetTypeObject,
 		}
 
 		s := &event.Prop{
@@ -45,15 +45,15 @@ func init() {
 	}
 }
 
-func NewOnChangeStateMessage(topic string, targetType messages.TargetType, targetID int, state, value string) (messages.Message, error) {
-	e, err := event.MakeEvent("on_change_state", targetType, targetID, map[string]interface{}{"state": state, "value": value})
+func NewOnCheckMessage(topic string, targetID int, state, value string) (messages.Message, error) {
+	e, err := event.MakeEvent("object.port.on_check", messages.TargetTypeObject, targetID, map[string]interface{}{"state": state, "value": value})
 	if err != nil {
-		return nil, errors.Wrap(err, "NewOnChangeStateMessage")
+		return nil, errors.Wrap(err, "NewOnCheckMessage")
 	}
 
 	m, err := e.ToMqttMessage(topic)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewOnChangeStateMessage")
+		return nil, errors.Wrap(err, "NewOnCheckMessage")
 	}
 
 	return m, nil

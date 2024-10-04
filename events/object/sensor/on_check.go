@@ -91,3 +91,22 @@ func init() {
 		panic(err)
 	}
 }
+
+func NewOnCheckMessage(topic string, targetID int, values map[string]float32) (messages.Message, error) {
+	payload := make(map[string]interface{}, len(values))
+	for k, v := range values {
+		payload[k] = v
+	}
+
+	e, err := event.MakeEvent("object.sensor.on_check", messages.TargetTypeObject, targetID, payload)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnCheckMessage")
+	}
+
+	m, err := e.ToMqttMessage(topic)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnCheckMessage")
+	}
+
+	return m, nil
+}

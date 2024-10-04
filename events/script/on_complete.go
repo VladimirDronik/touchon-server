@@ -36,3 +36,17 @@ func init() {
 		panic(err)
 	}
 }
+
+func NewOnCompleteMessage(topic string, targetID int, result interface{}) (messages.Message, error) {
+	e, err := event.MakeEvent("script.on_complete", messages.TargetTypeObject, targetID, map[string]interface{}{"result": result})
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnCompleteMessage")
+	}
+
+	m, err := e.ToMqttMessage(topic)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnCompleteMessage")
+	}
+
+	return m, nil
+}
