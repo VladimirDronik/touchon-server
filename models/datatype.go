@@ -45,6 +45,10 @@ func (o *Item) Round(v bool) {
 
 }
 
+func (o *Item) GetValue() interface{} {
+	return o.value
+}
+
 // GetStringValue Метод-хэлпер для получения строкового значения
 func (o *Item) GetStringValue() (string, error) {
 	if v, ok := o.value.(string); ok {
