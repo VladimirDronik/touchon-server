@@ -259,7 +259,7 @@ type message struct {
 	Publisher  string                 `json:"publisher"`
 	Type       MessageType            `json:"type"`
 	Name       string                 `json:"name"`
-	TargetID   int                    `json:"target_id"`
-	TargetType TargetType             `json:"target_type"`
-	Payload    map[string]interface{} `json:"payload"`
+	TargetID   int                    `json:"target_id,omitempty"`
+	TargetType TargetType             `json:"target_type,omitempty"`
+	Payload    map[string]interface{} `json:"payload,omitempty"`
 }

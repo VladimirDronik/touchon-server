@@ -12,8 +12,8 @@ type Event struct {
 	Description string `json:"description,omitempty"`
 	Props       *Props `json:"props"`
 
-	TargetID   int                 `json:"target_id"`
-	TargetType messages.TargetType `json:"target_type"`
+	TargetID   int                 `json:"target_id,omitempty"`
+	TargetType messages.TargetType `json:"target_type,omitempty"`
 }
 
 func (o *Event) Check() error {
