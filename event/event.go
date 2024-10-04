@@ -37,7 +37,7 @@ func (o *Event) Check() error {
 	return nil
 }
 
-func (o *Event) ToMqttMessage() (messages.Message, error) {
+func (o *Event) ToMqttMessage(topic string) (messages.Message, error) {
 	payload := make(map[string]interface{}, o.Props.Len())
 	for _, p := range o.Props.GetOrderedMap().GetValueList() {
 		payload[p.Code] = p.GetValue()
@@ -47,6 +47,8 @@ func (o *Event) ToMqttMessage() (messages.Message, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "ToMqttMessage")
 	}
+
+	m.SetTopic(topic)
 
 	return m, nil
 }
