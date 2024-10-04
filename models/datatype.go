@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/VladimirDronik/touchon-server/helpers"
@@ -25,9 +26,23 @@ var DataTypeToGoType = map[DataType]string{
 	DataTypeFloat:  "float32",
 }
 
+func NewItem(itemType DataType) *Item {
+	return &Item{
+		Type:       itemType,
+		RoundFloat: false,
+		value:      nil,
+	}
+}
+
 type Item struct {
-	Type  DataType
-	value interface{}
+	Type       DataType          `json:"type"`             //
+	Values     map[string]string `json:"values,omitempty"` // Для DataTypeEnum
+	RoundFloat bool              `json:"-"`                // Для DataTypeFloat. Округлять вещественные числа до десятых долей
+	value      interface{}       //
+}
+
+func (o *Item) Round(v bool) {
+
 }
 
 // GetStringValue Метод-хэлпер для получения строкового значения
@@ -97,6 +112,9 @@ func (o *Item) SetValue(value interface{}) error {
 		if !ok {
 			return errors.Wrap(errors.Errorf("value is not string (%T)", value), "SetValue")
 		}
+		if _, ok := o.Values[s]; !ok {
+			return errors.Wrap(errors.Errorf("value %q not found in enum values %v", s, o.Values), "SetValue")
+		}
 		o.value = s
 
 	case DataTypeBool:
@@ -138,6 +156,11 @@ func (o *Item) SetValue(value interface{}) error {
 		}
 
 	case DataTypeFloat:
+		round := o.noRound
+		if o.RoundFloat {
+			round = o.round
+		}
+
 		switch v := value.(type) {
 		case string:
 			if v == "" {
@@ -147,14 +170,14 @@ func (o *Item) SetValue(value interface{}) error {
 			if err != nil {
 				return errors.Wrap(err, "SetValue")
 			}
-			o.value = helpers.Round(float32(f))
+			o.value = round(float32(f))
 
 		case int:
-			o.value = helpers.Round(float32(v))
+			o.value = round(float32(v))
 		case float64:
-			o.value = helpers.Round(float32(v))
+			o.value = round(float32(v))
 		case float32:
-			o.value = helpers.Round(v)
+			o.value = round(v)
 
 		default:
 			return errors.Wrap(errors.Errorf("value is not string, int or float (%T)", value), "SetValue")
@@ -165,4 +188,34 @@ func (o *Item) SetValue(value interface{}) error {
 	}
 
 	return nil
+}
+
+func (o *Item) Check() error {
+	if _, ok := DataTypeToGoType[o.Type]; !ok {
+		return errors.Errorf("unknown type %q", o.Type)
+	}
+
+	switch {
+	case o.Type == DataTypeEnum && len(o.Values) == 0:
+		return errors.New("values is empty")
+	}
+
+	return nil
+}
+
+// StringValue возвращает строковое представление значения свойства
+func (o *Item) StringValue() string {
+	v := fmt.Sprintf("%v", o.value)
+	if v == "<nil>" {
+		return ""
+	}
+	return v
+}
+
+func (o *Item) round(v float32) float32 {
+	return helpers.Round(v)
+}
+
+func (o *Item) noRound(v float32) float32 {
+	return v
 }
