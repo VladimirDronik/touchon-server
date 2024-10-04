@@ -26,23 +26,19 @@ var DataTypeToGoType = map[DataType]string{
 	DataTypeFloat:  "float32",
 }
 
-func NewItem(itemType DataType) *Item {
-	return &Item{
-		Type:       itemType,
-		RoundFloat: false,
-		value:      nil,
-	}
-}
+//func NewItem(itemType DataType) *Item {
+//	return &Item{
+//		Type:       itemType,
+//		RoundFloat: false,
+//		value:      nil,
+//	}
+//}
 
 type Item struct {
 	Type       DataType          `json:"type"`             //
 	Values     map[string]string `json:"values,omitempty"` // Для DataTypeEnum
 	RoundFloat bool              `json:"-"`                // Для DataTypeFloat. Округлять вещественные числа до десятых долей
 	value      interface{}       //
-}
-
-func (o *Item) Round(v bool) {
-
 }
 
 func (o *Item) GetValue() interface{} {
@@ -202,6 +198,10 @@ func (o *Item) Check() error {
 	switch {
 	case o.Type == DataTypeEnum && len(o.Values) == 0:
 		return errors.New("values is empty")
+	case o.Type != DataTypeEnum && len(o.Values) > 0:
+		return errors.Errorf("may be type must be %q?", DataTypeEnum)
+	case o.Type != DataTypeFloat && o.RoundFloat:
+		return errors.Errorf("may be type must be %q?", DataTypeFloat)
 	}
 
 	return nil
