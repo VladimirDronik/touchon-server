@@ -1,4 +1,4 @@
-package sensor
+package regulator
 
 import (
 	"github.com/VladimirDronik/touchon-server/event"

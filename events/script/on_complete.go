@@ -1,4 +1,4 @@
-package events
+package script
 
 import (
 	"github.com/VladimirDronik/touchon-server/event"
