@@ -11,6 +11,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/valyala/fasthttp v1.56.0
+	github.com/valyala/fastjson v1.6.4
 	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.12
 )
