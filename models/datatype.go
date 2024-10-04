@@ -214,18 +214,16 @@ func (o *Item) StringValue() string {
 }
 
 type jsonItem struct {
-	Type       DataType          `json:"type"`
-	Values     map[string]string `json:"values,omitempty"`
-	RoundFloat bool              `json:"round_float"`
-	Value      interface{}       `json:"value"`
+	Type   DataType          `json:"type"`
+	Values map[string]string `json:"values,omitempty"`
+	Value  interface{}       `json:"value"`
 }
 
 func (o *Item) MarshalJSON() ([]byte, error) {
 	item := jsonItem{
-		Type:       o.Type,
-		Values:     o.Values,
-		RoundFloat: o.RoundFloat,
-		Value:      o.value,
+		Type:   o.Type,
+		Values: o.Values,
+		Value:  o.value,
 	}
 
 	return json.Marshal(item)
@@ -240,7 +238,6 @@ func (o *Item) UnmarshalJSON(data []byte) error {
 
 	o.Type = v.Type
 	o.Values = v.Values
-	o.RoundFloat = v.RoundFloat
 	o.value = v.Value
 
 	return nil
