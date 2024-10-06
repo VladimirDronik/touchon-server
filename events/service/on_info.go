@@ -2,9 +2,9 @@ package service
 
 import (
 	"github.com/VladimirDronik/touchon-server/event"
+	"github.com/VladimirDronik/touchon-server/info"
 	"github.com/VladimirDronik/touchon-server/models"
 	"github.com/VladimirDronik/touchon-server/mqtt/messages"
-	"github.com/VladimirDronik/touchon-server/service"
 	"github.com/pkg/errors"
 )
 
@@ -39,12 +39,12 @@ func init() {
 }
 
 func NewOnInfoMessage(topic string) (messages.Message, error) {
-	info, err := service.GetInfo()
+	nfo, err := info.GetInfo()
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnInfoMessage")
 	}
 
-	e, err := event.MakeEvent("service.on_info", messages.TargetTypeService, 0, map[string]interface{}{"info": info})
+	e, err := event.MakeEvent("service.on_info", messages.TargetTypeService, 0, map[string]interface{}{"info": nfo})
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnInfoMessage")
 	}

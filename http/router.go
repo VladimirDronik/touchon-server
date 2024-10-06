@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VladimirDronik/touchon-server/service"
+	"github.com/VladimirDronik/touchon-server/info"
 	"github.com/valyala/fasthttp"
 )
 
@@ -23,12 +23,12 @@ type RequestHandler func(ctx *fasthttp.RequestCtx) (body interface{}, status int
 // @Success      200
 // @Router /_/info [get]
 func (o *Service) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	info, err := service.GetInfo()
+	nfo, err := info.GetInfo()
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	return info, http.StatusOK, nil
+	return nfo, http.StatusOK, nil
 }
 
 // Получить логи
