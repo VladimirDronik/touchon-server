@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pbnjay/memory"
 	"github.com/valyala/fasthttp"
 )
@@ -46,21 +47,23 @@ func init() {
 // @Router /_/info [get]
 func (o *Service) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	type Info struct {
-		Env            interface{}
+		Service        string
 		StartedAt      string
 		Uptime         string
 		MaxMemoryUsage string
 		TotalMemory    string
 		FreeMemory     string
+		Env            interface{}
 	}
 
 	info := &Info{
-		Env:            o.cfg,
+		Service:        messages.Publisher,
 		StartedAt:      startedAt.Format("02.01.2006 15:04:05"),
 		Uptime:         time.Since(startedAt).Round(time.Second).String(),
 		MaxMemoryUsage: fmt.Sprintf("%.1f MiB", float64(maxMem.Load())/1024/1024),
 		TotalMemory:    fmt.Sprintf("%.1f MiB", float64(memory.TotalMemory())/1024/1024),
 		FreeMemory:     fmt.Sprintf("%.1f MiB", float64(memory.FreeMemory())/1024/1024),
+		Env:            o.cfg,
 	}
 
 	return info, http.StatusOK, nil
