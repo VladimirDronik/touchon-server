@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/VladimirDronik/touchon-server/mqtt/messages"
+	"github.com/VladimirDronik/touchon-server/service"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -99,7 +100,7 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 
 	token := o.client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		// Свои сообщения игнорируем
-		if !strings.HasPrefix(msg.Topic(), messages.Publisher) {
+		if !strings.HasPrefix(msg.Topic(), service.Name) {
 			o.logger.Debugf("MQTT: [%s] QoS=%d %s", msg.Topic(), msg.Qos(), string(msg.Payload()))
 			c <- msg
 		}

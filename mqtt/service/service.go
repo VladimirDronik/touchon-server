@@ -3,6 +3,7 @@ package service
 import (
 	"sync"
 
+	"github.com/VladimirDronik/touchon-server/events/service"
 	"github.com/VladimirDronik/touchon-server/mqtt/client"
 	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -63,6 +64,27 @@ func (o *Service) Start() error {
 			defer o.wg.Done()
 
 			for msg := range msgs {
+				m, err := messages.NewFromMQTT(msg)
+				if err != nil {
+					o.logger.Error(err)
+					continue
+				}
+
+				if m.GetTargetType() == messages.TargetTypeService && m.GetType() == messages.MessageTypeCommand && m.GetName() == "info" {
+					m, err := service.NewOnInfoMessage("service/info")
+					if err != nil {
+						o.logger.Error(err)
+						continue
+					}
+
+					if err := o.client.Send(m); err != nil {
+						o.logger.Error(err)
+						continue
+					}
+
+					continue
+				}
+
 				if err := o.handler(msg); err != nil {
 					o.logger.Error(err)
 				}

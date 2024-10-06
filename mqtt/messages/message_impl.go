@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/VladimirDronik/touchon-server/service"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 )
@@ -35,7 +36,7 @@ func NewMessage(msgType MessageType, name string, targetType TargetType, targetI
 	}
 
 	return &MessageImpl{
-		publisher:  Publisher,
+		publisher:  service.Name,
 		msgType:    msgType,
 		name:       name,
 		targetID:   targetID,

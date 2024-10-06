@@ -53,10 +53,10 @@ type Service struct {
 	router     *router.Router
 	ringBuffer fmt.Stringer
 	logger     *logrus.Logger
-	cfg        interface{} // for GET /_/info
+	cfg        map[string]string
 }
 
-func (o *Service) SetConfig(cfg interface{}) {
+func (o *Service) SetConfig(cfg map[string]string) {
 	o.cfg = cfg
 }
 

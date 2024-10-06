@@ -30,6 +30,7 @@ const (
 	TargetTypeObject     TargetType = "object"
 	TargetTypeItem       TargetType = "item"
 	TargetTypeScript     TargetType = "script"
+	TargetTypeService    TargetType = "service"
 )
 
 var TargetTypes = map[TargetType]bool{
@@ -37,6 +38,7 @@ var TargetTypes = map[TargetType]bool{
 	TargetTypeObject:     true,
 	TargetTypeItem:       true,
 	TargetTypeScript:     true,
+	TargetTypeService:    true,
 }
 
 type Message interface {

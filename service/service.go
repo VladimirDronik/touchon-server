@@ -5,7 +5,6 @@ import (
 
 	"github.com/VladimirDronik/touchon-server/config"
 	"github.com/VladimirDronik/touchon-server/helpers"
-	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -29,7 +28,8 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 
 	fmt.Print("Version: ", cfg["version"], "\n\n\n")
 
-	messages.Publisher = cfg["service_name"]
+	Config = cfg
+	Name = cfg["service_name"]
 
 	logger, err := helpers.NewLogger(cfg["log_level"])
 	if err != nil {
