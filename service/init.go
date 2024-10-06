@@ -1,4 +1,4 @@
-package touchon_server
+package service
 
 // Регистрируем события
 import (
