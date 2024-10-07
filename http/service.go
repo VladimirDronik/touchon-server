@@ -73,6 +73,10 @@ func (o *Service) GetLogger() *logrus.Logger {
 	return o.logger
 }
 
+func (o *Service) GetConfig() map[string]string {
+	return o.cfg
+}
+
 func (o *Service) Start(bindAddr string) error {
 	go func() {
 		o.logger.Infof("HTTP: сервис запустился %q", bindAddr)
