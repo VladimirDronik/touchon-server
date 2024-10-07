@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,12 +72,24 @@ func (o *Service) Respond(ctx *fasthttp.RequestCtx, code int, data interface{}) 
 
 func handlerWrapper(f RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
-		var r Response[any]
-
-		const magic = "CoNtEnTLeNgTh"
-
 		start := time.Now()
 		data, status, err := f(ctx)
+
+		// Метаданные добавляем только к ответу в формате JSON
+		if !strings.HasPrefix(strings.ToLower(string(ctx.Response.Header.ContentType())), "application/json") {
+			s := ""
+			switch {
+			case err != nil:
+				s = err.Error()
+			case data != nil:
+				s = fmt.Sprintf("%v", data)
+			}
+			ctx.Error(s, status)
+			return
+		}
+
+		var r Response[any]
+		const magic = "CoNtEnTLeNgTh"
 		r.Meta.Duration = float64(int(time.Since(start).Seconds()*1000)) / 1000
 		r.Meta.ContentLength = magic
 		ctx.Response.SetStatusCode(status)
