@@ -41,7 +41,7 @@ func New(ringBuffer fmt.Stringer, logger *logrus.Logger) (*Service, error) {
 
 	// Служебные эндпоинты
 	o.router.GET("/_/info", handlerWrapper(o.handleGetInfo))
-	o.router.GET("/_/log", handlerWrapper(o.handleGetLog))
+	o.router.GET("/_/log", o.handleGetLog)
 
 	o.httpServer.Handler = o.requestWrapper
 
