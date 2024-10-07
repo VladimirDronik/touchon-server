@@ -41,7 +41,9 @@ func (o *Server) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 // @Router /_/log [get]
 func (o *Server) handleGetLog(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetContentType("text/plain; charset=UTF-8")
-	_, _ = ctx.WriteString(o.ringBuffer.String())
+	if o.ringBuffer != nil {
+		_, _ = ctx.WriteString(o.ringBuffer.String())
+	}
 }
 
 // Meta Метаинформация о запросе/ответе
