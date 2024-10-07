@@ -68,7 +68,8 @@ func (o *Service) Respond(ctx *fasthttp.RequestCtx, code int, data interface{}) 
 	}
 }
 
-func handlerWrapper(f RequestHandler) fasthttp.RequestHandler {
+// JsonHandlerWrapper ответ в формате JSON оборачивает в единый формат и добавляет метаданные.
+func JsonHandlerWrapper(f RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		var r Response[any]
 		const magic = "CoNtEnTLeNgTh"

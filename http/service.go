@@ -14,7 +14,7 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
-func New(ringBuffer fmt.Stringer, logger *logrus.Logger) (*Service, error) {
+func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) (*Service, error) {
 	if logger == nil {
 		return nil, errors.Wrap(errors.New("logger is nil"), "http.New")
 	}
@@ -25,6 +25,7 @@ func New(ringBuffer fmt.Stringer, logger *logrus.Logger) (*Service, error) {
 			WriteTimeout:         5 * time.Second,
 			NoDefaultContentType: true,
 		},
+		cfg:        cfg,
 		router:     router.New(),
 		ringBuffer: ringBuffer,
 		logger:     logger,
@@ -40,10 +41,10 @@ func New(ringBuffer fmt.Stringer, logger *logrus.Logger) (*Service, error) {
 	))
 
 	// Служебные эндпоинты
-	o.router.GET("/_/info", handlerWrapper(o.handleGetInfo))
+	o.router.GET("/_/info", JsonHandlerWrapper(o.handleGetInfo))
 	o.router.GET("/_/log", o.handleGetLog)
 
-	o.httpServer.Handler = o.requestWrapper
+	o.httpServer.Handler = RequestWrapper(o.router.Handler)
 
 	return o, nil
 }
@@ -56,12 +57,16 @@ type Service struct {
 	cfg        map[string]string
 }
 
-func (o *Service) SetConfig(cfg map[string]string) {
-	o.cfg = cfg
+func (o *Service) AddHandler(method, path string, handler RequestHandler) {
+	o.router.Handle(method, path, JsonHandlerWrapper(handler))
 }
 
-func (o *Service) AddHandler(method, path string, handler RequestHandler) {
-	o.router.Handle(method, path, handlerWrapper(handler))
+func (o *Service) GetServer() *fasthttp.Server {
+	return o.httpServer
+}
+
+func (o *Service) GetRouter() *router.Router {
+	return o.router
 }
 
 func (o *Service) GetLogger() *logrus.Logger {
@@ -70,7 +75,7 @@ func (o *Service) GetLogger() *logrus.Logger {
 
 func (o *Service) Start(bindAddr string) error {
 	go func() {
-		o.logger.Info("HTTP: сервис запустился")
+		o.logger.Infof("HTTP: сервис запустился %q", bindAddr)
 		if err := o.httpServer.ListenAndServe(bindAddr); err != nil {
 			log.Fatal("HTTP:", err)
 		}
@@ -87,26 +92,31 @@ func (o *Service) Shutdown() error {
 	return nil
 }
 
-func (o *Service) requestWrapper(ctx *fasthttp.RequestCtx) {
-	ref := string(ctx.Request.Header.Peek("Origin"))
-	if ref == "" {
-		ref = "*"
+// RequestWrapper добавляет CORS заголовки и content type
+func RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		ref := string(ctx.Request.Header.Peek("Origin"))
+		if ref == "" {
+			ref = "*"
+		}
+
+		ctx.Response.Header.Set("Access-Control-Allow-Origin", ref)
+		ctx.Response.Header.Set("Access-Control-Allow-Headers", "api-key,token")
+		ctx.Response.Header.Set("Access-Control-Allow-Methods", "*")
+		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+
+		// Хрому нужен OK на запрос OPTIONS
+		if string(ctx.Method()) == http.MethodOptions {
+			ctx.SetStatusCode(http.StatusOK)
+			return
+		}
+
+		if len(ctx.Response.Header.ContentType()) == 0 {
+			ctx.Response.Header.SetContentType("application/json; charset=UTF-8")
+		}
+
+		if next != nil {
+			next(ctx)
+		}
 	}
-
-	ctx.Response.Header.Set("Access-Control-Allow-Origin", ref)
-	ctx.Response.Header.Set("Access-Control-Allow-Headers", "api-key,token")
-	ctx.Response.Header.Set("Access-Control-Allow-Methods", "*")
-	ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-
-	// Хрому нужен OK на запрос OPTIONS
-	if string(ctx.Method()) == http.MethodOptions {
-		ctx.SetStatusCode(http.StatusOK)
-		return
-	}
-
-	if len(ctx.Response.Header.ContentType()) == 0 {
-		ctx.Response.Header.SetContentType("application/json; charset=UTF-8")
-	}
-
-	o.router.Handler(ctx)
 }
