@@ -14,12 +14,12 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
-func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) (*Service, error) {
+func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) (*Server, error) {
 	if logger == nil {
 		return nil, errors.Wrap(errors.New("logger is nil"), "http.New")
 	}
 
-	o := &Service{
+	o := &Server{
 		httpServer: &fasthttp.Server{
 			ReadTimeout:          5 * time.Second,
 			WriteTimeout:         5 * time.Second,
@@ -49,7 +49,7 @@ func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) 
 	return o, nil
 }
 
-type Service struct {
+type Server struct {
 	httpServer *fasthttp.Server
 	router     *router.Router
 	ringBuffer fmt.Stringer
@@ -57,38 +57,41 @@ type Service struct {
 	cfg        map[string]string
 }
 
-func (o *Service) AddHandler(method, path string, handler RequestHandler) {
+func (o *Server) AddHandler(method, path string, handler RequestHandler) {
 	o.router.Handle(method, path, JsonHandlerWrapper(handler))
 }
 
-func (o *Service) GetServer() *fasthttp.Server {
+func (o *Server) GetServer() *fasthttp.Server {
 	return o.httpServer
 }
 
-func (o *Service) GetRouter() *router.Router {
+func (o *Server) GetRouter() *router.Router {
 	return o.router
 }
 
-func (o *Service) GetLogger() *logrus.Logger {
+func (o *Server) GetLogger() *logrus.Logger {
 	return o.logger
 }
 
-func (o *Service) GetConfig() map[string]string {
+func (o *Server) GetConfig() map[string]string {
 	return o.cfg
 }
 
-func (o *Service) Start(bindAddr string) error {
+func (o *Server) Start(bindAddr string) error {
 	go func() {
-		o.logger.Infof("HTTP: сервис запустился %q", bindAddr)
+		o.logger.Infof("HTTP(%s): сервер запущен", bindAddr)
+
 		if err := o.httpServer.ListenAndServe(bindAddr); err != nil {
 			log.Fatal("HTTP:", err)
 		}
+
+		o.logger.Infof("HTTP(%s): сервер остановлен", bindAddr)
 	}()
 
 	return nil
 }
 
-func (o *Service) Shutdown() error {
+func (o *Server) Shutdown() error {
 	if err := o.httpServer.Shutdown(); err != nil {
 		return errors.Wrap(err, "Shutdown")
 	}

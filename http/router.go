@@ -22,7 +22,7 @@ type RequestHandler func(ctx *fasthttp.RequestCtx) (body interface{}, status int
 // @Produce text/json
 // @Success      200
 // @Router /_/info [get]
-func (o *Service) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+func (o *Server) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	nfo, err := info.GetInfo()
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -39,7 +39,7 @@ func (o *Service) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, err
 // @Produce text/plain
 // @Success      200
 // @Router /_/log [get]
-func (o *Service) handleGetLog(ctx *fasthttp.RequestCtx) {
+func (o *Server) handleGetLog(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetContentType("text/plain; charset=UTF-8")
 	_, _ = ctx.WriteString(o.ringBuffer.String())
 }
@@ -57,11 +57,11 @@ type Response[T any] struct {
 	Error string `json:"error,omitempty"` // Описание возвращенной ошибки
 }
 
-func (o *Service) Error(ctx *fasthttp.RequestCtx, code int, errMsg string) {
+func (o *Server) Error(ctx *fasthttp.RequestCtx, code int, errMsg string) {
 	o.Respond(ctx, code, Response[interface{}]{Error: errMsg})
 }
 
-func (o *Service) Respond(ctx *fasthttp.RequestCtx, code int, data interface{}) {
+func (o *Server) Respond(ctx *fasthttp.RequestCtx, code int, data interface{}) {
 	ctx.Response.SetStatusCode(code)
 	if data != nil {
 		_ = json.NewEncoder(ctx).Encode(data)
