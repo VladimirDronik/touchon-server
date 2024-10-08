@@ -10,8 +10,8 @@ import (
 type NotifyType string
 
 const (
-	OnNotifyTypeNonCritical NotifyType = ""
-	OnNotifyTypeCritical    NotifyType = "critical"
+	NotifyTypeNonCritical NotifyType = ""
+	NotifyTypeCritical    NotifyType = "critical"
 )
 
 func init() {
