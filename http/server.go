@@ -108,7 +108,7 @@ func RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		}
 
 		ctx.Response.Header.Set("Access-Control-Allow-Origin", ref)
-		ctx.Response.Header.Set("Access-Control-Allow-Headers", "api-key,token")
+		ctx.Response.Header.Set("Access-Control-Allow-Headers", "api-key,token,content-type")
 		ctx.Response.Header.Set("Access-Control-Allow-Methods", "*")
 		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 
