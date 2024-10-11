@@ -214,6 +214,10 @@ func (o *Item) Check() error {
 	return nil
 }
 
+func (o *Item) SetValueUnsafe(value interface{}) {
+	o.value = value
+}
+
 // StringValue возвращает строковое представление значения свойства
 func (o *Item) StringValue() string {
 	v := fmt.Sprintf("%v", o.value)
