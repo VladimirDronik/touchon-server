@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"log"
 	"math"
 	"os"
 	"strconv"
@@ -109,4 +110,30 @@ func NewDB(connString string) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+func DumpRequestCtx(ctx *fasthttp.RequestCtx) {
+	if ctx == nil {
+		return
+	}
+
+	log.Println()
+	log.Println("================================")
+	log.Printf("REQUEST [%s] %s", ctx.RemoteAddr().String(), string(ctx.Request.URI().FullURI()))
+	ctx.Request.Header.VisitAll(func(k, v []byte) {
+		log.Printf("HEADER: %s = %q", string(k), string(v))
+	})
+	if len(ctx.Request.Body()) > 0 {
+		log.Println(string(ctx.Request.Body()))
+	}
+
+	log.Println()
+	log.Println("---------------------------------")
+	log.Printf("RESPONSE [%d]", ctx.Response.StatusCode())
+	ctx.Response.Header.VisitAll(func(k, v []byte) {
+		log.Printf("HEADER: %s = %q", string(k), string(v))
+	})
+	if len(ctx.Response.Body()) > 0 {
+		log.Println(string(ctx.Response.Body()))
+	}
 }
