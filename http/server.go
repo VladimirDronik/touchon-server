@@ -136,8 +136,8 @@ func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHa
 
 		if next != nil {
 			next(ctx)
-
-			helpers.DumpRequestCtx(ctx, o.debugLevel)
 		}
+
+		helpers.DumpRequestCtx(ctx, o.debugLevel)
 	}
 }
