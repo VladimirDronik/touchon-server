@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/fasthttp/router"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -44,7 +45,7 @@ func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) 
 	o.router.GET("/_/info", JsonHandlerWrapper(o.handleGetInfo))
 	o.router.GET("/_/log", o.handleGetLog)
 
-	o.httpServer.Handler = RequestWrapper(o.router.Handler)
+	o.httpServer.Handler = RequestWrapper(o.router.Handler, o.debugLevel)
 
 	return o, nil
 }
@@ -55,10 +56,21 @@ type Server struct {
 	ringBuffer fmt.Stringer
 	logger     *logrus.Logger
 	cfg        map[string]string
+	debugLevel int
 }
 
 func (o *Server) AddHandler(method, path string, handler RequestHandler) {
 	o.router.Handle(method, path, JsonHandlerWrapper(handler))
+}
+
+func (o *Server) SetDebugLevel(level int) error {
+	if level < 0 || level > 2 {
+		return errors.Wrap(errors.New("level < 0 || level > 2"), "SetDebugLevel")
+	}
+
+	o.debugLevel = level
+
+	return nil
 }
 
 func (o *Server) GetServer() *fasthttp.Server {
@@ -100,7 +112,7 @@ func (o *Server) Shutdown() error {
 }
 
 // RequestWrapper добавляет CORS заголовки и content type
-func RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+func RequestWrapper(next fasthttp.RequestHandler, debugLevel int) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		ref := string(ctx.Request.Header.Peek("Origin"))
 		if ref == "" {
@@ -124,6 +136,8 @@ func RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 
 		if next != nil {
 			next(ctx)
+
+			helpers.DumpRequestCtx(ctx, debugLevel)
 		}
 	}
 }

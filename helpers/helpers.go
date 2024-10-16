@@ -112,28 +112,36 @@ func NewDB(connString string) (*gorm.DB, error) {
 	return db, nil
 }
 
-func DumpRequestCtx(ctx *fasthttp.RequestCtx) {
-	if ctx == nil {
+func DumpRequestCtx(ctx *fasthttp.RequestCtx, level int) {
+	if ctx == nil || level < 1 || level > 2 {
 		return
 	}
 
-	log.Println()
-	log.Println("================================")
+	if level == 2 {
+		log.Println()
+		log.Println("================================")
+	}
 	log.Printf("REQUEST [%s] %s %s", ctx.RemoteAddr().String(), string(ctx.Request.Header.Method()), string(ctx.Request.URI().FullURI()))
-	ctx.Request.Header.VisitAll(func(k, v []byte) {
-		log.Printf("HEADER: %s = %q", string(k), string(v))
-	})
-	if len(ctx.Request.Body()) > 0 {
-		log.Println(string(ctx.Request.Body()))
+	if level == 2 {
+		ctx.Request.Header.VisitAll(func(k, v []byte) {
+			log.Printf("HEADER: %s = %q", string(k), string(v))
+		})
+		if len(ctx.Request.Body()) > 0 {
+			log.Println(string(ctx.Request.Body()))
+		}
 	}
 
-	log.Println()
-	log.Println("---------------------------------")
+	if level == 2 {
+		log.Println()
+		log.Println("---------------------------------")
+	}
 	log.Printf("RESPONSE [%d]", ctx.Response.StatusCode())
-	ctx.Response.Header.VisitAll(func(k, v []byte) {
-		log.Printf("HEADER: %s = %q", string(k), string(v))
-	})
-	if len(ctx.Response.Body()) > 0 {
-		log.Println(string(ctx.Response.Body()))
+	if level == 2 {
+		ctx.Response.Header.VisitAll(func(k, v []byte) {
+			log.Printf("HEADER: %s = %q", string(k), string(v))
+		})
+		if len(ctx.Response.Body()) > 0 {
+			log.Println(string(ctx.Response.Body()))
+		}
 	}
 }
