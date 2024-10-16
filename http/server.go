@@ -45,7 +45,7 @@ func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) 
 	o.router.GET("/_/info", JsonHandlerWrapper(o.handleGetInfo))
 	o.router.GET("/_/log", o.handleGetLog)
 
-	o.httpServer.Handler = RequestWrapper(o.router.Handler, o.debugLevel)
+	o.httpServer.Handler = o.RequestWrapper(o.router.Handler)
 
 	return o, nil
 }
@@ -112,7 +112,7 @@ func (o *Server) Shutdown() error {
 }
 
 // RequestWrapper добавляет CORS заголовки и content type
-func RequestWrapper(next fasthttp.RequestHandler, debugLevel int) fasthttp.RequestHandler {
+func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		ref := string(ctx.Request.Header.Peek("Origin"))
 		if ref == "" {
@@ -137,7 +137,7 @@ func RequestWrapper(next fasthttp.RequestHandler, debugLevel int) fasthttp.Reque
 		if next != nil {
 			next(ctx)
 
-			helpers.DumpRequestCtx(ctx, debugLevel)
+			helpers.DumpRequestCtx(ctx, o.debugLevel)
 		}
 	}
 }
