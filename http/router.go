@@ -59,17 +59,6 @@ type Response[T any] struct {
 	Error string `json:"error,omitempty"` // Описание возвращенной ошибки
 }
 
-func (o *Server) Error(ctx *fasthttp.RequestCtx, code int, errMsg string) {
-	o.Respond(ctx, code, Response[interface{}]{Error: errMsg})
-}
-
-func (o *Server) Respond(ctx *fasthttp.RequestCtx, code int, data interface{}) {
-	ctx.Response.SetStatusCode(code)
-	if data != nil {
-		_ = json.NewEncoder(ctx).Encode(data)
-	}
-}
-
 // JsonHandlerWrapper ответ в формате JSON оборачивает в единый формат и добавляет метаданные.
 func JsonHandlerWrapper(f RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {

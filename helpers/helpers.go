@@ -119,7 +119,7 @@ func DumpRequestCtx(ctx *fasthttp.RequestCtx) {
 
 	log.Println()
 	log.Println("================================")
-	log.Printf("REQUEST [%s] %s", ctx.RemoteAddr().String(), string(ctx.Request.URI().FullURI()))
+	log.Printf("REQUEST [%s] %s %s", ctx.RemoteAddr().String(), string(ctx.Request.Header.Method()), string(ctx.Request.URI().FullURI()))
 	ctx.Request.Header.VisitAll(func(k, v []byte) {
 		log.Printf("HEADER: %s = %q", string(k), string(v))
 	})
