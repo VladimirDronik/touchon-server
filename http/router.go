@@ -18,9 +18,10 @@ type RequestHandler func(ctx *fasthttp.RequestCtx) (body interface{}, status int
 // @Summary Получить информацию о сервисе
 // @Tags Service
 // @Description Получить информацию о сервисе
-// @ID Service/Info
-// @Produce text/json
-// @Success      200
+// @ID ServiceInfo
+// @Produce json
+// @Success      200 {object} http.Response[info.Info]
+// @Failure      500 {object} http.Response[any]
 // @Router /_/info [get]
 func (o *Server) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	nfo, err := info.GetInfo()
@@ -35,7 +36,7 @@ func (o *Server) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 // @Summary Получить логи
 // @Tags Service
 // @Description Получить логи
-// @ID Service/Log
+// @ID ServiceLog
 // @Produce text/plain
 // @Success      200
 // @Router /_/log [get]
