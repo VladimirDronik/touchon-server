@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -20,6 +21,8 @@ func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) 
 		return nil, errors.Wrap(errors.New("logger is nil"), "http.New")
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	o := &Server{
 		httpServer: &fasthttp.Server{
 			ReadTimeout:          5 * time.Second,
@@ -30,6 +33,8 @@ func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) 
 		router:     router.New(),
 		ringBuffer: ringBuffer,
 		logger:     logger,
+		ctx:        ctx,
+		cancel:     cancel,
 	}
 
 	// Обработчик для Swagger'а
@@ -57,6 +62,8 @@ type Server struct {
 	logger     *logrus.Logger
 	cfg        map[string]string
 	debugLevel int
+	ctx        context.Context
+	cancel     context.CancelFunc
 }
 
 func (o *Server) AddHandler(method, path string, handler RequestHandler) {
@@ -71,6 +78,10 @@ func (o *Server) SetDebugLevel(level int) error {
 	o.debugLevel = level
 
 	return nil
+}
+
+func (o *Server) GetContext() context.Context {
+	return o.ctx
 }
 
 func (o *Server) GetServer() *fasthttp.Server {
@@ -104,6 +115,8 @@ func (o *Server) Start(bindAddr string) error {
 }
 
 func (o *Server) Shutdown() error {
+	o.cancel()
+
 	if err := o.httpServer.Shutdown(); err != nil {
 		return errors.Wrap(err, "Shutdown")
 	}
