@@ -29,10 +29,11 @@ var DataTypeToGoType = map[DataType]string{
 }
 
 type Item struct {
-	Type       DataType          `json:"type"`                  //
-	Values     map[string]string `json:"values,omitempty"`      // Для DataTypeEnum
-	RoundFloat bool              `json:"round_float,omitempty"` // Для DataTypeFloat. Округлять вещественные числа до десятых долей
-	value      interface{}       //
+	Type         DataType          `json:"type"`                  //
+	Values       map[string]string `json:"values,omitempty"`      // Для DataTypeEnum
+	RoundFloat   bool              `json:"round_float,omitempty"` // Для DataTypeFloat. Округлять вещественные числа до десятых долей
+	DefaultValue interface{}       `json:"-"`
+	value        interface{}       //
 }
 
 func (o *Item) GetValue() interface{} {
