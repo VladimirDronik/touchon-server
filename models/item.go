@@ -198,6 +198,10 @@ func (o *Item) SetValue(value interface{}) error {
 	return nil
 }
 
+func (o *Item) RemoveValue() {
+	o.value = nil
+}
+
 func (o *Item) Check() error {
 	if _, ok := DataTypeToGoType[o.Type]; !ok {
 		return errors.Errorf("unknown type %q", o.Type)
@@ -210,6 +214,16 @@ func (o *Item) Check() error {
 		return errors.Errorf("may be type must be %q?", DataTypeEnum)
 	case o.Type != DataTypeFloat && o.RoundFloat:
 		return errors.Errorf("may be type must be %q?", DataTypeFloat)
+	}
+
+	// Проверяем DefaultValue
+	if o.DefaultValue != nil {
+		currValue := o.GetValue()
+		if err := o.SetValue(o.DefaultValue); err != nil {
+			return err
+		}
+
+		o.SetValueUnsafe(currValue)
 	}
 
 	return nil
