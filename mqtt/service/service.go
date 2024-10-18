@@ -73,6 +73,7 @@ func (o *Service) Start() error {
 
 				m.SetReceivedAt(time.Now())
 				o.GetLogger().Debugf("MQTT msg travel time: %s", m.GetReceivedAt().Sub(m.GetSentAt()))
+				o.GetLogger().Debugf("MQTT: [%s] QoS=%d %s", msg.Topic(), msg.Qos(), string(msg.Payload()))
 
 				if m.GetTargetType() == messages.TargetTypeService && m.GetType() == messages.MessageTypeCommand && m.GetName() == "info" {
 					m, err := service.NewOnInfoMessage("service/info")
