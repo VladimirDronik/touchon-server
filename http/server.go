@@ -151,6 +151,6 @@ func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHa
 			next(ctx)
 		}
 
-		helpers.DumpRequestCtx(ctx, o.debugLevel)
+		helpers.DumpRequestCtx(o.logger, ctx, o.debugLevel)
 	}
 }
