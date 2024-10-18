@@ -7,7 +7,6 @@ import (
 	"github.com/VladimirDronik/touchon-server/events/service"
 	"github.com/VladimirDronik/touchon-server/mqtt/client"
 	"github.com/VladimirDronik/touchon-server/mqtt/messages"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -32,10 +31,10 @@ type Service struct {
 	topic      string
 	threads    int
 	wg         *sync.WaitGroup
-	handler    func(mqtt.Message) error
+	handler    func(messages.Message) error
 }
 
-func (o *Service) SetHandler(handler func(mqtt.Message) error) {
+func (o *Service) SetHandler(handler func(messages.Message) error) {
 	o.handler = handler
 }
 
@@ -90,7 +89,7 @@ func (o *Service) Start() error {
 					continue
 				}
 
-				if err := o.handler(msg); err != nil {
+				if err := o.handler(m); err != nil {
 					o.logger.Error(err)
 				}
 			}
