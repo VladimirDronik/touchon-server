@@ -245,7 +245,7 @@ func (o *MessageImpl) SetReceivedAt(v time.Time) {
 	o.receivedAt = v
 }
 
-const atFormat = "02.01.2006 15:04:05.000000"
+const atFormat = "02.01.2006 15:04:05.000000 MST"
 
 func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 	m := &message{
