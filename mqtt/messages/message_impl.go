@@ -299,6 +299,11 @@ func (o *MessageImpl) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (o *MessageImpl) String() string {
+	data, _ := o.MarshalJSON()
+	return string(data)
+}
+
 type message struct {
 	Publisher  string                 `json:"publisher"`
 	Type       MessageType            `json:"type"`

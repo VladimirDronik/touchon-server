@@ -2,6 +2,7 @@ package messages
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -78,6 +79,7 @@ type Message interface {
 
 	json.Marshaler
 	json.Unmarshaler
+	fmt.Stringer
 }
 
 func NewCommand(method string, targetType TargetType, targetID int, methodArgs map[string]interface{}) (Message, error) {
