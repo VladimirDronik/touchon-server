@@ -86,25 +86,11 @@ func (o *Service) Start() error {
 				}
 
 				m.SetReceivedAt(time.Now())
-				travelTime := m.GetReceivedAt().Sub(m.GetSentAt())
 
+				travelTime := o.processTravelTime(m, maxTravelTime)
 				o.GetLogger().Debugln()
 				o.GetLogger().Debugf("MQTT: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), travelTime)
 				o.GetLogger().Debug(m.String())
-				if travelTime > maxTravelTime && o.GetLogger().Level >= logrus.DebugLevel {
-					type TravelTimeTooLong struct {
-						Duration string
-						Message  messages.Message
-					}
-					msg := TravelTimeTooLong{
-						Duration: travelTime.String(),
-						Message:  m,
-					}
-
-					if err := o.client.SendRaw("debug/travel_time_too_long/"+info.Name, messages.QoSNotGuaranteed, false, msg); err != nil {
-						o.GetLogger().Error(err)
-					}
-				}
 
 				if m.GetTargetType() == messages.TargetTypeService && m.GetType() == messages.MessageTypeCommand && m.GetName() == "info" {
 					m, err := service.NewOnInfoMessage("service/info")
@@ -131,6 +117,31 @@ func (o *Service) Start() error {
 	o.logger.Info("MQTT: сервис запущен")
 
 	return nil
+}
+
+func (o *Service) processTravelTime(m messages.Message, maxTravelTime time.Duration) string {
+	if m.GetSentAt().IsZero() {
+		return ""
+	}
+
+	travelTime := m.GetReceivedAt().Sub(m.GetSentAt())
+
+	if travelTime > maxTravelTime && o.GetLogger().Level >= logrus.DebugLevel {
+		type TravelTimeTooLong struct {
+			Duration string
+			Message  messages.Message
+		}
+		msg := TravelTimeTooLong{
+			Duration: travelTime.String(),
+			Message:  m,
+		}
+
+		if err := o.client.SendRaw("debug/travel_time_too_long/"+info.Name, messages.QoSNotGuaranteed, false, msg); err != nil {
+			o.GetLogger().Error(err)
+		}
+	}
+
+	return travelTime.String()
 }
 
 func (o *Service) Shutdown() error {
