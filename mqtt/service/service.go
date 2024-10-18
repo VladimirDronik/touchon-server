@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -136,7 +137,9 @@ func (o *Service) processTravelTime(m messages.Message, maxTravelTime time.Durat
 			Message:  m,
 		}
 
-		if err := o.client.SendRaw("debug/travel_time_too_long/"+info.Name, messages.QoSNotGuaranteed, false, msg); err != nil {
+		data, _ := json.Marshal(msg)
+
+		if err := o.client.SendRaw("debug/travel_time_too_long/"+info.Name, messages.QoSNotGuaranteed, false, data); err != nil {
 			o.GetLogger().Error(err)
 		}
 	}
