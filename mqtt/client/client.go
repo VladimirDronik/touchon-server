@@ -140,6 +140,8 @@ func (o *Client) Send(msg messages.Message) error {
 		return errors.Wrap(errors.New("topic is empty"), "Send")
 	}
 
+	msg.SetSentAt(time.Now())
+
 	data, err := msg.MarshalJSON()
 	if err != nil {
 		return errors.Wrap(err, "Send")

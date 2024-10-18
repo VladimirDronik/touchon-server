@@ -2,6 +2,7 @@ package messages
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -69,6 +70,11 @@ type Message interface {
 	GetStringValue(name string) (string, error)
 	GetIntValue(name string) (int, error)
 	GetBoolValue(name string) (bool, error)
+
+	GetSentAt() time.Time
+	SetSentAt(time.Time)
+	GetReceivedAt() time.Time
+	SetReceivedAt(time.Time)
 
 	json.Marshaler
 	json.Unmarshaler

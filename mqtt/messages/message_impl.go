@@ -3,6 +3,7 @@ package messages
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/VladimirDronik/touchon-server/info"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -55,6 +56,8 @@ type MessageImpl struct {
 	targetType TargetType
 	payload    map[string]interface{} //
 	qos        QoS
+	sentAt     time.Time
+	receivedAt time.Time
 }
 
 func (o *MessageImpl) GetRetained() bool {
@@ -226,6 +229,24 @@ func (o *MessageImpl) GetBoolValue(name string) (bool, error) {
 	}
 }
 
+func (o *MessageImpl) GetSentAt() time.Time {
+	return o.sentAt
+}
+
+func (o *MessageImpl) SetSentAt(v time.Time) {
+	o.sentAt = v
+}
+
+func (o *MessageImpl) GetReceivedAt() time.Time {
+	return o.receivedAt
+}
+
+func (o *MessageImpl) SetReceivedAt(v time.Time) {
+	o.receivedAt = v
+}
+
+const atFormat = "02.01.2006 15:04:05.000000"
+
 func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 	m := &message{
 		Publisher:  o.GetPublisher(),
@@ -234,6 +255,14 @@ func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 		TargetID:   o.GetTargetID(),
 		TargetType: o.GetTargetType(),
 		Payload:    o.GetPayload(),
+	}
+
+	if !o.GetSentAt().IsZero() {
+		m.SentAt = o.GetSentAt().Format(atFormat)
+	}
+
+	if !o.GetReceivedAt().IsZero() {
+		m.ReceivedAt = o.GetReceivedAt().Format(atFormat)
 	}
 
 	if len(m.Payload) == 0 {
@@ -257,6 +286,16 @@ func (o *MessageImpl) UnmarshalJSON(data []byte) error {
 	o.SetTargetType(m.TargetType)
 	o.SetPayload(m.Payload)
 
+	sentAt, err := time.Parse(atFormat, m.SentAt)
+	if err == nil {
+		o.SetSentAt(sentAt)
+	}
+
+	receivedAt, err := time.Parse(atFormat, m.ReceivedAt)
+	if err == nil {
+		o.SetReceivedAt(receivedAt)
+	}
+
 	return nil
 }
 
@@ -267,4 +306,6 @@ type message struct {
 	TargetID   int                    `json:"target_id,omitempty"`
 	TargetType TargetType             `json:"target_type,omitempty"`
 	Payload    map[string]interface{} `json:"payload,omitempty"`
+	SentAt     string
+	ReceivedAt string
 }

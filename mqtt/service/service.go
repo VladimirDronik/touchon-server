@@ -2,6 +2,7 @@ package service
 
 import (
 	"sync"
+	"time"
 
 	"github.com/VladimirDronik/touchon-server/events/service"
 	"github.com/VladimirDronik/touchon-server/mqtt/client"
@@ -69,6 +70,9 @@ func (o *Service) Start() error {
 					o.logger.Error(err)
 					continue
 				}
+
+				m.SetReceivedAt(time.Now())
+				o.GetLogger().Debugf("MQTT msg travel time: %s", m.GetReceivedAt().Sub(m.GetSentAt()))
 
 				if m.GetTargetType() == messages.TargetTypeService && m.GetType() == messages.MessageTypeCommand && m.GetName() == "info" {
 					m, err := service.NewOnInfoMessage("service/info")
