@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"log"
 	"math"
 	"os"
 	"strconv"
@@ -135,7 +134,7 @@ func DumpRequestCtx(logger *logrus.Logger, ctx *fasthttp.RequestCtx, level int) 
 		logger.Println()
 		logger.Println("---------------------------------")
 	}
-	log.Printf("RESPONSE [%d]", ctx.Response.StatusCode())
+	logger.Printf("RESPONSE [%d]", ctx.Response.StatusCode())
 	if level == 2 {
 		ctx.Response.Header.VisitAll(func(k, v []byte) {
 			logger.Printf("HEADER: %s = %q", string(k), string(v))
