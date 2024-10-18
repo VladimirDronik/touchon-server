@@ -134,7 +134,8 @@ func (o *Client) Unsubscribe(topics ...string) error {
 }
 
 // Send Отправляет сообщения в топик
-func (o *Client) Send(msg messages.Message) error {
+// sync - to track delivery of the message to the broker
+func (o *Client) Send(msg messages.Message, sync ...bool) error {
 	if msg.GetTopic() == "" {
 		return errors.Wrap(errors.New("topic is empty"), "Send")
 	}
@@ -146,12 +147,29 @@ func (o *Client) Send(msg messages.Message) error {
 		return errors.Wrap(err, "Send")
 	}
 
-	_ = o.client.Publish(msg.GetTopic(), byte(msg.GetQoS()), msg.GetRetained(), data)
-	//if sync {
-	//	if err := o.processToken(token); err != nil {
-	//		return errors.Wrap(err, "Send")
-	//	}
-	//}
+	token := o.client.Publish(msg.GetTopic(), byte(msg.GetQoS()), msg.GetRetained(), data)
+	if len(sync) > 0 && sync[0] {
+		if err := o.processToken(token); err != nil {
+			return errors.Wrap(err, "Send")
+		}
+	}
+
+	return nil
+}
+
+// SendRaw Отправляет сообщения в топик
+// sync - to track delivery of the message to the broker
+func (o *Client) SendRaw(msg mqtt.Message, sync ...bool) error {
+	if msg.Topic() == "" {
+		return errors.Wrap(errors.New("topic is empty"), "Send")
+	}
+
+	token := o.client.Publish(msg.Topic(), msg.Qos(), msg.Retained(), msg.Payload())
+	if len(sync) > 0 && sync[0] {
+		if err := o.processToken(token); err != nil {
+			return errors.Wrap(err, "Send")
+		}
+	}
 
 	return nil
 }

@@ -71,7 +71,7 @@ func (o *Service) Start() error {
 				}
 
 				m.SetReceivedAt(time.Now())
-				o.GetLogger().Debugf("MQTT: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), m.GetReceivedAt().Sub(m.GetSentAt()))
+				o.GetLogger().Debugf("\nMQTT: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), m.GetReceivedAt().Sub(m.GetSentAt()))
 				o.GetLogger().Debug(m.String())
 
 				if m.GetTargetType() == messages.TargetTypeService && m.GetType() == messages.MessageTypeCommand && m.GetName() == "info" {
