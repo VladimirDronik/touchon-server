@@ -63,7 +63,7 @@ func (o *Service) Start() error {
 		return errors.Wrap(err, "Start")
 	}
 
-	maxTravelTime := 0xFFFFFF * time.Hour
+	maxTravelTime := 0xFFFF * time.Hour
 	if v := o.config["mqtt_max_travel_time"]; v != "" {
 		maxTravelTime, err = time.ParseDuration(v)
 		if err != nil {
