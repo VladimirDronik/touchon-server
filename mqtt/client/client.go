@@ -159,12 +159,12 @@ func (o *Client) Send(msg messages.Message, sync ...bool) error {
 
 // SendRaw Отправляет сообщения в топик
 // sync - to track delivery of the message to the broker
-func (o *Client) SendRaw(msg mqtt.Message, sync ...bool) error {
-	if msg.Topic() == "" {
+func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}, sync ...bool) error {
+	if topic == "" {
 		return errors.Wrap(errors.New("topic is empty"), "Send")
 	}
 
-	token := o.client.Publish(msg.Topic(), msg.Qos(), msg.Retained(), msg.Payload())
+	token := o.client.Publish(topic, byte(qos), retained, payload)
 	if len(sync) > 0 && sync[0] {
 		if err := o.processToken(token); err != nil {
 			return errors.Wrap(err, "Send")
