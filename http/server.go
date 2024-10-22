@@ -61,27 +61,12 @@ type Server struct {
 	ringBuffer fmt.Stringer
 	logger     *logrus.Logger
 	cfg        map[string]string
-	debugLevel int
 	ctx        context.Context
 	cancel     context.CancelFunc
 }
 
 func (o *Server) AddHandler(method, path string, handler RequestHandler) {
 	o.router.Handle(method, path, JsonHandlerWrapper(handler))
-}
-
-func (o *Server) SetDebugLevel(level int) error {
-	if level < 0 || level > 2 {
-		return errors.Wrap(errors.New("level < 0 || level > 2"), "SetDebugLevel")
-	}
-
-	o.debugLevel = level
-
-	return nil
-}
-
-func (o *Server) GetDebugLevel() int {
-	return o.debugLevel
 }
 
 func (o *Server) GetContext() context.Context {
@@ -155,6 +140,6 @@ func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHa
 			next(ctx)
 		}
 
-		helpers.DumpRequestCtx(o.logger, ctx, o.debugLevel)
+		helpers.DumpRequestCtx(o.logger, ctx)
 	}
 }

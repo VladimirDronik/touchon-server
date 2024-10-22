@@ -111,36 +111,24 @@ func NewDB(connString string) (*gorm.DB, error) {
 	return db, nil
 }
 
-func DumpRequestCtx(logger *logrus.Logger, ctx *fasthttp.RequestCtx, level int) {
-	if ctx == nil || level < 1 || level > 2 {
-		return
+func DumpRequestCtx(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
+	logger.Traceln()
+	logger.Traceln("================================")
+	logger.Debugf("REQUEST [%s] %s %s", ctx.RemoteAddr().String(), string(ctx.Request.Header.Method()), string(ctx.Request.URI().FullURI()))
+	ctx.Request.Header.VisitAll(func(k, v []byte) {
+		logger.Tracef("HEADER: %s = %q", string(k), string(v))
+	})
+	if len(ctx.Request.Body()) > 0 {
+		logger.Traceln(string(ctx.Request.Body()))
 	}
 
-	if level == 2 {
-		logger.Println()
-		logger.Println("================================")
-	}
-	logger.Printf("REQUEST [%s] %s %s", ctx.RemoteAddr().String(), string(ctx.Request.Header.Method()), string(ctx.Request.URI().FullURI()))
-	if level == 2 {
-		ctx.Request.Header.VisitAll(func(k, v []byte) {
-			logger.Printf("HEADER: %s = %q", string(k), string(v))
-		})
-		if len(ctx.Request.Body()) > 0 {
-			logger.Println(string(ctx.Request.Body()))
-		}
-	}
-
-	if level == 2 {
-		logger.Println()
-		logger.Println("---------------------------------")
-	}
-	logger.Printf("RESPONSE [%d]", ctx.Response.StatusCode())
-	if level == 2 {
-		ctx.Response.Header.VisitAll(func(k, v []byte) {
-			logger.Printf("HEADER: %s = %q", string(k), string(v))
-		})
-		if len(ctx.Response.Body()) > 0 {
-			logger.Println(string(ctx.Response.Body()))
-		}
+	logger.Traceln()
+	logger.Traceln("---------------------------------")
+	logger.Debugf("RESPONSE [%d]", ctx.Response.StatusCode())
+	ctx.Response.Header.VisitAll(func(k, v []byte) {
+		logger.Tracef("HEADER: %s = %q", string(k), string(v))
+	})
+	if len(ctx.Response.Body()) > 0 {
+		logger.Tracef(string(ctx.Response.Body()))
 	}
 }
