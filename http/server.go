@@ -80,6 +80,10 @@ func (o *Server) SetDebugLevel(level int) error {
 	return nil
 }
 
+func (o *Server) GetDebugLevel() int {
+	return o.debugLevel
+}
+
 func (o *Server) GetContext() context.Context {
 	return o.ctx
 }
