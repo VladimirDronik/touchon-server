@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -16,7 +15,7 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 )
 
-func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) (*Server, error) {
+func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) (*Server, error) {
 	if logger == nil {
 		return nil, errors.Wrap(errors.New("logger is nil"), "http.New")
 	}
@@ -24,6 +23,7 @@ func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	o := &Server{
+		name: name,
 		httpServer: &fasthttp.Server{
 			ReadTimeout:          5 * time.Second,
 			WriteTimeout:         5 * time.Second,
@@ -56,6 +56,7 @@ func New(cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) 
 }
 
 type Server struct {
+	name       string
 	httpServer *fasthttp.Server
 	router     *router.Router
 	ringBuffer fmt.Stringer
@@ -91,13 +92,13 @@ func (o *Server) GetConfig() map[string]string {
 
 func (o *Server) Start(bindAddr string) error {
 	go func() {
-		o.logger.Infof("HTTP(%s): сервер запущен", bindAddr)
+		o.logger.Infof("HTTP (%s): %s-сервер запущен", bindAddr, o.name)
 
 		if err := o.httpServer.ListenAndServe(bindAddr); err != nil {
-			log.Fatal("HTTP:", err)
+			o.logger.Fatalf("HTTP (%s): %v", o.name, err)
 		}
 
-		o.logger.Infof("HTTP(%s): сервер остановлен", bindAddr)
+		o.logger.Infof("HTTP (%s): %s-сервер остановлен", bindAddr, o.name)
 	}()
 
 	return nil
