@@ -41,13 +41,11 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 	rb := helpers.NewRingBuffer(100 * 1024)
 	logger.AddHook(rb)
 
-	if logger.Level == logrus.DebugLevel {
-		fmt.Printf("==========================================================================\n" +
-			"=================== SERVICE IS RUNNING ON DEBUG MODE =====================\n" +
-			"==========================================================================\n\n\n")
+	logger.Debugf("==========================================================================\n" +
+		"=================== SERVICE IS RUNNING ON DEBUG MODE =====================\n" +
+		"==========================================================================\n\n\n")
 
-		logger.Infof("ENV: %#v", cfg)
-	}
+	logger.Debugf("ENV: %#v", cfg)
 
 	db, err := helpers.NewDB(cfg["database_url"])
 	if err != nil {

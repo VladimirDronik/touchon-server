@@ -3,6 +3,7 @@
 package client
 
 import (
+	"encoding/json"
 	"net/url"
 	"strings"
 	"sync"
@@ -170,15 +171,13 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 		return errors.Wrap(errors.New("topic is empty"), "Send")
 	}
 
-	o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
-
-	if o.logger.Level >= logrus.TraceLevel {
-		p := payload
-		if v, ok := p.([]byte); ok {
-			p = string(v)
-		}
-		o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, p)
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return errors.Wrap(err, "SendRaw")
 	}
+
+	o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
+	o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(data))
 
 	token := o.client.Publish(topic, byte(qos), retained, payload)
 	if len(sync) > 0 && sync[0] {
