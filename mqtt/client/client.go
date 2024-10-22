@@ -54,9 +54,24 @@ type Client struct {
 	tries      int
 	connString *url.URL
 	logger     *logrus.Logger
+	debugLevel int
 
 	mu    sync.Mutex
 	chans map[string][]chan mqtt.Message
+}
+
+func (o *Client) SetDebugLevel(level int) error {
+	if level < 0 || level > 2 {
+		return errors.Wrap(errors.New("level < 0 || level > 2"), "SetDebugLevel")
+	}
+
+	o.debugLevel = level
+
+	return nil
+}
+
+func (o *Client) GetDebugLevel() int {
+	return o.debugLevel
 }
 
 func (o *Client) pushChan(topic string, ch chan mqtt.Message) {
@@ -101,6 +116,13 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 	token := o.client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		// Свои сообщения игнорируем
 		if !strings.HasPrefix(msg.Topic(), info.Name) {
+			switch o.debugLevel {
+			case 1:
+				o.logger.Debugf("mqtt.Client.Receive: [%s]", msg.Topic())
+			case 2:
+				o.logger.Debugf("mqtt.Client.Receive: [%s] %s", msg.Topic(), string(msg.Payload()))
+			}
+
 			c <- msg
 		}
 	})
@@ -147,6 +169,13 @@ func (o *Client) Send(msg messages.Message, sync ...bool) error {
 		return errors.Wrap(err, "Send")
 	}
 
+	switch o.debugLevel {
+	case 1:
+		o.logger.Debugf("mqtt.Client.Send: [%s] %s", msg.GetTopic(), msg.GetName())
+	case 2:
+		o.logger.Debugf("mqtt.Client.Send: [%s] %s", msg.GetTopic(), msg.String())
+	}
+
 	token := o.client.Publish(msg.GetTopic(), byte(msg.GetQoS()), msg.GetRetained(), data)
 	if len(sync) > 0 && sync[0] {
 		if err := o.processToken(token); err != nil {
@@ -162,6 +191,17 @@ func (o *Client) Send(msg messages.Message, sync ...bool) error {
 func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}, sync ...bool) error {
 	if topic == "" {
 		return errors.Wrap(errors.New("topic is empty"), "Send")
+	}
+
+	switch o.debugLevel {
+	case 1:
+		o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
+	case 2:
+		p := payload
+		if v, ok := p.([]byte); ok {
+			p = string(v)
+		}
+		o.logger.Debugf("mqtt.Client.Send: [%s] %s", topic, p)
 	}
 
 	token := o.client.Publish(topic, byte(qos), retained, payload)

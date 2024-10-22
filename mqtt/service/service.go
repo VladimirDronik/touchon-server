@@ -36,6 +36,21 @@ type Service struct {
 	threads    int
 	wg         *sync.WaitGroup
 	handler    func(messages.Message) error
+	debugLevel int
+}
+
+func (o *Service) SetDebugLevel(level int) error {
+	if level < 0 || level > 2 {
+		return errors.Wrap(errors.New("level < 0 || level > 2"), "SetDebugLevel")
+	}
+
+	o.debugLevel = level
+
+	return nil
+}
+
+func (o *Service) GetDebugLevel() int {
+	return o.debugLevel
 }
 
 func (o *Service) SetHandler(handler func(messages.Message) error) {
@@ -89,9 +104,16 @@ func (o *Service) Start() error {
 				m.SetReceivedAt(time.Now())
 
 				travelTime := o.processTravelTime(m, maxTravelTime)
-				o.GetLogger().Debugln()
-				o.GetLogger().Debugf("MQTT: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), travelTime)
-				o.GetLogger().Debug(m.String())
+
+				switch o.debugLevel {
+				case 1:
+					o.GetLogger().Debugln()
+					o.GetLogger().Debugf("mqtt.Service.Receive: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), travelTime)
+				case 2:
+					o.GetLogger().Debugln()
+					o.GetLogger().Debugf("mqtt.Service.Receive: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), travelTime)
+					o.GetLogger().Debugf("mqtt.Service.Receive: %s", m.String())
+				}
 
 				if m.GetTargetType() == messages.TargetTypeService && m.GetType() == messages.MessageTypeCommand && m.GetName() == "info" {
 					m, err := service.NewOnInfoMessage("service/info")
