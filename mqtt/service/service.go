@@ -90,7 +90,6 @@ func (o *Service) Start() error {
 
 				travelTime := o.processTravelTime(m, maxTravelTime)
 
-				o.GetLogger().Debugln()
 				o.GetLogger().Debugf("mqtt.Service.Receive: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), travelTime)
 				o.GetLogger().Tracef("mqtt.Service.Receive: %s", m.String())
 
