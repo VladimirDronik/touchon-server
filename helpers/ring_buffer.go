@@ -1,7 +1,7 @@
 package helpers
 
 import (
-	"bytes"
+	"fmt"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -26,27 +26,6 @@ func NewRingBuffer(bufSize int) *RingBuffer {
 		//	CallerPrettyfier: nil,
 		//	PrettyPrint:      false,
 		//},
-		logFormatter: &logrus.TextFormatter{
-			TimestampFormat: "02.01.2006 15:04:05.000",
-			FullTimestamp:   true,
-			ForceColors:     false,
-			DisableColors:   true,
-			//ForceQuote:                false,
-			DisableQuote: true,
-			// EnvironmentOverrideColors: false,
-			// DisableTimestamp: true,
-			//DisableSorting:            false,
-			//SortingFunc:            nil,
-			DisableLevelTruncation: true,
-			PadLevelText:           true,
-			//QuoteEmptyFields:          false,
-			FieldMap: logrus.FieldMap{
-				logrus.FieldKeyTime:  "ts123",
-				logrus.FieldKeyLevel: "lvl456",
-				logrus.FieldKeyMsg:   "msg789",
-			},
-			//CallerPrettyfier:          nil,
-		},
 	}
 }
 
@@ -57,8 +36,7 @@ type RingBuffer struct {
 	buf  []byte
 	size int
 
-	logLevel     logrus.Level
-	logFormatter logrus.Formatter
+	logLevel logrus.Level
 }
 
 func (o *RingBuffer) Levels() []logrus.Level {
@@ -66,16 +44,20 @@ func (o *RingBuffer) Levels() []logrus.Level {
 }
 
 func (o *RingBuffer) Fire(e *logrus.Entry) error {
-	b, err := o.logFormatter.Format(e)
-	if err != nil {
-		return err
+	levels := map[logrus.Level]string{
+		logrus.TraceLevel: "[TRS]",
+		logrus.DebugLevel: "[DBG]",
+		logrus.InfoLevel:  "[NFO]",
+		logrus.WarnLevel:  "[WRN]",
+		logrus.ErrorLevel: "[ERR]",
+		logrus.FatalLevel: "[FTL]",
+		logrus.PanicLevel: "[PNC]",
 	}
 
-	b = bytes.Replace(b, []byte("ts123="), nil, 1)
-	b = bytes.Replace(b, []byte("lvl456="), nil, 1)
-	b = bytes.Replace(b, []byte("msg789="), nil, 1)
+	// TimestampFormat:   "",
+	r := fmt.Sprintf("%s %s %s", e.Time.Format("02.01.2006 15:04:05.000"), levels[e.Level], e.Message)
 
-	if _, err := o.Write(b); err != nil {
+	if _, err := o.Write([]byte(r)); err != nil {
 		return err
 	}
 
