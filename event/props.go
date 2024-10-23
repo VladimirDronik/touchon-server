@@ -139,7 +139,7 @@ func (o *Props) MarshalJSON() ([]byte, error) {
 }
 
 func (o *Props) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, o)
+	return json.Unmarshal(data, o.m)
 }
 
 func (o *Props) Check() error {
