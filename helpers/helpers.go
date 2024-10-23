@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"log"
 	"math"
 	"os"
 	"strconv"
@@ -142,14 +141,10 @@ func DumpResponse(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
 }
 
 func SetRequestID(ctx *fasthttp.RequestCtx, id uint64) {
-	log.Printf(">>> SetRequestID %[1]v %[1]T", id)
-
 	ctx.SetUserValue("request_id", id)
 }
 
 func GetRequestID(ctx *fasthttp.RequestCtx) uint64 {
-	log.Printf(">>> GetRequestID %[1]v %[1]T", ctx.UserValue("request_id"))
-
 	if v, ok := ctx.UserValue("request_id").(uint64); ok {
 		return v
 	}
