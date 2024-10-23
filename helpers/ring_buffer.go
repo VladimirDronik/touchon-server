@@ -54,8 +54,7 @@ func (o *RingBuffer) Fire(e *logrus.Entry) error {
 		logrus.PanicLevel: "[PNC]",
 	}
 
-	// TimestampFormat:   "",
-	r := fmt.Sprintf("%s %s %s", e.Time.Format("02.01.2006 15:04:05.000"), levels[e.Level], e.Message)
+	r := fmt.Sprintf("%s %s %s\n", e.Time.Format("02.01.2006 15:04:05.000"), levels[e.Level], e.Message)
 
 	if _, err := o.Write([]byte(r)); err != nil {
 		return err
