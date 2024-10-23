@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/VladimirDronik/touchon-server/models"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
@@ -66,20 +65,6 @@ func GetUintPathParam(ctx *fasthttp.RequestCtx, paramName string) (int, error) {
 	}
 
 	return v, nil
-}
-
-func NewLogger(logLevel string) (*logrus.Logger, error) {
-	logger := logrus.New()
-
-	level, err := logrus.ParseLevel(logLevel)
-	if err != nil {
-		return nil, errors.Wrap(err, "NewLogger")
-	}
-
-	logger.SetLevel(level)
-	logger.SetFormatter(&models.LogFormatter{})
-
-	return logger, nil
 }
 
 func FileIsExists(path string) bool {

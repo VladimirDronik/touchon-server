@@ -33,13 +33,13 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 	info.Config = cfg
 	info.Name = cfg["service_name"]
 
-	logger, err := helpers.NewLogger(cfg["log_level"])
+	logger, err := models.NewLogger(cfg["log_level"])
 	if err != nil {
 		return nil, nil, nil, nil, errors.Wrap(err, "Prolog")
 	}
 
 	// Выводим логи в консоль и кольцевой буфер
-	rb := models.NewRingBuffer(100 * 1024)
+	rb := models.NewRingBuffer(100*1024, &models.LogFormatter{})
 	logger.AddHook(rb)
 
 	logger.Debugf("\n==========================================================================\n" +

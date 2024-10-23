@@ -8,12 +8,12 @@ import (
 )
 
 // NewRingBuffer создает новый кольцевой буфер.
-func NewRingBuffer(bufSize int) *RingBuffer {
+func NewRingBuffer(bufSize int, formatter logrus.Formatter) *RingBuffer {
 	return &RingBuffer{
 		buf:          make([]byte, 0, bufSize),
 		size:         bufSize,
 		logLevel:     logrus.TraceLevel,
-		logFormatter: &LogFormatter{},
+		logFormatter: formatter,
 	}
 }
 
@@ -25,7 +25,7 @@ type RingBuffer struct {
 	size int
 
 	logLevel     logrus.Level
-	logFormatter *LogFormatter
+	logFormatter logrus.Formatter
 }
 
 func (o *RingBuffer) Levels() []logrus.Level {
