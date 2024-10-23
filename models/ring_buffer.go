@@ -1,9 +1,8 @@
-package helpers
+package models
 
 import (
 	"sync"
 
-	"github.com/VladimirDronik/touchon-server/models"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -14,7 +13,7 @@ func NewRingBuffer(bufSize int) *RingBuffer {
 		buf:          make([]byte, 0, bufSize),
 		size:         bufSize,
 		logLevel:     logrus.TraceLevel,
-		logFormatter: &models.LogFormatter{},
+		logFormatter: &LogFormatter{},
 	}
 }
 
@@ -26,7 +25,7 @@ type RingBuffer struct {
 	size int
 
 	logLevel     logrus.Level
-	logFormatter *models.LogFormatter
+	logFormatter *LogFormatter
 }
 
 func (o *RingBuffer) Levels() []logrus.Level {

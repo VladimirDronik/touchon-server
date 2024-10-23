@@ -6,6 +6,7 @@ import (
 	"github.com/VladimirDronik/touchon-server/config"
 	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/VladimirDronik/touchon-server/info"
+	"github.com/VladimirDronik/touchon-server/models"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -38,7 +39,7 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 	}
 
 	// Выводим логи в консоль и кольцевой буфер
-	rb := helpers.NewRingBuffer(100 * 1024)
+	rb := models.NewRingBuffer(100 * 1024)
 	logger.AddHook(rb)
 
 	logger.Debugf("\n==========================================================================\n" +
