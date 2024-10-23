@@ -26,7 +26,7 @@ func NewRingBuffer(bufSize int) *RingBuffer {
 		//	PrettyPrint:      false,
 		//},
 		logFormatter: &logrus.TextFormatter{
-			TimestampFormat: "02.01.2006 15:04:05",
+			TimestampFormat: "02.01.2006 15:04:05.000",
 			FullTimestamp:   true,
 			ForceColors:     false,
 			DisableColors:   true,
