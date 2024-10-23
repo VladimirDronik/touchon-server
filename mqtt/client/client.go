@@ -139,10 +139,10 @@ func (o *Client) Unsubscribe(topics ...string) error {
 
 // Send Отправляет сообщения в топик
 // sync - to track delivery of the message to the broker
-func (o *Client) Send(msg messages.Message, sync ...bool) error {
+func (o *Client) Send(msg messages.Message) error {
 	msg.SetSentAt(time.Now())
 
-	if err := o.SendRaw(msg.GetTopic(), msg.GetQoS(), msg.GetRetained(), msg, sync...); err != nil {
+	if err := o.SendRaw(msg.GetTopic(), msg.GetQoS(), msg.GetRetained(), msg); err != nil {
 		return errors.Wrap(err, "Send")
 	}
 
@@ -151,7 +151,7 @@ func (o *Client) Send(msg messages.Message, sync ...bool) error {
 
 // SendRaw Отправляет сообщения в топик
 // sync - to track delivery of the message to the broker
-func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}, sync ...bool) error {
+func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}) error {
 	if topic == "" {
 		return errors.Wrap(errors.New("topic is empty"), "SendRaw")
 	}
@@ -165,10 +165,8 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 	o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(data))
 
 	token := o.client.Publish(topic, byte(qos), retained, data)
-	if len(sync) > 0 && sync[0] {
-		if err := o.processToken(token); err != nil {
-			return errors.Wrap(err, "SendRaw")
-		}
+	if err := o.processToken(token); err != nil {
+		return errors.Wrap(err, "SendRaw")
 	}
 
 	return nil
