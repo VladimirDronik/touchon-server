@@ -164,7 +164,7 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 	o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
 	o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(data))
 
-	token := o.client.Publish(topic, byte(qos), retained, payload)
+	token := o.client.Publish(topic, byte(qos), retained, data)
 	if len(sync) > 0 && sync[0] {
 		if err := o.processToken(token); err != nil {
 			return errors.Wrap(err, "SendRaw")
