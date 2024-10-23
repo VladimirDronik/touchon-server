@@ -4,6 +4,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -116,7 +117,12 @@ func DumpRequestCtx(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
 	DumpResponse(logger, ctx)
 }
 
+var dumpRequestMutex sync.Mutex
+
 func DumpRequest(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
+	dumpRequestMutex.Lock()
+	defer dumpRequestMutex.Unlock()
+
 	logger.Traceln()
 	logger.Traceln("================================")
 	logger.Debugf("REQUEST(%d) [%s] %s %s", GetRequestID(ctx), ctx.RemoteAddr().String(), string(ctx.Request.Header.Method()), string(ctx.Request.URI().FullURI()))
@@ -128,7 +134,12 @@ func DumpRequest(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
 	}
 }
 
+var dumpResponseMutex sync.Mutex
+
 func DumpResponse(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
+	dumpResponseMutex.Lock()
+	defer dumpResponseMutex.Unlock()
+
 	logger.Traceln()
 	logger.Traceln("---------------------------------")
 	logger.Debugf("RESPONSE(%d) [%d]", GetRequestID(ctx), ctx.Response.StatusCode())
