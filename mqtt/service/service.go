@@ -161,12 +161,3 @@ func (o *Service) Shutdown() error {
 
 	return nil
 }
-
-// Send отправка сообщения в топик
-func (o *Service) Send(msg messages.Message, sync ...bool) error {
-	if err := o.client.Send(msg, sync...); err != nil {
-		return errors.Wrap(err, "Send")
-	}
-
-	return nil
-}
