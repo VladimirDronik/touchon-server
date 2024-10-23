@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/VladimirDronik/touchon-server/models"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
@@ -76,6 +77,8 @@ func NewLogger(logLevel string) (*logrus.Logger, error) {
 	}
 
 	logger.SetLevel(level)
+	logger.SetFormatter(&models.LogFormatter{})
+
 	return logger, nil
 }
 

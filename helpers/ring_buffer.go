@@ -1,31 +1,20 @@
 package helpers
 
 import (
-	"fmt"
 	"sync"
 
+	"github.com/VladimirDronik/touchon-server/models"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // NewRingBuffer создает новый кольцевой буфер.
 func NewRingBuffer(bufSize int) *RingBuffer {
 	return &RingBuffer{
-		buf:      make([]byte, 0, bufSize),
-		size:     bufSize,
-		logLevel: logrus.TraceLevel,
-		//logFormatter: &logrus.JSONFormatter{
-		//	TimestampFormat:   "02.01.2006 15:04:05",
-		//	DisableTimestamp:  false,
-		//	DisableHTMLEscape: true,
-		//	DataKey:           "",
-		//	FieldMap: logrus.FieldMap{
-		//		logrus.FieldKeyTime:  "ts",
-		//		logrus.FieldKeyLevel: "lvl",
-		//		logrus.FieldKeyMsg:   "msg",
-		//	},
-		//	CallerPrettyfier: nil,
-		//	PrettyPrint:      false,
-		//},
+		buf:          make([]byte, 0, bufSize),
+		size:         bufSize,
+		logLevel:     logrus.TraceLevel,
+		logFormatter: &models.LogFormatter{},
 	}
 }
 
@@ -36,7 +25,8 @@ type RingBuffer struct {
 	buf  []byte
 	size int
 
-	logLevel logrus.Level
+	logLevel     logrus.Level
+	logFormatter *models.LogFormatter
 }
 
 func (o *RingBuffer) Levels() []logrus.Level {
@@ -44,20 +34,13 @@ func (o *RingBuffer) Levels() []logrus.Level {
 }
 
 func (o *RingBuffer) Fire(e *logrus.Entry) error {
-	levels := map[logrus.Level]string{
-		logrus.TraceLevel: "[TRS]",
-		logrus.DebugLevel: "[DBG]",
-		logrus.InfoLevel:  "[NFO]",
-		logrus.WarnLevel:  "[WRN]",
-		logrus.ErrorLevel: "[ERR]",
-		logrus.FatalLevel: "[FTL]",
-		logrus.PanicLevel: "[PNC]",
+	data, err := o.logFormatter.Format(e)
+	if err != nil {
+		return errors.Wrap(err, "RingBuffer.Fire")
 	}
 
-	r := fmt.Sprintf("%s %s %s\n", e.Time.Format("02.01.2006 15:04:05.000"), levels[e.Level], e.Message)
-
-	if _, err := o.Write([]byte(r)); err != nil {
-		return err
+	if _, err := o.Write(data); err != nil {
+		return errors.Wrap(err, "RingBuffer.Fire")
 	}
 
 	return nil
