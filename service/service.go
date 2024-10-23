@@ -41,7 +41,7 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 	rb := helpers.NewRingBuffer(100 * 1024)
 	logger.AddHook(rb)
 
-	logger.Debugf("==========================================================================\n" +
+	logger.Debugf("\n==========================================================================\n" +
 		"=================== SERVICE IS RUNNING ON DEBUG MODE =====================\n" +
 		"==========================================================================\n\n\n")
 

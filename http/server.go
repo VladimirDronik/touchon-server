@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/VladimirDronik/touchon-server/helpers"
@@ -64,6 +65,7 @@ type Server struct {
 	cfg        map[string]string
 	ctx        context.Context
 	cancel     context.CancelFunc
+	requestID  atomic.Uint64
 }
 
 func (o *Server) AddHandler(method, path string, handler RequestHandler) {
@@ -117,6 +119,10 @@ func (o *Server) Shutdown() error {
 // RequestWrapper добавляет CORS заголовки и content type
 func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
+		// Маркируем запрос
+		o.requestID.Add(1)
+		helpers.SetRequestID(ctx, o.requestID.Load())
+
 		ref := string(ctx.Request.Header.Peek("Origin"))
 		if ref == "" {
 			ref = "*"
@@ -137,10 +143,12 @@ func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHa
 			ctx.Response.Header.SetContentType("application/json; charset=UTF-8")
 		}
 
+		helpers.DumpRequest(o.logger, ctx)
+
 		if next != nil {
 			next(ctx)
 		}
 
-		helpers.DumpRequestCtx(o.logger, ctx)
+		helpers.DumpResponse(o.logger, ctx)
 	}
 }
