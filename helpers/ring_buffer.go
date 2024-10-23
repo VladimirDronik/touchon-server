@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"bytes"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -40,9 +41,9 @@ func NewRingBuffer(bufSize int) *RingBuffer {
 			PadLevelText:           true,
 			//QuoteEmptyFields:          false,
 			FieldMap: logrus.FieldMap{
-				logrus.FieldKeyTime:  "ts",
-				logrus.FieldKeyLevel: "lvl",
-				logrus.FieldKeyMsg:   "msg",
+				logrus.FieldKeyTime:  "ts123",
+				logrus.FieldKeyLevel: "lvl456",
+				logrus.FieldKeyMsg:   "msg789",
 			},
 			//CallerPrettyfier:          nil,
 		},
@@ -69,6 +70,10 @@ func (o *RingBuffer) Fire(e *logrus.Entry) error {
 	if err != nil {
 		return err
 	}
+
+	b = bytes.Replace(b, []byte("ts123="), nil, 1)
+	b = bytes.Replace(b, []byte("lvl456="), nil, 1)
+	b = bytes.Replace(b, []byte("msg789="), nil, 1)
 
 	if _, err := o.Write(b); err != nil {
 		return err
