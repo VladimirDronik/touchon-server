@@ -10,7 +10,7 @@ type Event struct {
 	Code        string `json:"code"` // unique
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
-	Props       *Props `json:"props"`
+	Props       *props `json:"props"`
 
 	TargetID   int                 `json:"target_id,omitempty"`
 	TargetType messages.TargetType `json:"target_type,omitempty"`

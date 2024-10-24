@@ -7,25 +7,25 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewProps() *Props {
-	return &Props{
+func NewProps() *props {
+	return &props{
 		m: orderedmap.New[string, *Prop](10),
 	}
 }
 
-type Props struct {
+type props struct {
 	m *orderedmap.OrderedMap[string, *Prop]
 }
 
-func (o *Props) Len() int {
+func (o *props) Len() int {
 	return o.m.Len()
 }
 
-func (o *Props) GetOrderedMap() *orderedmap.OrderedMap[string, *Prop] {
+func (o *props) GetOrderedMap() *orderedmap.OrderedMap[string, *Prop] {
 	return o.m
 }
 
-func (o *Props) Get(code string) (*Prop, error) {
+func (o *props) Get(code string) (*Prop, error) {
 	v, err := o.m.Get(code)
 	if err != nil {
 		return nil, errors.Wrap(err, "Get")
@@ -34,7 +34,7 @@ func (o *Props) Get(code string) (*Prop, error) {
 	return v, nil
 }
 
-func (o *Props) Set(code string, value interface{}) error {
+func (o *props) Set(code string, value interface{}) error {
 	p, err := o.Get(code)
 	if err != nil {
 		return errors.Wrap(err, "Set")
@@ -48,7 +48,7 @@ func (o *Props) Set(code string, value interface{}) error {
 }
 
 // GetStringValue Метод-хэлпер для получения строкового значения
-func (o *Props) GetStringValue(code string) (string, error) {
+func (o *props) GetStringValue(code string) (string, error) {
 	p, err := o.Get(code)
 	if err != nil {
 		return "", errors.Wrap(err, "GetStringValue")
@@ -63,7 +63,7 @@ func (o *Props) GetStringValue(code string) (string, error) {
 }
 
 // GetBoolValue Метод-хэлпер для получения логического значения
-func (o *Props) GetBoolValue(code string) (bool, error) {
+func (o *props) GetBoolValue(code string) (bool, error) {
 	p, err := o.Get(code)
 	if err != nil {
 		return false, errors.Wrap(err, "GetBoolValue")
@@ -78,7 +78,7 @@ func (o *Props) GetBoolValue(code string) (bool, error) {
 }
 
 // GetEnumValue Метод-хэлпер для получения значения-перечисления
-func (o *Props) GetEnumValue(code string) (string, error) {
+func (o *props) GetEnumValue(code string) (string, error) {
 	p, err := o.Get(code)
 	if err != nil {
 		return "", errors.Wrap(err, "GetEnumValue")
@@ -92,7 +92,7 @@ func (o *Props) GetEnumValue(code string) (string, error) {
 	return v, nil
 }
 
-func (o *Props) GetIntValue(code string) (int, error) {
+func (o *props) GetIntValue(code string) (int, error) {
 	p, err := o.Get(code)
 	if err != nil {
 		return 0, errors.Wrap(err, "GetIntValue")
@@ -106,7 +106,7 @@ func (o *Props) GetIntValue(code string) (int, error) {
 	return v, nil
 }
 
-func (o *Props) GetFloatValue(code string) (float32, error) {
+func (o *props) GetFloatValue(code string) (float32, error) {
 	p, err := o.Get(code)
 	if err != nil {
 		return 0, errors.Wrap(err, "GetFloatValue")
@@ -120,7 +120,7 @@ func (o *Props) GetFloatValue(code string) (float32, error) {
 	return v, nil
 }
 
-func (o *Props) Add(items ...*Prop) error {
+func (o *props) Add(items ...*Prop) error {
 	for _, item := range items {
 		if item == nil {
 			return errors.Wrap(errors.New("prop is nil"), "Add")
@@ -134,19 +134,19 @@ func (o *Props) Add(items ...*Prop) error {
 	return nil
 }
 
-func (o *Props) MarshalJSON() ([]byte, error) {
+func (o *props) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.m)
 }
 
-func (o *Props) UnmarshalJSON(data []byte) error {
+func (o *props) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, o.m); err != nil {
-		return errors.Wrap(err, "Props.UnmarshalJSON")
+		return errors.Wrap(err, "props.UnmarshalJSON")
 	}
 
 	return nil
 }
 
-func (o *Props) Check() error {
+func (o *props) Check() error {
 	for _, p := range o.m.GetValueList() {
 		// Проверяем определение свойства
 		if err := p.Check(); err != nil {
