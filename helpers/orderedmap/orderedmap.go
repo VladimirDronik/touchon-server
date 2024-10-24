@@ -154,7 +154,7 @@ func (o *OrderedMap[K, V]) UnmarshalJSON(data []byte) error {
 	// read {
 	t, err := dec.Token()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "OrderedMap.UnmarshalJSON")
 	}
 
 	for dec.More() {
@@ -164,17 +164,17 @@ func (o *OrderedMap[K, V]) UnmarshalJSON(data []byte) error {
 			break
 		}
 		if err != nil {
-			return err
+			return errors.Wrap(err, "OrderedMap.UnmarshalJSON")
 		}
 
 		k, ok := t.(K)
 		if !ok {
-			return errors.Errorf("%v is not %T", t, k)
+			return errors.Wrap(errors.Errorf("%v is not %T", t, k), "OrderedMap.UnmarshalJSON")
 		}
 
 		var v V
 		if err := dec.Decode(&v); err != nil {
-			return err
+			return errors.Wrap(err, "OrderedMap.UnmarshalJSON")
 		}
 
 		o.Set(k, v)
@@ -183,7 +183,7 @@ func (o *OrderedMap[K, V]) UnmarshalJSON(data []byte) error {
 	// read }
 	_, err = dec.Token()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "OrderedMap.UnmarshalJSON")
 	}
 
 	return nil

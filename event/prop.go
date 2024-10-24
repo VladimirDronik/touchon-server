@@ -45,7 +45,7 @@ func (o *Prop) UnmarshalJSON(data []byte) error {
 
 	v := &jsonProp{}
 	if err := json.Unmarshal(data, v); err != nil {
-		return err
+		return errors.Wrapf(err, "Prop.UnmarshalJSON")
 	}
 
 	o.Code = v.Code

@@ -44,5 +44,9 @@ func (o *Events) MarshalJSON() ([]byte, error) {
 }
 
 func (o *Events) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, o)
+	if err := json.Unmarshal(data, o.m); err != nil {
+		return errors.Wrap(err, "Events.UnmarshalJSON")
+	}
+
+	return nil
 }

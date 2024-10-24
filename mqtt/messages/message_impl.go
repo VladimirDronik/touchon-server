@@ -276,7 +276,7 @@ func (o *MessageImpl) UnmarshalJSON(data []byte) error {
 	m := &message{}
 
 	if err := json.Unmarshal(data, m); err != nil {
-		return err
+		return errors.Wrap(err, "MessageImpl.UnmarshalJSON")
 	}
 
 	o.SetPublisher(m.Publisher)
