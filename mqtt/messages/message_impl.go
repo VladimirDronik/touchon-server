@@ -311,6 +311,6 @@ type message struct {
 	TargetID   int                    `json:"target_id,omitempty"`
 	TargetType TargetType             `json:"target_type,omitempty"`
 	Payload    map[string]interface{} `json:"payload,omitempty"`
-	SentAt     string
-	ReceivedAt string
+	SentAt     string                 `json:"sent_at"`
+	ReceivedAt string                 `json:"received_at"`
 }
