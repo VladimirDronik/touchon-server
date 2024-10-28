@@ -10,8 +10,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.controller.on_unavailable",
-			Name:        "Контроллер стал недоступен",
-			Description: "",
+			Name:        "on_unavailable",
+			Description: "Контролдлер стал недоступен",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}
