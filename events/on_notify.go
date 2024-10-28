@@ -47,6 +47,7 @@ func init() {
 		return e, nil
 	}
 
+	// Для регистрации событий надо в service/init.go добавить импорт данного _пакета_!
 	if err := event.Register(maker); err != nil {
 		panic(err)
 	}
