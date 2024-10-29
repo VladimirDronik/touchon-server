@@ -10,8 +10,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.controller.on_load",
-			Name:        "Инициализация контроллера после включения питания",
-			Description: "",
+			Name:        "on_load",
+			Description: "Инициализация контроллера после включения питания",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}
