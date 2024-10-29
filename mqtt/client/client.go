@@ -102,8 +102,12 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 	token := o.client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		// Свои сообщения игнорируем
 		if !strings.HasPrefix(msg.Topic(), info.Name) {
-			o.logger.Debugf("mqtt.Client.Receive: [%s]", msg.Topic())
-			o.logger.Tracef("mqtt.Client.Receive: %s", string(msg.Payload()))
+			switch o.logger.Level {
+			case logrus.DebugLevel:
+				o.logger.Debugf("mqtt.Client.Receive: [%s]", msg.Topic())
+			case logrus.TraceLevel:
+				o.logger.Tracef("mqtt.Client.Receive: [%s] %s", msg.Topic(), string(msg.Payload()))
+			}
 
 			c <- msg
 		}
@@ -161,8 +165,12 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 		return errors.Wrap(err, "SendRaw")
 	}
 
-	o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
-	o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(data))
+	switch o.logger.Level {
+	case logrus.DebugLevel:
+		o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
+	case logrus.TraceLevel:
+		o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(data))
+	}
 
 	token := o.client.Publish(topic, byte(qos), retained, data)
 	if err := o.processToken(token); err != nil {

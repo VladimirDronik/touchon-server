@@ -90,8 +90,12 @@ func (o *Service) Start() error {
 
 				travelTime := o.processTravelTime(m, maxTravelTime)
 
-				o.GetLogger().Debugf("mqtt.Service.Receive: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), travelTime)
-				o.GetLogger().Tracef("mqtt.Service.Receive: %s", m.String())
+				switch o.logger.Level {
+				case logrus.DebugLevel:
+					o.logger.Debugf("mqtt.Service.Receive: [%s] QoS=%d travelTime=%s", m.GetTopic(), m.GetQoS(), travelTime)
+				case logrus.TraceLevel:
+					o.logger.Tracef("mqtt.Service.Receive: [%s] QoS=%d travelTime=%s %s", m.GetTopic(), m.GetQoS(), travelTime, m.String())
+				}
 
 				if m.GetTargetType() == messages.TargetTypeService && m.GetType() == messages.MessageTypeCommand && m.GetName() == "info" {
 					m, err := service.NewOnInfoMessage("service/info")
