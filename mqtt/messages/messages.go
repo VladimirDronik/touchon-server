@@ -99,3 +99,29 @@ func NewEvent(name string, targetType TargetType, targetID int, payload map[stri
 
 	return m, nil
 }
+
+type NotificationType string
+
+const (
+	NotificationTypeNormal   = "normal"
+	NotificationTypeCritical = "critical"
+)
+
+type Notification struct {
+	Type NotificationType
+	Text string
+}
+
+func NewNotification(notType NotificationType, text string) (*Notification, error) {
+	switch {
+	case notType != NotificationTypeNormal && notType != NotificationTypeCritical:
+		return nil, errors.Wrap(errors.Errorf("unknown notification type %q", notType), "NewNotification")
+	case text == "":
+		return nil, errors.Wrap(errors.New("notification text is empty"), "NewNotification")
+	}
+
+	return &Notification{
+		Type: notType,
+		Text: text,
+	}, nil
+}
