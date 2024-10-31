@@ -80,7 +80,25 @@ func init() {
 			},
 		}
 
-		if err := e.Props.Add(t, h, p, i, c, v, c2); err != nil {
+		m := &event.Prop{
+			Code: "motion",
+			Name: "Движение",
+			Item: &models.Item{
+				Type:       models.DataTypeFloat,
+				RoundFloat: true,
+			},
+		}
+
+		pr := &event.Prop{
+			Code: "presence",
+			Name: "Присутствие",
+			Item: &models.Item{
+				Type:       models.DataTypeFloat,
+				RoundFloat: true,
+			},
+		}
+
+		if err := e.Props.Add(t, h, p, i, c, v, c2, m, pr); err != nil {
 			return nil, errors.Wrap(err, "init.maker")
 		}
 
