@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"slices"
 
 	"github.com/pkg/errors"
 )
@@ -92,6 +93,16 @@ func (o *OrderedMap[K, V]) GetUnorderedMap() map[K]V {
 
 func (o *OrderedMap[K, V]) Len() int {
 	return len(o.m)
+}
+
+func (o *OrderedMap[K, V]) Delete(k K) {
+	delete(o.m, k)
+
+	for i, item := range o.order {
+		if item == k {
+			o.order = slices.Delete(o.order, i, i+1)
+		}
+	}
 }
 
 func (o *OrderedMap[K, V]) Clear() {
