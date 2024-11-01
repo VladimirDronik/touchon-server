@@ -40,7 +40,10 @@ func (o *Event) Check() error {
 func (o *Event) ToMqttMessage(topic string) (messages.Message, error) {
 	payload := make(map[string]interface{}, o.Props.Len())
 	for _, p := range o.Props.GetOrderedMap().GetValueList() {
-		payload[p.Code] = p.GetValue()
+		v := p.GetValue()
+		if v != nil {
+			payload[p.Code] = p.GetValue()
+		}
 	}
 
 	m, err := messages.NewMessage(messages.MessageTypeEvent, o.Code, o.TargetType, o.TargetID, payload)
