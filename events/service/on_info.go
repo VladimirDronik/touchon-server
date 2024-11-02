@@ -12,8 +12,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "service.on_info",
-			Name:        "Информация о сервисе",
-			Description: "",
+			Name:        "on_info",
+			Description: "Информация о сервисе",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeService,
 		}

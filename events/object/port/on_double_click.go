@@ -10,8 +10,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.port.on_double_click",
-			Name:        "Порт замкнут дважды",
-			Description: "",
+			Name:        "on_double_click",
+			Description: "Порт замкнут дважды",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}

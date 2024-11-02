@@ -11,8 +11,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "script.on_complete",
-			Name:        "Скрипт завершил работу",
-			Description: "",
+			Name:        "on_complete",
+			Description: "Скрипт завершил работу",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeScript,
 		}

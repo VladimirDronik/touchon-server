@@ -10,8 +10,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.sensor.on_presence_on",
-			Name:        "Присутствие есть",
-			Description: "",
+			Name:        "on_presence_on",
+			Description: "Присутствие есть",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}

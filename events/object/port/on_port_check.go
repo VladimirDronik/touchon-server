@@ -11,7 +11,7 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.port.on_check",
-			Name:        "Проверка состояние порта",
+			Name:        "on_check",
 			Description: "Событие возникает, когда проверяется состояние порта, но при этом новое пришедшее состояние порта не различается с тем, что хранится в БД",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
