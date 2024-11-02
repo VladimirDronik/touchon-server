@@ -11,8 +11,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.sensor.on_alarm",
-			Name:        "Данные датчика вышли за пороговые значения",
-			Description: "",
+			Name:        "on_alarm",
+			Description: "Данные датчика вышли за пороговые значения",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}
