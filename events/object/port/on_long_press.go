@@ -10,8 +10,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.port.on_long_press",
-			Name:        "Порт удерживается в замкнутом состоянии",
-			Description: "",
+			Name:        "on_long_press",
+			Description: "Порт удерживается в замкнутом состоянии",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}

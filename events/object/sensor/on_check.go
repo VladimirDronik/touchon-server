@@ -11,8 +11,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.sensor.on_check",
-			Name:        "Данные датчика обновлены",
-			Description: "",
+			Name:        "on_check",
+			Description: "Данные датчика обновлены",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}

@@ -10,8 +10,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "object.port.on_press",
-			Name:        "Порт замкнут",
-			Description: "",
+			Name:        "on_press",
+			Description: "Порт замкнут",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}

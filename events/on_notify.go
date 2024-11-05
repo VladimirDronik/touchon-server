@@ -18,8 +18,8 @@ func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
 			Code:        "on_notify",
-			Name:        "Уведомление",
-			Description: "",
+			Name:        "on_notify",
+			Description: "Уведомление",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeNotMatters,
 		}
