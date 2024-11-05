@@ -18,11 +18,12 @@ import (
 
 func New(clientID, connString string, timeout time.Duration, tries int, logger *logrus.Logger) (*Client, error) {
 	o := &Client{
-		clientID: clientID,
-		timeout:  timeout,
-		tries:    tries,
-		chans:    make(map[string][]chan mqtt.Message),
-		logger:   logger,
+		clientID:       clientID,
+		timeout:        timeout,
+		tries:          tries,
+		chans:          make(map[string][]chan mqtt.Message),
+		logger:         logger,
+		ignoreSelfMsgs: true,
 	}
 
 	var err error
@@ -49,15 +50,24 @@ func New(clientID, connString string, timeout time.Duration, tries int, logger *
 }
 
 type Client struct {
-	clientID   string
-	client     mqtt.Client
-	timeout    time.Duration
-	tries      int
-	connString *url.URL
-	logger     *logrus.Logger
+	clientID       string
+	client         mqtt.Client
+	timeout        time.Duration
+	tries          int
+	connString     *url.URL
+	logger         *logrus.Logger
+	ignoreSelfMsgs bool
 
 	mu    sync.Mutex
 	chans map[string][]chan mqtt.Message
+}
+
+func (o *Client) GetIgnoreSelfMsgs() bool {
+	return o.ignoreSelfMsgs
+}
+
+func (o *Client) SetIgnoreSelfMsgs(v bool) {
+	o.ignoreSelfMsgs = v
 }
 
 func (o *Client) pushChan(topic string, ch chan mqtt.Message) {
@@ -101,7 +111,7 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 
 	token := o.client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		// Свои сообщения игнорируем
-		if !strings.HasPrefix(msg.Topic(), info.Name) {
+		if !o.ignoreSelfMsgs || !strings.HasPrefix(msg.Topic(), info.Name) {
 			switch o.logger.Level {
 			case logrus.DebugLevel:
 				o.logger.Debugf("mqtt.Client.Receive: [%s]", msg.Topic())
