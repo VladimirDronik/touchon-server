@@ -76,8 +76,16 @@ func Round(v float32) float32 {
 	return float32(math.Round(float64(v)*10)) / 10
 }
 
+// Add into main.go:
+//
+//	func init() {
+//		var exts = map[string]string{"darwin": ".dylib", "linux": ".so", "windows": ".dll"}
+//		path := fmt.Sprintf("sqlean/%s_%s/unicode%s", runtime.GOOS, runtime.GOARCH, exts[runtime.GOOS])
+//		sql.Register("sqlite3_with_extensions", &sqlite3.SQLiteDriver{Extensions: []string{path}})
+//	}
 func NewDB(connString string) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(connString), &gorm.Config{})
+	d := sqlite.Dialector{DriverName: "sqlite3_with_extensions", DSN: connString}
+	db, err := gorm.Open(d, &gorm.Config{})
 	if err != nil {
 		return nil, errors.Wrap(err, "NewDB")
 	}
