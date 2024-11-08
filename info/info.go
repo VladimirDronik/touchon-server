@@ -42,6 +42,8 @@ type Info struct {
 	MaxMemoryUsage string
 	TotalMemory    string
 	FreeMemory     string
+	GOOS           string
+	GOARCH         string
 	Env            map[string]string
 }
 
@@ -53,6 +55,8 @@ func GetInfo() (*Info, error) {
 		MaxMemoryUsage: fmt.Sprintf("%.1f MiB", float64(maxMem.Load())/1024/1024),
 		TotalMemory:    fmt.Sprintf("%.1f MiB", float64(memory.TotalMemory())/1024/1024),
 		FreeMemory:     fmt.Sprintf("%.1f MiB", float64(memory.FreeMemory())/1024/1024),
+		GOOS:           runtime.GOOS,
+		GOARCH:         runtime.GOARCH,
 		Env:            Config,
 	}
 
