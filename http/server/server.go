@@ -57,15 +57,24 @@ func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *lo
 }
 
 type Server struct {
-	name       string
-	httpServer *fasthttp.Server
-	router     *router.Router
-	ringBuffer fmt.Stringer
-	logger     *logrus.Logger
-	cfg        map[string]string
-	ctx        context.Context
-	cancel     context.CancelFunc
-	requestID  atomic.Uint64
+	name         string
+	httpServer   *fasthttp.Server
+	router       *router.Router
+	ringBuffer   fmt.Stringer
+	logger       *logrus.Logger
+	cfg          map[string]string
+	ctx          context.Context
+	cancel       context.CancelFunc
+	requestID    atomic.Uint64
+	gzipResponse bool
+}
+
+func (o *Server) GetGzipResponse() bool {
+	return o.gzipResponse
+}
+
+func (o *Server) SetGzipResponseIfPossible(v bool) {
+	o.gzipResponse = v
 }
 
 func (o *Server) AddHandler(method, path string, handler RequestHandler) {
@@ -154,5 +163,11 @@ func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHa
 		}
 
 		helpers.DumpResponse(o.logger, ctx)
+
+		switch {
+		case o.gzipResponse && ctx.Request.Header.HasAcceptEncoding("gzip"):
+			ctx.Response.Header.SetContentEncoding("gzip")
+			ctx.Response.SetBody(fasthttp.AppendGzipBytes(nil, ctx.Response.Body()))
+		}
 	}
 }
