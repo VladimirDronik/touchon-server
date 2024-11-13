@@ -30,12 +30,13 @@ func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *lo
 			WriteTimeout:         5 * time.Second,
 			NoDefaultContentType: true,
 		},
-		cfg:        cfg,
-		router:     router.New(),
-		ringBuffer: ringBuffer,
-		logger:     logger,
-		ctx:        ctx,
-		cancel:     cancel,
+		cfg:          cfg,
+		router:       router.New(),
+		ringBuffer:   ringBuffer,
+		logger:       logger,
+		ctx:          ctx,
+		cancel:       cancel,
+		gzipResponse: true,
 	}
 
 	// Обработчик для Swagger'а
