@@ -166,7 +166,7 @@ func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHa
 		helpers.DumpResponse(o.logger, ctx)
 
 		switch {
-		case o.gzipResponse && ctx.Request.Header.HasAcceptEncoding("gzip"):
+		case o.gzipResponse && string(ctx.Response.Header.ContentEncoding()) == "" && ctx.Request.Header.HasAcceptEncoding("gzip"):
 			ctx.Response.Header.SetContentEncoding("gzip")
 			ctx.Response.SetBody(fasthttp.AppendGzipBytes(nil, ctx.Response.Body()))
 		}
