@@ -170,19 +170,24 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 		return errors.Wrap(errors.New("topic is empty"), "SendRaw")
 	}
 
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return errors.Wrap(err, "SendRaw")
+	switch v := payload.(type) {
+	case []byte:
+	default:
+		var err error
+		payload, err = json.Marshal(v)
+		if err != nil {
+			return errors.Wrap(err, "SendRaw")
+		}
 	}
 
 	switch o.logger.Level {
 	case logrus.DebugLevel:
 		o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
 	case logrus.TraceLevel:
-		o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(data))
+		o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(payload.([]byte)))
 	}
 
-	token := o.client.Publish(topic, byte(qos), retained, data)
+	token := o.client.Publish(topic, byte(qos), retained, payload)
 	if err := o.processToken(token); err != nil {
 		return errors.Wrap(err, "SendRaw")
 	}
