@@ -4,6 +4,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
@@ -113,11 +114,13 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 	token := o.client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
 		// Свои сообщения игнорируем
 		if !o.ignoreSelfMsgs || !strings.HasPrefix(msg.Topic(), info.Name) {
+			msgInfo := getMetaInfoFromRawMsg(msg.Payload())
+
 			switch o.logger.Level {
 			case logrus.DebugLevel:
-				o.logger.Debugf("mqtt.Client.Receive: [%s]", msg.Topic())
+				o.logger.Debugf("mqtt.Client.Receive: [%s]%s", msg.Topic(), msgInfo)
 			case logrus.TraceLevel:
-				o.logger.Tracef("mqtt.Client.Receive: [%s] %s", msg.Topic(), string(msg.Payload()))
+				o.logger.Tracef("mqtt.Client.Receive: [%s]%s %s", msg.Topic(), msgInfo, string(msg.Payload()))
 			}
 
 			c <- msg
@@ -164,7 +167,28 @@ func (o *Client) Send(msg messages.Message) error {
 	return nil
 }
 
+var patternTargetType = regexp.MustCompile(`"target_type"\s*:\s*"([^"]+)"`)
+var patternTargetID = regexp.MustCompile(`"target_id"\s*:\s*"([^"]+)"`)
 var patternName = regexp.MustCompile(`"name"\s*:\s*"([^"]+)"`)
+
+func getMetaInfoFromRawMsg(data []byte) string {
+	var targetType string
+	if r := patternTargetType.FindStringSubmatch(string(data)); len(r) == 2 {
+		targetType = r[1]
+	}
+
+	var targetID string
+	if r := patternTargetID.FindStringSubmatch(string(data)); len(r) == 2 {
+		targetID = r[1]
+	}
+
+	var name string
+	if r := patternName.FindStringSubmatch(string(data)); len(r) == 2 {
+		name = r[1]
+	}
+
+	return fmt.Sprintf(" [%s/%s/%s]", targetType, targetID, name)
+}
 
 // SendRaw Отправляет сообщения в топик
 // sync - to track delivery of the message to the broker
@@ -183,17 +207,13 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 		}
 	}
 
-	// Пытаемся извлечь название сообщения
-	var name string
-	if r := patternName.FindStringSubmatch(string(payload.([]byte))); len(r) == 2 {
-		name = " (" + r[1] + ")"
-	}
+	msgInfo := getMetaInfoFromRawMsg(payload.([]byte))
 
 	switch o.logger.Level {
 	case logrus.DebugLevel:
-		o.logger.Debugf("mqtt.Client.Send: [%s]%s", topic, name)
+		o.logger.Debugf("mqtt.Client.Send: [%s]%s", topic, msgInfo)
 	case logrus.TraceLevel:
-		o.logger.Tracef("mqtt.Client.Send: [%s]%s %s", topic, name, string(payload.([]byte)))
+		o.logger.Tracef("mqtt.Client.Send: [%s]%s %s", topic, msgInfo, string(payload.([]byte)))
 	}
 
 	token := o.client.Publish(topic, byte(qos), retained, payload)
