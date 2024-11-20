@@ -168,7 +168,7 @@ func (o *Client) Send(msg messages.Message) error {
 }
 
 var patternTargetType = regexp.MustCompile(`"target_type"\s*:\s*"([^"]+)"`)
-var patternTargetID = regexp.MustCompile(`"target_id"\s*:\s*\d+`)
+var patternTargetID = regexp.MustCompile(`"target_id"\s*:\s*(\d+)`)
 var patternName = regexp.MustCompile(`"name"\s*:\s*"([^"]+)"`)
 
 func getMetaInfoFromRawMsg(data []byte) string {
