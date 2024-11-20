@@ -5,6 +5,7 @@ package client
 import (
 	"encoding/json"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -163,6 +164,8 @@ func (o *Client) Send(msg messages.Message) error {
 	return nil
 }
 
+var patternName = regexp.MustCompile(`"name"\s*:\s*"([^"]+)"`)
+
 // SendRaw Отправляет сообщения в топик
 // sync - to track delivery of the message to the broker
 func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}) error {
@@ -180,11 +183,17 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 		}
 	}
 
+	// Пытаемся извлечь название сообщения
+	var name string
+	if r := patternName.FindStringSubmatch(string(payload.([]byte))); len(r) == 2 {
+		name = " (" + r[1] + ")"
+	}
+
 	switch o.logger.Level {
 	case logrus.DebugLevel:
-		o.logger.Debugf("mqtt.Client.Send: [%s]", topic)
+		o.logger.Debugf("mqtt.Client.Send: [%s]%s", topic, name)
 	case logrus.TraceLevel:
-		o.logger.Tracef("mqtt.Client.Send: [%s] %s", topic, string(payload.([]byte)))
+		o.logger.Tracef("mqtt.Client.Send: [%s]%s %s", topic, name, string(payload.([]byte)))
 	}
 
 	token := o.client.Publish(topic, byte(qos), retained, payload)
