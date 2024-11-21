@@ -3,6 +3,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -36,10 +37,24 @@ func New(clientID, connString string, timeout time.Duration, tries int, logger *
 
 	password, _ := o.connString.User.Password()
 	opts := mqtt.NewClientOptions().
-		AddBroker("tcp://" + o.connString.Host).
+		AddBroker("mqtt://" + o.connString.Host).
 		SetUsername(o.connString.User.Username()).
 		SetPassword(password).
-		SetClientID(clientID)
+		SetClientID(clientID).
+		SetResumeSubs(true)
+
+	opts.OnConnectionLost = func(client mqtt.Client, reason error) {
+		o.logger.Debugf("mqtt.Client: connection lost: %v", reason)
+	}
+
+	opts.OnConnectAttempt = func(broker *url.URL, tlsCfg *tls.Config) *tls.Config {
+		o.logger.Debugf("mqtt.Client: connection attempt: %v", broker)
+		return tlsCfg
+	}
+
+	opts.OnConnect = func(client mqtt.Client) {
+		o.logger.Debugf("mqtt.Client: connected = %t", client.IsConnected())
+	}
 
 	o.client = mqtt.NewClient(opts)
 
@@ -91,17 +106,19 @@ func (o *Client) processToken(token mqtt.Token) error {
 	var ok bool
 
 	for i := 0; i < o.tries; i++ {
-		if ok = token.WaitTimeout(o.timeout); ok {
-			break
+		if ok = token.WaitTimeout(o.timeout); !ok {
+			continue
 		}
+
+		if err := token.Error(); err != nil {
+			return errors.Wrap(err, "processToken")
+		}
+
+		break
 	}
 
 	if !ok {
 		return errors.Wrap(errors.New("timeout"), "processToken")
-	}
-
-	if err := token.Error(); err != nil {
-		return errors.Wrap(err, "processToken")
 	}
 
 	return nil
@@ -123,7 +140,8 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 				o.logger.Tracef("mqtt.Client.Receive: [%s]%s %s", msg.Topic(), msgInfo, string(msg.Payload()))
 			}
 
-			c <- msg
+			// for non blocking
+			go func() { c <- msg }()
 		}
 	})
 
