@@ -9,9 +9,9 @@ import (
 func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
-			Code:        "object.relay.on_state_on",
-			Name:        "on_state_on",
-			Description: "Включение реле",
+			Code:        "object.relay.on_state_off",
+			Name:        "on_state_off",
+			Description: "Выключение реле",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
 		}
@@ -25,15 +25,15 @@ func init() {
 	}
 }
 
-func NewOnStateMessage(topic string, targetID int) (messages.Message, error) {
-	e, err := event.MakeEvent("object.relay.on_state_on", messages.TargetTypeObject, targetID, nil)
+func NewOffStateMessage(topic string, targetID int) (messages.Message, error) {
+	e, err := event.MakeEvent("object.relay.on_state_off", messages.TargetTypeObject, targetID, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewOnStateMessage")
+		return nil, errors.Wrap(err, "NewOffStateMessage")
 	}
 
 	m, err := e.ToMqttMessage(topic)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewOnStateMessage")
+		return nil, errors.Wrap(err, "NewOffStateMessage")
 	}
 
 	return m, nil
