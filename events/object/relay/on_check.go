@@ -25,8 +25,8 @@ func init() {
 	}
 }
 
-func NewCheckMessage(topic string, targetID int) (messages.Message, error) {
-	e, err := event.MakeEvent("object.relay.on_check", messages.TargetTypeObject, targetID, nil)
+func NewCheckMessage(topic string, targetType messages.TargetType, targetID int, state, value string) (messages.Message, error) {
+	e, err := event.MakeEvent("on_change_state", targetType, targetID, map[string]interface{}{"state": state, "value": value})
 	if err != nil {
 		return nil, errors.Wrap(err, "NewCheckMessage")
 	}
