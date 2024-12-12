@@ -19,6 +19,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Global instance
+var I *Client
+
 func New(clientID, connString string, timeout time.Duration, tries int, logger *logrus.Logger) (*Client, error) {
 	o := &Client{
 		clientID:       clientID,

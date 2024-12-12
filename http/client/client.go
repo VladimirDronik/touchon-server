@@ -10,6 +10,9 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+// Global instance
+var I *Client
+
 func New() *Client {
 	return &Client{
 		client: &fasthttp.Client{
