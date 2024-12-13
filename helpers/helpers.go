@@ -121,7 +121,7 @@ func DumpRequest(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
 
 	logger.Traceln()
 	logger.Traceln("================================")
-	logger.Debugf("REQUEST(%d) [%s] %s %s", ctx.ID(), ctx.RemoteAddr().String(), string(ctx.Request.Header.Method()), string(ctx.Request.URI().FullURI()))
+	logger.Debugf("REQUEST(%d) [%s] %s %s", GetRequestID(ctx), ctx.RemoteAddr().String(), string(ctx.Request.Header.Method()), string(ctx.Request.URI().FullURI()))
 	ctx.Request.Header.VisitAll(func(k, v []byte) {
 		logger.Tracef("HEADER: %s = %q", string(k), string(v))
 	})
@@ -138,11 +138,21 @@ func DumpResponse(logger *logrus.Logger, ctx *fasthttp.RequestCtx) {
 
 	logger.Traceln()
 	logger.Traceln("---------------------------------")
-	logger.Debugf("RESPONSE(%d) [%d]", ctx.ID(), ctx.Response.StatusCode())
+	logger.Debugf("RESPONSE(%d) [%d]", GetRequestID(ctx), ctx.Response.StatusCode())
 	ctx.Response.Header.VisitAll(func(k, v []byte) {
 		logger.Tracef("HEADER: %s = %q", string(k), string(v))
 	})
 	if len(ctx.Response.Body()) > 0 {
 		logger.Traceln(string(ctx.Response.Body()))
 	}
+}
+
+func SetRequestID(ctx *fasthttp.RequestCtx, id uint64) {
+	ctx.SetUserValue("request_id", id)
+}
+func GetRequestID(ctx *fasthttp.RequestCtx) uint64 {
+	if v, ok := ctx.UserValue("request_id").(uint64); ok {
+		return v
+	}
+	return 0
 }

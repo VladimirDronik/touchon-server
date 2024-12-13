@@ -126,9 +126,17 @@ func (o *Server) Shutdown() error {
 	return nil
 }
 
+func (o *Server) SetRequestID(ctx *fasthttp.RequestCtx) {
+	o.requestID.Add(1)
+	helpers.SetRequestID(ctx, o.requestID.Load())
+}
+
 // RequestWrapper добавляет CORS заголовки и content type
 func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
+		// Маркируем запрос
+		o.SetRequestID(ctx)
+		
 		ref := string(ctx.Request.Header.Peek("Origin"))
 		if ref == "" {
 			ref = "*"
