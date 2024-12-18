@@ -245,7 +245,7 @@ func (o *MessageImpl) SetReceivedAt(v time.Time) {
 	o.receivedAt = v
 }
 
-const atFormat = "02.01.2006 15:04:05.000000 MST"
+const TimeLabelFormat = "02.01.2006 15:04:05.000000 MST"
 
 func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 	m := &message{
@@ -258,11 +258,11 @@ func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 	}
 
 	if !o.GetSentAt().IsZero() {
-		m.SentAt = o.GetSentAt().Format(atFormat)
+		m.SentAt = o.GetSentAt().Format(TimeLabelFormat)
 	}
 
 	if !o.GetReceivedAt().IsZero() {
-		m.ReceivedAt = o.GetReceivedAt().Format(atFormat)
+		m.ReceivedAt = o.GetReceivedAt().Format(TimeLabelFormat)
 	}
 
 	if len(m.Payload) == 0 {
@@ -286,12 +286,12 @@ func (o *MessageImpl) UnmarshalJSON(data []byte) error {
 	o.SetTargetType(m.TargetType)
 	o.SetPayload(m.Payload)
 
-	sentAt, err := time.Parse(atFormat, m.SentAt)
+	sentAt, err := time.Parse(TimeLabelFormat, m.SentAt)
 	if err == nil {
 		o.SetSentAt(sentAt)
 	}
 
-	receivedAt, err := time.Parse(atFormat, m.ReceivedAt)
+	receivedAt, err := time.Parse(TimeLabelFormat, m.ReceivedAt)
 	if err == nil {
 		o.SetReceivedAt(receivedAt)
 	}
