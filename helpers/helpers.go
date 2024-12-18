@@ -44,6 +44,19 @@ func GetUintParam(ctx *fasthttp.RequestCtx, paramName string) (int, error) {
 	return v, nil
 }
 
+func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string) (bool, error) {
+	if s := GetParam(ctx, paramName); s != "" {
+		v, err := strconv.ParseBool(s)
+		if err != nil {
+			return false, errors.Wrapf(err, "GetBoolParam(%s)", paramName)
+		}
+
+		return v, nil
+	}
+
+	return false, nil
+}
+
 func GetPathParam(ctx *fasthttp.RequestCtx, paramName string) string {
 	s, _ := ctx.UserValue(paramName).(string)
 	return s
