@@ -10,7 +10,7 @@ import (
 
 var Publisher string
 
-type MessageType string
+type MessageType = string
 
 const (
 	MessageTypeEvent   MessageType = "event"
@@ -25,7 +25,7 @@ const (
 	QoSGuaranteedOne            // Гарантировано один раз
 )
 
-type TargetType string
+type TargetType = string
 
 const (
 	TargetTypeNotMatters TargetType = "not_matters" // Используется, например, в определении ошибки, относящейся к любому типу
