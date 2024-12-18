@@ -169,3 +169,20 @@ func GetRequestID(ctx *fasthttp.RequestCtx) uint64 {
 	}
 	return 0
 }
+
+func GetNumber(v interface{}) (int, error) {
+	switch v := v.(type) {
+	case float64:
+		return int(v), nil
+	case int:
+		return v, nil
+	case int64:
+		return int(v), nil
+	case string:
+		if v, err := strconv.Atoi(v); err == nil {
+			return v, nil
+		}
+	}
+
+	return 0, errors.Wrap(errors.Errorf("value is not number (%T)", v), "GetNumber")
+}
