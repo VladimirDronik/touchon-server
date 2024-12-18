@@ -1,4 +1,4 @@
-package sensor
+package wb_mrm2_mini
 
 import (
 	"github.com/VladimirDronik/touchon-server/event"
