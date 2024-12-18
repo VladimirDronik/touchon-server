@@ -75,6 +75,10 @@ func (o *Item) GetIntValue() (int, error) {
 		return v, nil
 	case int64:
 		return int(v), nil
+	case string:
+		if v, err := strconv.Atoi(v); err == nil {
+			return v, nil
+		}
 	}
 
 	return 0, errors.Wrap(errors.Errorf("value is not int (%T)", o.value), "GetIntValue")
