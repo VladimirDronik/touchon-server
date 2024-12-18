@@ -17,7 +17,7 @@ const (
 	MessageTypeCommand MessageType = "command"
 )
 
-type QoS int
+type QoS = int
 
 const (
 	QoSNotGuaranteed QoS = iota // Нет никаких гарантий
