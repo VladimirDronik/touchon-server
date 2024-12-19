@@ -55,9 +55,10 @@ type Meta struct {
 
 // Response Ответ сервиса
 type Response[T any] struct {
-	Meta  Meta   `json:"meta"`            // Метаинформация о запросе/ответе
-	Data  T      `json:"data,omitempty"`  // Полезная нагрузка, зависит от запроса
-	Error string `json:"error,omitempty"` // Описание возвращенной ошибки
+	Meta    Meta   `json:"meta"`               // Метаинформация о запросе/ответе
+	Success bool   `json:"success"`            // Подтверждение отсутствия ошибок в выводе
+	Data    T      `json:"response,omitempty"` // Полезная нагрузка, зависит от запроса
+	Error   string `json:"error,omitempty"`    // Описание возвращенной ошибки
 }
 
 // JsonHandlerWrapper ответ в формате JSON оборачивает в единый формат и добавляет метаданные.
@@ -78,6 +79,8 @@ func JsonHandlerWrapper(f RequestHandler) fasthttp.RequestHandler {
 		case data != nil:
 			r.Data = data
 		}
+
+		r.Success = err == nil
 
 		var buf bytes.Buffer
 
