@@ -45,6 +45,9 @@ func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *lo
 			httpSwagger.DeepLinking(true),
 			httpSwagger.DocExpansion("none"),
 			httpSwagger.DomID("swagger-ui"),
+			httpSwagger.PersistAuthorization(true),
+			httpSwagger.DocExpansion("list"),
+			httpSwagger.DefaultModelsExpandDepth(httpSwagger.HideModel),
 		),
 	))
 
@@ -136,7 +139,7 @@ func (o *Server) RequestWrapper(next fasthttp.RequestHandler) fasthttp.RequestHa
 	return func(ctx *fasthttp.RequestCtx) {
 		// Маркируем запрос
 		o.SetRequestID(ctx)
-		
+
 		ref := string(ctx.Request.Header.Peek("Origin"))
 		if ref == "" {
 			ref = "*"
