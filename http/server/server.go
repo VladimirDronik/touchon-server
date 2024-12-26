@@ -40,14 +40,19 @@ func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *lo
 	}
 
 	// Обработчик для Swagger'а
+	// https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/
 	o.router.GET("/swagger/{filepath:*}", fasthttpadaptor.NewFastHTTPHandler(
 		httpSwagger.Handler(
 			httpSwagger.DeepLinking(true),
 			httpSwagger.DocExpansion("none"),
 			httpSwagger.DomID("swagger-ui"),
 			httpSwagger.PersistAuthorization(true),
-			httpSwagger.DocExpansion("list"),
 			httpSwagger.DefaultModelsExpandDepth(httpSwagger.HideModel),
+			httpSwagger.UIConfig(map[string]string{
+				"showExtensions":  "true",
+				"filter":          "true",
+				"tryItOutEnabled": "true",
+			}),
 		),
 	))
 
