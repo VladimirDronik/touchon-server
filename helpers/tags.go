@@ -17,14 +17,14 @@ func PrepareTag(tag string) string {
 	s := strings.TrimSpace(strings.ToLower(tag))
 	s = strings.ReplaceAll(s, "-", "_")
 
-	var r []rune
-	for _, c := range s {
-		if abc[c] {
-			r = append(r, c)
-		}
-	}
+	//var r []rune //Убрали, чтобы выводилась кириллица, убрать совсем, если не нужно
+	//for _, c := range s {
+	//	if abc[c] {
+	//		r = append(r, c)
+	//	}
+	//}
 
-	return string(r)
+	return s //string(r)
 }
 
 func PrepareTags(tags string) []string {
