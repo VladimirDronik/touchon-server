@@ -10,7 +10,7 @@ import (
 func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
-			Code:        "object.modbus.wb_mrm2_mini.on_check",
+			Code:        "object.wiren_board.wb_mrm2_mini.on_check",
 			Name:        "on_check",
 			Description: "Получено состояние выходов",
 			Props:       event.NewProps(),
@@ -55,7 +55,7 @@ func NewOnCheckMessage(topic string, targetID int, values map[string]bool) (mess
 		}
 	}
 
-	e, err := event.MakeEvent("object.modbus.wb_mrm2_mini.on_check", messages.TargetTypeObject, targetID, payload)
+	e, err := event.MakeEvent("object.wiren_board.wb_mrm2_mini.on_check", messages.TargetTypeObject, targetID, payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheckMessage")
 	}
