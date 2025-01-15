@@ -10,8 +10,8 @@ import (
 func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
-			Code:        "object.onokom.gateway.on_method_result_ready",
-			Name:        "on_method_result_ready",
+			Code:        "object.onokom.gateway.on_method_result",
+			Name:        "on_method_result",
 			Description: "Результат выполнения метода",
 			Props:       event.NewProps(),
 			TargetType:  messages.TargetTypeObject,
@@ -29,7 +29,7 @@ func init() {
 			Code: "result",
 			Name: "Результат",
 			Item: &models.Item{
-				Type: models.DataTypeBool,
+				Type: models.DataTypeInterface,
 			},
 		}
 
@@ -46,21 +46,21 @@ func init() {
 	}
 }
 
-// NewOnMethodResultReadyMessage используется для возврата результат метода.
-func NewOnMethodResultReadyMessage(topic string, targetID int, methodCodeName string, result bool) (messages.Message, error) {
+// NewOnMethodResultMessage используется для возврата результат метода.
+func NewOnMethodResultMessage(topic string, targetID int, methodCodeName string, result interface{}) (messages.Message, error) {
 	payload := map[string]interface{}{
 		"method": methodCodeName,
 		"result": result,
 	}
 
-	e, err := event.MakeEvent("object.onokom.gateway.on_method_result_ready", messages.TargetTypeObject, targetID, payload)
+	e, err := event.MakeEvent("object.onokom.gateway.on_method_result", messages.TargetTypeObject, targetID, payload)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewOnMethodResultReadyMessage")
+		return nil, errors.Wrap(err, "NewOnMethodResultMessage")
 	}
 
 	m, err := e.ToMqttMessage(topic)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewOnMethodResultReadyMessage")
+		return nil, errors.Wrap(err, "NewOnMethodResultMessage")
 	}
 
 	return m, nil
