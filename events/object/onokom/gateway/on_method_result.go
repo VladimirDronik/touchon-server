@@ -33,7 +33,15 @@ func init() {
 			},
 		}
 
-		if err := e.Props.Add(m, r); err != nil {
+		d := &event.Prop{
+			Code: "description",
+			Name: "Описание/комментарий",
+			Item: &models.Item{
+				Type: models.DataTypeString,
+			},
+		}
+
+		if err := e.Props.Add(m, r, d); err != nil {
 			return nil, errors.Wrap(err, "init.maker")
 		}
 
@@ -47,10 +55,11 @@ func init() {
 }
 
 // NewOnMethodResultMessage используется для возврата результат метода.
-func NewOnMethodResultMessage(topic string, targetID int, methodCodeName string, result interface{}) (messages.Message, error) {
+func NewOnMethodResultMessage(topic string, targetID int, methodCodeName string, result interface{}, description string) (messages.Message, error) {
 	payload := map[string]interface{}{
-		"method": methodCodeName,
-		"result": result,
+		"method":      methodCodeName,
+		"result":      result,
+		"description": description,
 	}
 
 	e, err := event.MakeEvent("object.onokom.gateway.on_method_result", messages.TargetTypeObject, targetID, payload)
