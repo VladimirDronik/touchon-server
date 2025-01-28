@@ -7,6 +7,41 @@ import (
 	"github.com/pkg/errors"
 )
 
+var OpModes = map[string]string{
+	"1": "Нагрев",
+	"2": "Охлаждение",
+	"3": "Автоматический",
+	"4": "Осушение",
+	"5": "Вентиляция",
+}
+
+var FanSpeed = map[string]string{
+	"0": "Авто",
+	"1": "Первая скорость",
+	"2": "Вторая скорость",
+	"3": "Третья скорость",
+}
+
+var HSlatsModes = map[string]string{
+	"1": "Качание",
+	"2": "Нижнее положение",
+	"3": "Второе положение",
+	"4": "Третье положение",
+	"5": "Четвертое положение",
+	"6": "Пятое положение",
+	"7": "Шестое положение",
+	"8": "Седьмое положение",
+}
+
+var VSlatsModes = map[string]string{
+	"1": "Качание",
+	"2": "Левое положение",
+	"3": "Второе положение",
+	"4": "Третье положение",
+	"5": "Четвертое положение",
+	"6": "Пятое положение",
+}
+
 func init() {
 	maker := func() (*event.Event, error) {
 		e := &event.Event{
@@ -32,13 +67,13 @@ func init() {
 			{Code: "sounds", Name: "Звуковая индикация", Item: &models.Item{Type: models.DataTypeBool}},
 			{Code: "on_duty_heating", Name: "Дежурный обогрев", Item: &models.Item{Type: models.DataTypeBool}},
 			{Code: "soft_flow", Name: "Мягкий поток", Item: &models.Item{Type: models.DataTypeBool}},
-			{Code: "operating_mode", Name: "Режим работы", Item: &models.Item{Type: models.DataTypeEnum, Values: map[string]string{}}},
+			{Code: "operating_mode", Name: "Режим работы", Item: &models.Item{Type: models.DataTypeEnum, Values: OpModes}},
 			{Code: "internal_temperature", Name: "Температура в помещении", Item: &models.Item{Type: models.DataTypeInt}},
 			{Code: "external_temperature", Name: "Температура на улице", Item: &models.Item{Type: models.DataTypeInt}},
 			{Code: "target_temperature", Name: "Целевая температура", Item: &models.Item{Type: models.DataTypeInt}},
-			{Code: "fan_speed", Name: "Скорость вентилятора", Item: &models.Item{Type: models.DataTypeEnum, Values: map[string]string{}}},
-			{Code: "horizontal_slats_mode", Name: "Режим работы горизонтальных ламелей", Item: &models.Item{Type: models.DataTypeEnum, Values: map[string]string{}}},
-			{Code: "vertical_slats_mode", Name: "Режим работы вертикальных ламелей", Item: &models.Item{Type: models.DataTypeEnum, Values: map[string]string{}}},
+			{Code: "fan_speed", Name: "Скорость вентилятора", Item: &models.Item{Type: models.DataTypeEnum, Values: FanSpeed}},
+			{Code: "horizontal_slats_mode", Name: "Режим работы горизонтальных ламелей", Item: &models.Item{Type: models.DataTypeEnum, Values: HSlatsModes}},
+			{Code: "vertical_slats_mode", Name: "Режим работы вертикальных ламелей", Item: &models.Item{Type: models.DataTypeEnum, Values: VSlatsModes}},
 		}
 
 		if err := e.Props.Add(props...); err != nil {
