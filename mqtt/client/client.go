@@ -20,10 +20,21 @@ import (
 )
 
 // Global instance
-var I *Client
+var I Client
 
-func New(clientID, connString string, timeout time.Duration, tries int, logger *logrus.Logger) (*Client, error) {
-	o := &Client{
+type Client interface {
+	GetIgnoreSelfMsgs() bool
+	SetIgnoreSelfMsgs(v bool)
+	Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, error)
+	Unsubscribe(topics ...string) error
+	Send(msg messages.Message) error
+	SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}) error
+	GetTopicFromConnectionString() string
+	Shutdown() error
+}
+
+func New(clientID, connString string, timeout time.Duration, tries int, logger *logrus.Logger) (Client, error) {
+	o := &ClientImpl{
 		clientID:       clientID,
 		timeout:        timeout,
 		tries:          tries,
@@ -35,7 +46,7 @@ func New(clientID, connString string, timeout time.Duration, tries int, logger *
 	var err error
 	o.connString, err = url.Parse(connString)
 	if err != nil {
-		return nil, errors.Wrap(err, "Client.New")
+		return nil, errors.Wrap(err, "ClientImpl.New")
 	}
 
 	password, _ := o.connString.User.Password()
@@ -47,16 +58,16 @@ func New(clientID, connString string, timeout time.Duration, tries int, logger *
 		SetResumeSubs(true)
 
 	opts.OnConnectionLost = func(client mqtt.Client, reason error) {
-		o.logger.Debugf("mqtt.Client: connection lost: %v", reason)
+		o.logger.Debugf("mqtt.ClientImpl: connection lost: %v", reason)
 	}
 
 	opts.OnConnectAttempt = func(broker *url.URL, tlsCfg *tls.Config) *tls.Config {
-		o.logger.Debugf("mqtt.Client: connection attempt: %v", broker)
+		o.logger.Debugf("mqtt.ClientImpl: connection attempt: %v", broker)
 		return tlsCfg
 	}
 
 	opts.OnConnect = func(client mqtt.Client) {
-		o.logger.Debugf("mqtt.Client: connected = %t", client.IsConnected())
+		o.logger.Debugf("mqtt.ClientImpl: connected = %t", client.IsConnected())
 	}
 
 	o.client = mqtt.NewClient(opts)
@@ -69,7 +80,7 @@ func New(clientID, connString string, timeout time.Duration, tries int, logger *
 	return o, nil
 }
 
-type Client struct {
+type ClientImpl struct {
 	clientID       string
 	client         mqtt.Client
 	timeout        time.Duration
@@ -82,21 +93,21 @@ type Client struct {
 	chans map[string][]chan mqtt.Message
 }
 
-func (o *Client) GetIgnoreSelfMsgs() bool {
+func (o *ClientImpl) GetIgnoreSelfMsgs() bool {
 	return o.ignoreSelfMsgs
 }
 
-func (o *Client) SetIgnoreSelfMsgs(v bool) {
+func (o *ClientImpl) SetIgnoreSelfMsgs(v bool) {
 	o.ignoreSelfMsgs = v
 }
 
-func (o *Client) pushChan(topic string, ch chan mqtt.Message) {
+func (o *ClientImpl) pushChan(topic string, ch chan mqtt.Message) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	o.chans[topic] = append(o.chans[topic], ch)
 }
 
-func (o *Client) popChans(topic string) []chan mqtt.Message {
+func (o *ClientImpl) popChans(topic string) []chan mqtt.Message {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 	chans := o.chans[topic]
@@ -105,7 +116,7 @@ func (o *Client) popChans(topic string) []chan mqtt.Message {
 }
 
 // processToken Синхронно ожидает результата
-func (o *Client) processToken(token mqtt.Token) error {
+func (o *ClientImpl) processToken(token mqtt.Token) error {
 	var ok bool
 
 	for i := 0; i < o.tries; i++ {
@@ -128,7 +139,7 @@ func (o *Client) processToken(token mqtt.Token) error {
 }
 
 // Subscribe Подписывает на топики
-func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, error) {
+func (o *ClientImpl) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, error) {
 	c := make(chan mqtt.Message, bufferSize)
 
 	token := o.client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
@@ -138,9 +149,9 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 
 			switch o.logger.Level {
 			case logrus.DebugLevel:
-				o.logger.Debugf("mqtt.Client.Receive: [%s]%s", msg.Topic(), msgInfo)
+				o.logger.Debugf("mqtt.ClientImpl.Receive: [%s]%s", msg.Topic(), msgInfo)
 			case logrus.TraceLevel:
-				o.logger.Tracef("mqtt.Client.Receive: [%s]%s %s", msg.Topic(), msgInfo, string(msg.Payload()))
+				o.logger.Tracef("mqtt.ClientImpl.Receive: [%s]%s %s", msg.Topic(), msgInfo, string(msg.Payload()))
 			}
 
 			// for non blocking
@@ -159,7 +170,7 @@ func (o *Client) Subscribe(topic string, bufferSize int) (<-chan mqtt.Message, e
 }
 
 // Unsubscribe Отменяет подписку на топики
-func (o *Client) Unsubscribe(topics ...string) error {
+func (o *ClientImpl) Unsubscribe(topics ...string) error {
 	token := o.client.Unsubscribe(topics...)
 
 	if err := o.processToken(token); err != nil {
@@ -178,7 +189,7 @@ func (o *Client) Unsubscribe(topics ...string) error {
 
 // Send Отправляет сообщения в топик
 // sync - to track delivery of the message to the broker
-func (o *Client) Send(msg messages.Message) error {
+func (o *ClientImpl) Send(msg messages.Message) error {
 	msg.SetSentAt(time.Now())
 
 	if err := o.SendRaw(msg.GetTopic(), msg.GetQoS(), msg.GetRetained(), msg); err != nil {
@@ -213,7 +224,7 @@ func getMetaInfoFromRawMsg(data []byte) string {
 
 // SendRaw Отправляет сообщения в топик
 // sync - to track delivery of the message to the broker
-func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}) error {
+func (o *ClientImpl) SendRaw(topic string, qos messages.QoS, retained bool, payload interface{}) error {
 	if topic == "" {
 		return errors.Wrap(errors.New("topic is empty"), "SendRaw")
 	}
@@ -232,9 +243,9 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 
 	switch o.logger.Level {
 	case logrus.DebugLevel:
-		o.logger.Debugf("mqtt.Client.Send: [%s]%s", topic, msgInfo)
+		o.logger.Debugf("mqtt.ClientImpl.Send: [%s]%s", topic, msgInfo)
 	case logrus.TraceLevel:
-		o.logger.Tracef("mqtt.Client.Send: [%s]%s %s", topic, msgInfo, string(payload.([]byte)))
+		o.logger.Tracef("mqtt.ClientImpl.Send: [%s]%s %s", topic, msgInfo, string(payload.([]byte)))
 	}
 
 	token := o.client.Publish(topic, byte(qos), retained, payload)
@@ -245,7 +256,7 @@ func (o *Client) SendRaw(topic string, qos messages.QoS, retained bool, payload 
 	return nil
 }
 
-func (o *Client) GetTopicFromConnectionString() string {
+func (o *ClientImpl) GetTopicFromConnectionString() string {
 	topic := "#"
 	if len(o.connString.Path) > 1 {
 		topic = o.connString.Path[1:]
@@ -253,7 +264,7 @@ func (o *Client) GetTopicFromConnectionString() string {
 	return topic
 }
 
-func (o *Client) Shutdown() error {
+func (o *ClientImpl) Shutdown() error {
 	// Получаем список топиков
 	o.mu.Lock()
 	topics := make([]string, 0, len(o.chans))

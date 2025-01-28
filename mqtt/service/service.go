@@ -7,13 +7,13 @@ import (
 
 	"github.com/VladimirDronik/touchon-server/events/service"
 	"github.com/VladimirDronik/touchon-server/info"
-	"github.com/VladimirDronik/touchon-server/mqtt/client"
+	mqtt "github.com/VladimirDronik/touchon-server/mqtt/client"
 	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-func New(client *client.Client, cfg map[string]string, bufferSize int, threads int, logger *logrus.Logger) (*Service, error) {
+func New(client mqtt.Client, cfg map[string]string, bufferSize int, threads int, logger *logrus.Logger) (*Service, error) {
 	o := &Service{
 		client:     client,
 		config:     cfg,
@@ -28,7 +28,7 @@ func New(client *client.Client, cfg map[string]string, bufferSize int, threads i
 }
 
 type Service struct {
-	client     *client.Client
+	client     mqtt.Client
 	config     map[string]string
 	bufferSize int
 	logger     *logrus.Logger
@@ -46,7 +46,7 @@ func (o *Service) GetLogger() *logrus.Logger {
 	return o.logger
 }
 
-func (o *Service) GetClient() *client.Client {
+func (o *Service) GetClient() mqtt.Client {
 	return o.client
 }
 
