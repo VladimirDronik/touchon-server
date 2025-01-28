@@ -90,7 +90,7 @@ func init() {
 }
 
 func NewOnCheckMessage(topic string, targetID int, values map[string]interface{}) (messages.Message, error) {
-	e, err := event.MakeEvent("object.sensor.on_check", messages.TargetTypeObject, targetID, values)
+	e, err := event.MakeEvent("object.onokom.gateway.on_check", messages.TargetTypeObject, targetID, values)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheckMessage")
 	}
