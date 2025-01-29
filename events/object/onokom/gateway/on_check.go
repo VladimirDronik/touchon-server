@@ -53,7 +53,7 @@ var props = []*event.Prop{
 	{Code: "ionization", Name: "Ионизация", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "self_cleaning", Name: "Самоочистка", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "anti_fungus", Name: "Антиплесень", Item: &models.Item{Type: models.DataTypeBool}},
-	{Code: "disable_display_on_power_off", Name: "Отключение экрана при отключенном устройстве", Item: &models.Item{Type: models.DataTypeBool}},
+	{Code: "display_enabled_always", Name: "Экран включен при отключенном устройстве", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "sounds", Name: "Звуковая индикация", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "on_duty_heating", Name: "Дежурный обогрев", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "soft_flow", Name: "Мягкий поток", Item: &models.Item{Type: models.DataTypeBool}},
