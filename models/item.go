@@ -113,7 +113,7 @@ func (o *Item) SetValue(value interface{}) error {
 	case DataTypeEnum:
 		s, ok := value.(string)
 		if !ok {
-			return errors.Wrap(errors.Errorf("value is not string (%T)", value), "Item.SetValue")
+			s = fmt.Sprintf("%v", value)
 		}
 		if _, ok := o.Values[s]; !ok {
 			return errors.Wrap(errors.Errorf("value %q not found in enum values %v", s, o.Values), "Item.SetValue")
