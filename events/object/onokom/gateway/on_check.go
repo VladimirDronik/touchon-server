@@ -17,12 +17,16 @@ var OpModes = map[string]string{
 
 var FanSpeed = map[string]string{
 	"0": "Авто",
-	"1": "Первая скорость",
-	"2": "Вторая скорость",
-	"3": "Третья скорость",
+	"1": "Тихий режим",
+	"2": "Первая скорость",
+	"3": "Вторая скорость",
+	"4": "Третья скорость",
+	"5": "Четвертая скорость",
+	"6": "Пятая скорость",
 }
 
 var HSlatsModes = map[string]string{
+	"0": "Остановлено",
 	"1": "Качание",
 	"2": "Нижнее положение",
 	"3": "Второе положение",
@@ -34,18 +38,20 @@ var HSlatsModes = map[string]string{
 }
 
 var VSlatsModes = map[string]string{
+	"0": "Остановлено",
 	"1": "Качание",
 	"2": "Левое положение",
 	"3": "Второе положение",
 	"4": "Третье положение",
 	"5": "Четвертое положение",
 	"6": "Пятое положение",
+	"7": "Мягкий поток",
 }
 
 var props = []*event.Prop{
 	{Code: "power_status", Name: "Состояние вкл/выкл", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "display_backlight", Name: "Подсветка экрана", Item: &models.Item{Type: models.DataTypeBool}},
-	{Code: "display_brightness", Name: "Яркость экрана", Item: &models.Item{Type: models.DataTypeInt}},
+	{Code: "display_high_brightness", Name: "Высокая яркость экрана", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "silent_mode", Name: "Режим Тихий", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "eco_mode", Name: "Режим Эко", Item: &models.Item{Type: models.DataTypeBool}},
 	{Code: "turbo_mode", Name: "Режим Турбо", Item: &models.Item{Type: models.DataTypeBool}},
