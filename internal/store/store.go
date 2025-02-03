@@ -1,6 +1,12 @@
 package store
 
-import "touchon-server/internal/model"
+import (
+	"github.com/pkg/errors"
+	"touchon-server/internal/model"
+	"touchon-server/lib/mqtt/messages"
+)
+
+var ErrNotFound = errors.New("not found")
 
 // Global instance
 var I Store
@@ -10,6 +16,12 @@ type Store interface {
 	PortRepository() PortRepository
 	DeviceRepository() DeviceRepository
 	ScriptRepository() ScriptRepository
+
+	// AR
+
+	EventsRepo() EventsRepo
+	EventActionsRepo() EventActionsRepo
+	CronRepo() CronRepo
 }
 
 type ObjectRepository interface {
@@ -54,4 +66,52 @@ type ScriptRepository interface {
 	// GetTotal возвращает общее кол-во найденных скриптов
 	GetTotal(code, name string, offset, limit int) (int, error)
 	DelScript(id int) error
+}
+
+// AR
+
+type EventsRepo interface {
+	// GetEvents возвращает события сущности.
+	GetEvents(targetType messages.TargetType, targetID int) ([]*model.Event, error)
+
+	// GetEvent возвращает событие.
+	GetEvent(targetType messages.TargetType, targetID int, eventName string) (*model.Event, error)
+
+	// SaveEvent добавляет или обновляет событие.
+	SaveEvent(ev *model.Event) error
+
+	// DeleteEvent удаляет событие.
+	DeleteEvent(targetType messages.TargetType, targetID int, eventName string) error
+
+	// GetAllEventsName возвращает названия всех событий, используемых в таблице.
+	// Используется для проверки правильности указанных имен.
+	GetAllEventsName() ([]string, error)
+}
+
+type EventActionsRepo interface {
+	// GetActions возвращает список действий для события.
+	GetActions(eventIDs ...int) (map[int][]*model.EventAction, error)
+
+	// GetActionsCount возвращает количество действий для событий.
+	GetActionsCount(eventIDs ...int) (map[int]int, error)
+
+	// SaveAction добавляет или обновляет действие.
+	SaveAction(act *model.EventAction) error
+
+	// DeleteAction удаляет действие.
+	DeleteAction(actID int) error
+	DeleteActionByObject(targetType string, objectID int) error
+
+	// OrderActions меняет порядок действий.
+	OrderActions(actIDs []int) error
+}
+
+type CronRepo interface {
+	// GetEnabledTasks возвращает активные задачи.
+	GetEnabledTasks() ([]*model.CronTask, error)
+	CreateTask(task *model.CronTask) (int, error)
+	CreateTaskAction(action *model.CronAction) error
+	DeleteTask(objectID int, target string) error
+	UpdateTask(task *model.CronTask) error
+	GetCronAction(objectID int, targetType string) (*model.CronAction, error)
 }

@@ -14,6 +14,11 @@ type Store struct {
 	portRepo   *PortRepository
 	deviceRepo *DeviceRepository
 	scriptRepo *ScriptRepository
+
+	// AR
+	eventsRepo       *EventsRepo
+	eventActionsRepo *EventActionsRepo
+	cronRepo         *CronRepo
 }
 
 // New ...
@@ -57,4 +62,33 @@ func (s *Store) ScriptRepository() store.ScriptRepository {
 	}
 
 	return s.scriptRepo
+}
+
+// AR
+
+// EventsRepo Инициализация
+func (s *Store) EventsRepo() store.EventsRepo {
+	if s.eventsRepo == nil {
+		s.eventsRepo = &EventsRepo{store: s}
+	}
+
+	return s.eventsRepo
+}
+
+// EventActionsRepo Инициализация
+func (s *Store) EventActionsRepo() store.EventActionsRepo {
+	if s.eventActionsRepo == nil {
+		s.eventActionsRepo = &EventActionsRepo{store: s}
+	}
+
+	return s.eventActionsRepo
+}
+
+// CronRepo Инициализация
+func (s *Store) CronRepo() store.CronRepo {
+	if s.cronRepo == nil {
+		s.cronRepo = &CronRepo{store: s}
+	}
+
+	return s.cronRepo
 }

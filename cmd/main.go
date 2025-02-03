@@ -29,8 +29,10 @@ import (
 	"time"
 
 	"github.com/mattn/go-sqlite3"
+	"github.com/pkg/errors"
 	_ "touchon-server/docs"
 	"touchon-server/internal/context"
+	"touchon-server/internal/cron"
 	httpServer "touchon-server/internal/http"
 	mqttService "touchon-server/internal/mqtt"
 	"touchon-server/internal/objects"
@@ -38,6 +40,7 @@ import (
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/internal/store/sqlstore"
+	"touchon-server/lib/event"
 	httpClient "touchon-server/lib/http/client"
 	mqttClient "touchon-server/lib/mqtt/client"
 	"touchon-server/lib/service"
@@ -71,23 +74,23 @@ func init() {
 
 var defaults = map[string]string{
 	"http_addr":              "0.0.0.0:8082",
-	"action_router_addr":     "0.0.0.0:8083",
-	"database_url":           "./object-manager_db.sqlite?_foreign_keys=true",
+	"action_router_addr":     "0.0.0.0:8082",
+	"database_url":           "./db.sqlite?_foreign_keys=true",
 	"server_key":             "c041d36e381a835afce48c91686370c8",
 	"mqtt_connection_string": "mqtt://services:12345678@mqtt:1883/#",
-	"log_level":              "fatal",
+	"log_level":              "debug",
 	"version":                "0.1",
-	"service_name":           "object_manager",
+	"service_name":           "touchon_server",
 	"mqtt_max_travel_time":   "50ms",
 }
 
 const banner = `
- ██████╗ ██████╗      ██╗███████╗ ██████╗████████╗              ███╗   ███╗ █████╗ ███╗   ██╗ █████╗  ██████╗ ███████╗██████╗ 
-██╔═══██╗██╔══██╗     ██║██╔════╝██╔════╝╚══██╔══╝              ████╗ ████║██╔══██╗████╗  ██║██╔══██╗██╔════╝ ██╔════╝██╔══██╗
-██║   ██║██████╔╝     ██║█████╗  ██║        ██║       █████╗    ██╔████╔██║███████║██╔██╗ ██║███████║██║  ███╗█████╗  ██████╔╝
-██║   ██║██╔══██╗██   ██║██╔══╝  ██║        ██║       ╚════╝    ██║╚██╔╝██║██╔══██║██║╚██╗██║██╔══██║██║   ██║██╔══╝  ██╔══██╗
-╚██████╔╝██████╔╝╚█████╔╝███████╗╚██████╗   ██║                 ██║ ╚═╝ ██║██║  ██║██║ ╚████║██║  ██║╚██████╔╝███████╗██║  ██║
- ╚═════╝ ╚═════╝  ╚════╝ ╚══════╝ ╚═════╝   ╚═╝                 ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+████████╗ ██████╗ ██╗   ██╗ ██████╗██╗  ██╗         ███╗   ██╗    ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗ 
+╚══██╔══╝██╔═══██╗██║   ██║██╔════╝██║  ██║ ██████╗ ████╗  ██║    ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗
+   ██║   ██║   ██║██║   ██║██║     ███████║██║   ██║██╔██╗ ██║    ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝
+   ██║   ██║   ██║██║   ██║██║     ██╔══██║██║   ██║██║╚██╗██║    ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗
+   ██║   ╚██████╔╝╚██████╔╝╚██████╗██║  ██║╚██████╔╝██║ ╚████║    ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║
+   ╚═╝    ╚═════╝  ╚═════╝  ╚═════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝    ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝
 
 `
 
@@ -104,6 +107,7 @@ func main() {
 	context.Config = cfg
 
 	store.I = sqlstore.New(db)
+	check(checkData(store.I))
 
 	// Инициализация клиента для MQTT
 	mqttClient.I, err = mqttClient.New(cfg["service_name"], cfg["mqtt_connection_string"], 10*time.Second, 3, logger)
@@ -132,10 +136,19 @@ func main() {
 	// Старт HTTP API сервера
 	check(httpServer.I.Start(cfg["http_addr"]))
 
+	sch, err := cron.New(store.I, cfg, mqttClient.I)
+	check(err)
+
+	check(sch.Start())
+
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-sig
 	logger.Info("Получен сигнал на завершение...")
+
+	if err := sch.Shutdown(); err != nil {
+		logger.Error(err)
+	}
 
 	if err := httpServer.I.Shutdown(); err != nil {
 		logger.Error(err)
@@ -148,6 +161,22 @@ func main() {
 	if err := memStore.I.Shutdown(); err != nil {
 		logger.Error(err)
 	}
+}
+
+func checkData(store store.Store) error {
+	// Проверяем, что все указанные в таблице events названия событий правильные.
+	eventNames, err := store.EventsRepo().GetAllEventsName()
+	if err != nil {
+		return errors.Wrap(err, "checkData")
+	}
+
+	for _, eventName := range eventNames {
+		if _, err := event.GetMaker(eventName); err != nil {
+			return errors.Wrap(err, "checkData")
+		}
+	}
+
+	return nil
 }
 
 func check(err error) {

@@ -69,6 +69,21 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 
 	//o.AddHandler("POST", "/wizard/create_object", o.handleWizardCreateObject)
 
+	// AR
+
+	o.AddHandler("GET", "/events/actions/count", o.handleGetEventsActionsCount)  // получение количества действий для событий
+	o.AddHandler("GET", "/events/actions", o.handleGetEventsActions)             // получение действий для событий
+	o.AddHandler("POST", "/events/actions", o.handleCreateEventAction)           // добавления действия для события
+	o.AddHandler("PUT", "/events/actions", o.handleUpdateEventAction)            // обновление действия для события
+	o.AddHandler("DELETE", "/events/actions/{id}", o.handleDeleteEventAction)    // удаление действия для события
+	o.AddHandler("DELETE", "/events/all-actions", o.handleDeleteAllEventActions) // удаление всех событий по фильтру
+	o.AddHandler("PUT", "/events/actions/order", o.handleOrderEventActions)      // смена порядка действий для события
+	o.AddHandler("DELETE", "/events", o.handleDeleteEvent)                       // удаление события с действиями
+
+	o.AddHandler("POST", "/cron/task", o.handleCreateTask)   // создание задания крона
+	o.AddHandler("DELETE", "/cron/task", o.handleDeleteTask) // удаления задания крона
+	o.AddHandler("PUT", "/cron/task", o.handleUpdateTask)    // изменение задания крона
+
 	return o, nil
 }
 

@@ -40,7 +40,7 @@ func New(clientID, connString string, timeout time.Duration, tries int, logger *
 		tries:          tries,
 		chans:          make(map[string][]chan mqtt.Message),
 		logger:         logger,
-		ignoreSelfMsgs: true,
+		ignoreSelfMsgs: false,
 	}
 
 	var err error

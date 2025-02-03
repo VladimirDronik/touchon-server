@@ -15,7 +15,7 @@ RUN swag init --dir=cmd,internal,vendor/github.com/VladimirDronik/touchon-server
 
 # Запускаем тесты
 RUN mockery --dir=internal --all --inpackage --inpackage-suffix --with-expecter
-RUN mockery --dir=vendor/github.com/VladimirDronik/touchon-server --all --inpackage --inpackage-suffix --with-expecter
+RUN mockery --dir=lib --all --inpackage --inpackage-suffix --with-expecter
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go test -mod vendor ./...
 
 ARG TARGETOS TARGETARCH
@@ -33,6 +33,6 @@ WORKDIR /opt/service
 COPY --from=builder /opt/service/bin/. .
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
-#ENV LOG_LEVEL=debug
+ENV LOG_LEVEL=debug
 
 ENTRYPOINT ["/opt/service/svc"]
