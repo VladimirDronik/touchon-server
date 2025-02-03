@@ -1,9 +1,10 @@
-# docker build --file Dockerfile-w64 -t tr_w64 . && docker run --rm --mount type=bind,src="$(pwd)",dst=/host tr_w64
-# set DATABASE_URL=db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\translator.exe
+# docker build --file Dockerfile-w64-2 -t ts_w64 . && docker run --rm -v .:/host ts_w64
+# set DATABASE_URL=db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\ts.exe
 
 FROM golang:1.23.2 AS builder
 
-RUN apt-get update && apt-get install -y zip gcc mingw-w64
+# RUN apt-get update && apt-get install -y zip gcc mingw-w64
+RUN apt-get update && apt-get install -y zip
 
 WORKDIR /opt/service
 
@@ -11,17 +12,20 @@ ENV GO111MODULE=on
 
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
-COPY translator ./
+COPY . ./
 RUN swag init --dir=cmd,internal,lib --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 
-RUN GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" CC="x86_64-w64-mingw32-gcc" go build -C cmd -mod vendor \
--ldflags="-X 'main.Version=$(git rev-parse --verify --short HEAD)' -X \"main.BuildAt=$(date '+%d.%m.%Y %H:%M:%S')\" -extldflags=-static" \
--o ../bin/translator.exe
+# RUN GOOS=windows GOARCH=amd64 go build -C cmd -mod vendor -o ../bin/ts.exe
+RUN go build -C cmd -mod vendor -o ../bin/ts.exe
 
-RUN echo 'set DATABASE_URL=translator_db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\\translator.exe' > bin/start.bat
+#RUN GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" CC="x86_64-w64-mingw32-gcc" go build -C cmd -mod vendor \
+#-ldflags="-X 'main.Version=$(git rev-parse --verify --short HEAD)' -X \"main.BuildAt=$(date '+%d.%m.%Y %H:%M:%S')\" -extldflags=-static" \
+#-o ../bin/ts.exe
+
+RUN echo 'set DATABASE_URL=db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\\ts.exe' > bin/start.bat
 RUN echo 'pause' >> bin/start.bat
 RUN chmod +x bin/start.bat
 
-RUN mv bin/ translator/ && zip -r translator.zip translator
+RUN mv bin/ touchon-server/ && zip -r touchon-server.zip touchon-server
 
-ENTRYPOINT ["cp", "/opt/service/translator.zip", "/host/translator.zip"]
+ENTRYPOINT ["cp", "/opt/service/touchon-server.zip", "/host/touchon-server.zip"]

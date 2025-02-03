@@ -12,4 +12,5 @@ remarks_tr.txt
 .DS_Store
 Dockerfile
 Dockerfile-w64
-translator.zip
+Dockerfile-build-sqlean-unicode-so
+touchon-server.zip
