@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
-	"github.com/VladimirDronik/touchon-server/http/server"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"translator/internal/token"
+	"touchon-server/internal/store"
+	"touchon-server/internal/token"
+	"touchon-server/lib/helpers"
+	"touchon-server/lib/http/server"
 )
 
 // Генерация нового токена
@@ -38,12 +39,12 @@ func (o *Server) getToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 
 	switch {
 	case deviceID > 0:
-		if _, err := o.store.Users().GetByDeviceID(deviceID); err != nil {
+		if _, err := store.I.Users().GetByDeviceID(deviceID); err != nil {
 			return nil, http.StatusUnauthorized, err
 		}
 
 	case login != "" && password != "":
-		user, err := o.store.Users().GetByLoginAndPassword(login, password)
+		user, err := store.I.Users().GetByLoginAndPassword(login, password)
 		if err != nil {
 			return nil, http.StatusUnauthorized, err
 		}
@@ -98,7 +99,7 @@ func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error
 		return nil, http.StatusUnauthorized, errors.New("refresh token is missing")
 	}
 
-	user, err := o.store.Users().GetByToken(refreshToken)
+	user, err := store.I.Users().GetByToken(refreshToken)
 	if err != nil {
 		return nil, http.StatusUnauthorized, err
 	}

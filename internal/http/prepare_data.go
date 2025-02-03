@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
 )
 
 // outputZoneItems Формирование JSON с кнопками всех остальных комнат для отправки на сервер
 func (o *Server) outputZoneItems() ([]*model.GroupRoom, error) {
-	groupZoneRep, err := o.store.Items().GetZoneItems()
+	groupZoneRep, err := store.I.Items().GetZoneItems()
 	if err != nil {
 		return nil, errors.Wrap(err, "outputZoneItems")
 	}
@@ -27,7 +28,7 @@ func (o *Server) outputZoneItems() ([]*model.GroupRoom, error) {
 
 // outputZoneItem Формирование JSON с кнопками для помещения
 func (o *Server) outputZoneItem(id int) (*model.GroupRoom, error) {
-	var zone, err = o.store.Items().GetZone(id)
+	var zone, err = store.I.Items().GetZone(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "outputZoneItem")
 	}
@@ -47,7 +48,7 @@ func (o *Server) prepareItem(item *model.ViewItem) error {
 
 	switch item.Type {
 	case "group":
-		item.GroupElements, err = o.store.Items().GetGroupElements(item.ID)
+		item.GroupElements, err = store.I.Items().GetGroupElements(item.ID)
 		if err != nil {
 			return errors.Wrap(err, "prepareItem")
 		}

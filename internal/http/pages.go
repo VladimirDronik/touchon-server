@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 type getControlPanelResponse struct {
@@ -31,7 +32,7 @@ func (o *Server) getControlPanel(ctx *fasthttp.RequestCtx) (interface{}, int, er
 		return nil, http.StatusInternalServerError, err
 	}
 
-	scenarios, err := o.store.Items().GetScenarios()
+	scenarios, err := store.I.Items().GetScenarios()
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -89,7 +90,7 @@ func (o *Server) handleCreateZone(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		return nil, http.StatusBadRequest, err
 	}
 
-	zoneID, err := o.store.Zones().CreateZone(zone)
+	zoneID, err := store.I.Zones().CreateZone(zone)
 
 	return zoneID, http.StatusOK, err
 }
@@ -106,7 +107,7 @@ func (o *Server) handleCreateZone(ctx *fasthttp.RequestCtx) (interface{}, int, e
 // @Failure      500 {object} Response[any]
 // @Router /private/rooms-list [get]
 func (o *Server) getZones(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zones, err := o.store.Items().GetZones()
+	zones, err := store.I.Items().GetZones()
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -140,7 +141,7 @@ func setIsGroup(items []*model.Zone) {
 // @Failure      500 {object} Response[any]
 // @Router /private/rooms-list-all [get]
 func (o *Server) getAllZones(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zones, err := o.store.Zones().GetZoneTrees(0)
+	zones, err := store.I.Zones().GetZoneTrees(0)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -196,7 +197,7 @@ func (o *Server) updateZones(ctx *fasthttp.RequestCtx) (interface{}, int, error)
 		return nil, http.StatusInternalServerError, err
 	}
 
-	if err := o.store.Zones().UpdateZones(zones); err != nil {
+	if err := store.I.Zones().UpdateZones(zones); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -222,7 +223,7 @@ func (o *Server) setZonesOrder(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 		return nil, http.StatusInternalServerError, err
 	}
 
-	if err := o.store.Zones().SetOrder(zoneIDs); err != nil {
+	if err := store.I.Zones().SetOrder(zoneIDs); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -247,7 +248,7 @@ func (o *Server) handleDeleteZone(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		return nil, http.StatusBadRequest, err
 	}
 
-	err = o.store.Zones().DeleteZone(id)
+	err = store.I.Zones().DeleteZone(id)
 
 	return nil, http.StatusOK, err
 }

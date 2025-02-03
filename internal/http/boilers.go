@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 // Получить данные котла
@@ -27,7 +28,7 @@ func (o *Server) getBoiler(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	boiler, err := o.store.Boilers().GetBoiler(id)
+	boiler, err := store.I.Boilers().GetBoiler(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -65,7 +66,7 @@ func (o *Server) setBoilerOutlineStatus(ctx *fasthttp.RequestCtx) (interface{}, 
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Boilers().SetOutlineStatus(id, data.Outline, data.Status); err != nil {
+	if err := store.I.Boilers().SetOutlineStatus(id, data.Outline, data.Status); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -101,7 +102,7 @@ func (o *Server) setBoilerHeatingMode(ctx *fasthttp.RequestCtx) (interface{}, in
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Boilers().SetHeatingMode(id, data.Mode); err != nil {
+	if err := store.I.Boilers().SetHeatingMode(id, data.Mode); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -138,7 +139,7 @@ func (o *Server) setBoilerHeatingTemperature(ctx *fasthttp.RequestCtx) (interfac
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Boilers().SetHeatingTemperature(id, data.Temperature); err != nil {
+	if err := store.I.Boilers().SetHeatingTemperature(id, data.Temperature); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -170,7 +171,7 @@ func (o *Server) updateBoilerPresets(ctx *fasthttp.RequestCtx) (interface{}, int
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Boilers().UpdateBoilerPresets(request.BoilerId, request.Presets); err != nil {
+	if err := store.I.Boilers().UpdateBoilerPresets(request.BoilerId, request.Presets); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

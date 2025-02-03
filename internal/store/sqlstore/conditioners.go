@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/pkg/errors"
-	"translator/internal/model"
+	"touchon-server/internal/model"
 )
 
 type Conditioners struct {

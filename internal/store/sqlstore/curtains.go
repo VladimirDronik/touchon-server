@@ -2,7 +2,7 @@ package sqlstore
 
 import (
 	"github.com/pkg/errors"
-	"translator/internal/model"
+	"touchon-server/internal/model"
 )
 
 type Curtains struct {

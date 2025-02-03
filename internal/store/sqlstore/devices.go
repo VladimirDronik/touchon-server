@@ -1,9 +1,10 @@
 package sqlstore
 
 import (
-	"github.com/pkg/errors"
 	"math"
-	"translator/internal/model"
+
+	"github.com/pkg/errors"
+	"touchon-server/internal/model"
 )
 
 type Devices struct {

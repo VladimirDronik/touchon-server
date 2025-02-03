@@ -5,9 +5,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 // Получение кол-ва непрочитанных уведомлений
@@ -22,7 +23,7 @@ import (
 // @Failure      500 {object} Response[any]
 // @Router /private/notifications/unread-count [get]
 func (o *Server) getUnreadNotificationsCount(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	count, err := o.store.Notifications().GetUnreadNotificationsCount()
+	count, err := store.I.Notifications().GetUnreadNotificationsCount()
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -58,7 +59,7 @@ func (o *Server) getNotifications(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		limit = 20
 	}
 
-	notifications, err := o.store.Notifications().GetNotifications(offset, limit)
+	notifications, err := store.I.Notifications().GetNotifications(offset, limit)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -84,7 +85,7 @@ func (o *Server) setNotificationIsRead(ctx *fasthttp.RequestCtx) (interface{}, i
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err = o.store.Notifications().SetIsRead(id); err != nil {
+	if err = store.I.Notifications().SetIsRead(id); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 

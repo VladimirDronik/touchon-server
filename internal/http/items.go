@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/VladimirDronik/touchon-server/events/item"
-	"github.com/VladimirDronik/touchon-server/helpers"
-	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/valyala/fasthttp"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/events/item"
+	"touchon-server/lib/helpers"
+	mqttClient "touchon-server/lib/mqtt/client"
+	"touchon-server/lib/mqtt/messages"
 )
 
 // Создание элемента
@@ -44,7 +46,7 @@ func (o *Server) handleCreateItem(ctx *fasthttp.RequestCtx) (interface{}, int, e
 func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	sensor := &model.Sensor{}
 	item := &model.ViewItem{}
-	event := &model.Event{}
+	event := &model.TrEvent{}
 
 	if err := json.Unmarshal(ctx.Request.Body(), sensor); err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -53,7 +55,7 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 	item.Type = "sensor"
 	item.Enabled = true
 	item.ZoneID = sensor.ZoneID
-	itemID, err := o.store.Items().SaveItem(item)
+	itemID, err := store.I.Items().SaveItem(item)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -66,9 +68,11 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 	sensor.ViewItemID = itemID
 	sensor.Enabled = true
 
-	o.store.Events().AddEvent(event)
+	if err := store.I.Events().AddEvent(event); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
 
-	return sensor, http.StatusOK, o.store.Devices().SaveSensor(sensor)
+	return sensor, http.StatusOK, store.I.Devices().SaveSensor(sensor)
 }
 
 // Удаление датчика
@@ -90,8 +94,8 @@ func (o *Server) handleDeleteSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 		return nil, http.StatusBadRequest, err
 	}
 
-	o.store.Events().DeleteEvent(itemID)
-	o.store.Devices().DeleteSensor(itemID)
+	store.I.Events().DeleteEvent(itemID)
+	store.I.Devices().DeleteSensor(itemID)
 
 	return o.deleteItem(itemID)
 }
@@ -125,7 +129,7 @@ func (o *Server) saveItem(requestBody []byte) (*model.ViewItem, int, error) {
 
 	item.Enabled = true
 
-	if _, err := o.store.Items().SaveItem(item); err != nil {
+	if _, err := store.I.Items().SaveItem(item); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -150,7 +154,7 @@ func (o *Server) getItem(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	item, err := o.store.Items().GetItem(id)
+	item, err := store.I.Items().GetItem(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -176,7 +180,7 @@ func (o *Server) updateItem(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 		return nil, http.StatusInternalServerError, err
 	}
 
-	if err := o.store.Items().UpdateItem(req); err != nil {
+	if err := store.I.Items().UpdateItem(req); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -205,7 +209,7 @@ func (o *Server) handleDeleteItem(ctx *fasthttp.RequestCtx) (interface{}, int, e
 }
 
 func (o *Server) deleteItem(itemID int) (interface{}, int, error) {
-	if err := o.store.Items().DeleteItem(itemID); err != nil {
+	if err := store.I.Items().DeleteItem(itemID); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
@@ -230,7 +234,7 @@ func (o *Server) getDimmer(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	dimmer, err := o.store.Devices().GetDimmer(id)
+	dimmer, err := store.I.Devices().GetDimmer(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -256,7 +260,7 @@ func (o *Server) getThermostat(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 		return nil, http.StatusBadRequest, err
 	}
 
-	thermostat, err := o.store.Devices().GetSensor(id)
+	thermostat, err := store.I.Devices().GetSensor(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -289,12 +293,12 @@ func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	sensor, err := o.store.Devices().GetSensor(id)
+	sensor, err := store.I.Devices().GetSensor(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
-	sensor.History, err = o.store.History().GetHistory(id, model.HistoryItemTypeDeviceObject, "")
+	sensor.History, err = store.I.History().GetHistory(id, model.HistoryItemTypeDeviceObject, "")
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -321,7 +325,7 @@ func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 // @Failure      500 {object} Response[any]
 // @Router /private/counters-list [get]
 func (o *Server) getCountersList(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	counters, err := o.store.Items().GetCountersList()
+	counters, err := store.I.Items().GetCountersList()
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -347,12 +351,12 @@ func (o *Server) getCounter(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 		return nil, http.StatusBadRequest, err
 	}
 
-	counter, err := o.store.Items().GetCounter(id)
+	counter, err := store.I.Items().GetCounter(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
-	counter.History, err = o.store.History().GetHistory(id, model.HistoryItemTypeCounterObject, "")
+	counter.History, err = store.I.History().GetHistory(id, model.HistoryItemTypeCounterObject, "")
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -401,7 +405,7 @@ func (o *Server) itemChange(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 		}
 	}
 
-	if err := o.store.Items().ChangeItem(req.ItemID, req.State); err != nil {
+	if err := store.I.Items().ChangeItem(req.ItemID, req.State); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -410,9 +414,9 @@ func (o *Server) itemChange(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 
 	switch req.State {
 	case "on":
-		msg, err = item.NewOnChangeStateOnMessage("translator/item/event", req.ItemID)
+		msg, err = item.NewOnChangeStateOnMessage("touchon-server/item/event", req.ItemID)
 	case "off":
-		msg, err = item.NewOnChangeStateOffMessage("translator/item/event", req.ItemID)
+		msg, err = item.NewOnChangeStateOffMessage("touchon-server/item/event", req.ItemID)
 	default:
 		msg, err = messages.NewEvent(req.Event, messages.TargetTypeItem, req.ItemID, nil)
 	}
@@ -421,10 +425,10 @@ func (o *Server) itemChange(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 		return nil, http.StatusInternalServerError, err
 	}
 
-	msg.SetTopic("translator/item/event")
+	msg.SetTopic("touchon-server/item/event")
 	msg.SetPayload(req.Params)
 
-	if err := o.mqttClient.Send(msg); err != nil {
+	if err := mqttClient.I.Send(msg); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -455,7 +459,7 @@ func (o *Server) setItemsOrder(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 		return nil, http.StatusInternalServerError, err
 	}
 
-	if err := o.store.Items().SetOrder(req.ItemIDs, req.ZoneID); err != nil {
+	if err := store.I.Items().SetOrder(req.ItemIDs, req.ZoneID); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 // Возвращает историю изменений значений
@@ -34,7 +35,7 @@ func (o *Server) getObjectHistory(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	itemType := model.HistoryItemType(helpers.GetParam(ctx, "itemType"))
 	filter := model.HistoryFilter(helpers.GetParam(ctx, "filter"))
 
-	points, err := o.store.History().GetHistory(id, itemType, filter)
+	points, err := store.I.History().GetHistory(id, itemType, filter)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -96,7 +97,7 @@ func (o *Server) generateHistory(ctx *fasthttp.RequestCtx) (interface{}, int, er
 		return nil, http.StatusBadRequest, errors.New("filter is empty")
 	}
 
-	err = o.store.History().GenerateHistory(id, itemType, filter, startDate, endDate, float32(minValue), float32(maxValue))
+	err = store.I.History().GenerateHistory(id, itemType, filter, startDate, endDate, float32(minValue), float32(maxValue))
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}

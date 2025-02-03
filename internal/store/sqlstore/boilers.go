@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"translator/internal/model"
+	"touchon-server/internal/model"
 )
 
 type Boilers struct {

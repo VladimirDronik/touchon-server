@@ -1,6 +1,6 @@
 package model
 
-import "github.com/VladimirDronik/touchon-server/events"
+import "touchon-server/lib/events"
 
 type Notification struct {
 	ID     int               `json:"id,omitempty"`

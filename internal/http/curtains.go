@@ -5,8 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 // Возвращает объект шторы
@@ -27,7 +28,7 @@ func (o *Server) getCurtain(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 		return nil, http.StatusBadRequest, err
 	}
 
-	curtain, err := o.store.Curtains().GetCurtain(id)
+	curtain, err := store.I.Curtains().GetCurtain(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -69,7 +70,7 @@ func (o *Server) setCurtainOpenPercent(ctx *fasthttp.RequestCtx) (interface{}, i
 		return nil, http.StatusBadRequest, errors.New("value is invalid")
 	}
 
-	if err = o.store.Curtains().SetCurtainOpenPercent(id, requestData.Value); err != nil {
+	if err = store.I.Curtains().SetCurtainOpenPercent(id, requestData.Value); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

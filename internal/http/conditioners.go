@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 // Получение данных кондиционера
@@ -28,12 +29,12 @@ func (o *Server) getConditioner(ctx *fasthttp.RequestCtx) (interface{}, int, err
 		return nil, http.StatusBadRequest, err
 	}
 
-	conditioner, err := o.store.Conditioners().GetConditioner(id)
+	conditioner, err := store.I.Conditioners().GetConditioner(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
-	conditioner.History, err = o.store.History().GetHistory(id, model.HistoryItemTypeDeviceObject, "")
+	conditioner.History, err = store.I.History().GetHistory(id, model.HistoryItemTypeDeviceObject, "")
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -70,7 +71,7 @@ func (o *Server) setConditionerTemperature(ctx *fasthttp.RequestCtx) (interface{
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Conditioners().SetConditionerTemperature(id, float32(data.Value)); err != nil {
+	if err := store.I.Conditioners().SetConditionerTemperature(id, float32(data.Value)); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -107,7 +108,7 @@ func (o *Server) setConditionerMode(ctx *fasthttp.RequestCtx) (interface{}, int,
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Conditioners().SetConditionerMode(id, data.Mode, data.Value); err != nil {
+	if err := store.I.Conditioners().SetConditionerMode(id, data.Mode, data.Value); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
@@ -143,7 +144,7 @@ func (o *Server) setConditionerOperatingMode(ctx *fasthttp.RequestCtx) (interfac
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Conditioners().SetConditionerOperatingMode(id, data.Mode); err != nil {
+	if err := store.I.Conditioners().SetConditionerOperatingMode(id, data.Mode); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
@@ -180,7 +181,7 @@ func (o *Server) setConditionerDirection(ctx *fasthttp.RequestCtx) (interface{},
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Conditioners().SetConditionerDirection(id, data.Plane, data.Direction); err != nil {
+	if err := store.I.Conditioners().SetConditionerDirection(id, data.Plane, data.Direction); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
@@ -216,7 +217,7 @@ func (o *Server) setConditionerFanSpeed(ctx *fasthttp.RequestCtx) (interface{}, 
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Conditioners().SetConditionerFanSpeed(id, data.Speed); err != nil {
+	if err := store.I.Conditioners().SetConditionerFanSpeed(id, data.Speed); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
@@ -253,7 +254,7 @@ func (o *Server) setConditionerExtraMode(ctx *fasthttp.RequestCtx) (interface{},
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err := o.store.Conditioners().SetConditionerExtraMode(id, data.Mode, data.Value); err != nil {
+	if err := store.I.Conditioners().SetConditionerExtraMode(id, data.Mode, data.Value); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 

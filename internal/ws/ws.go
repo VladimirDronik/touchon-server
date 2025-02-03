@@ -5,35 +5,27 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
-	"github.com/VladimirDronik/touchon-server/http/server"
 	"github.com/fasthttp/websocket"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
-	_ "translator/docs"
-	"translator/internal/store"
-	"translator/internal/token"
+	"touchon-server/internal/context"
+	"touchon-server/internal/token"
+	"touchon-server/lib/helpers"
+	"touchon-server/lib/http/server"
 )
 
-func New(cfg map[string]string, store store.Store, logger *logrus.Logger) (*Server, error) {
-	switch {
-	case cfg == nil:
-		return nil, errors.Wrap(errors.New("cfg is nil"), "http.New")
-	case logger == nil:
-		return nil, errors.Wrap(errors.New("logger is nil"), "http.New")
-	case store == nil:
-		return nil, errors.Wrap(errors.New("store is nil"), "http.New")
-	}
+// Global instance
+var I *Server
 
-	baseServer, err := server.New("WS", cfg, nil, logger)
+func New() (*Server, error) {
+	baseServer, err := server.New("WS", context.Config, nil, context.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "http.New")
 	}
 
 	o := &Server{
 		Server:  baseServer,
-		store:   store,
 		clients: make(map[int]map[*websocket.Conn]bool),
 	}
 
@@ -44,7 +36,6 @@ func New(cfg map[string]string, store store.Store, logger *logrus.Logger) (*Serv
 
 type Server struct {
 	*server.Server
-	store   store.Store
 	clients map[int]map[*websocket.Conn]bool
 }
 

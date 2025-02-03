@@ -2,9 +2,11 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"net/http"
-	"translator/internal/model"
+
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -48,7 +50,7 @@ func (o *Server) linkDeviceToken(ctx *fasthttp.RequestCtx) (interface{}, int, er
 		return nil, http.StatusBadRequest, errors.New("device_id not found in context")
 	}
 
-	if err := o.store.Users().LinkDeviceToken(deviceID, req.DeviceToken, req.DeviceType); err != nil {
+	if err := store.I.Users().LinkDeviceToken(deviceID, req.DeviceToken, req.DeviceType); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
@@ -69,7 +71,7 @@ func (o *Server) linkDeviceToken(ctx *fasthttp.RequestCtx) (interface{}, int, er
 func (o *Server) handleGetAllUsers(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	var users []*model.User
 
-	users, err := o.store.Users().GetAllUsers()
+	users, err := store.I.Users().GetAllUsers()
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -102,7 +104,7 @@ func (o *Server) handleCreateUser(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	user.Password = req.Password
 	user.SendPush = req.SendPush
 
-	userID, err := o.store.Users().Create(&user)
+	userID, err := store.I.Users().Create(&user)
 
 	return userID, http.StatusOK, err
 }
@@ -125,7 +127,7 @@ func (o *Server) handleDeleteUser(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
-	if err := o.store.Users().Delete(userID); err != nil {
+	if err := store.I.Users().Delete(userID); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

@@ -3,8 +3,9 @@ package http
 import (
 	"net/http"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 // Получение пунктов меню
@@ -25,7 +26,7 @@ func (o *Server) getMenu(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	menus, err := o.store.Items().GetMenus(parent)
+	menus, err := store.I.Items().GetMenus(parent)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}

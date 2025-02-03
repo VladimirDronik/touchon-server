@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/VladimirDronik/touchon-server/event"
-	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/event"
+	"touchon-server/lib/mqtt/messages"
 )
 
 type ActionType = string // Enums(method,delay,notification)
@@ -129,7 +130,7 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 
 	//Если был указан управляющий объект, то сохраняем его в таблице events для итема
 	if item.ControlObject != 0 {
-		event := &model.Event{}
+		event := &model.TrEvent{}
 
 		event.EventName = "on_change_state"
 		event.TargetType = "object"
@@ -137,7 +138,9 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 		event.Value = "state"
 		event.ItemID = item.ID
 
-		o.store.Events().AddEvent(event)
+		if err := store.I.Events().AddEvent(event); err != nil {
+			return nil, http.StatusInternalServerError, err
+		}
 	}
 
 	return item, http.StatusOK, nil

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
+	"touchon-server/lib/helpers"
 )
 
 // Прокси для сервисов

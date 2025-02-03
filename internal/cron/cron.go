@@ -52,7 +52,7 @@ func (o *Scheduler) Start() error {
 	go func() {
 		defer o.wg.Done()
 
-		tasks, err := o.store.CronRepo().GetEnabledTasks()
+		tasks, err := store.I.CronRepo().GetEnabledTasks()
 		if err != nil {
 			o.logger.Error(err)
 		}
@@ -64,7 +64,7 @@ func (o *Scheduler) Start() error {
 			default:
 				// Раз в минуту запрашиваем задачи из базы
 				if _, _, sec := time.Now().Clock(); sec == 0 {
-					tasks, err = o.store.CronRepo().GetEnabledTasks()
+					tasks, err = store.I.CronRepo().GetEnabledTasks()
 					if err != nil {
 						o.logger.Error(err)
 						continue

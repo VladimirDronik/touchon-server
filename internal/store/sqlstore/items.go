@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pkg/errors"
-	"translator/internal/model"
+	"touchon-server/internal/model"
+	"touchon-server/lib/mqtt/messages"
 )
 
 type Items struct {

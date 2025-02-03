@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/VladimirDronik/touchon-server/helpers"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/store"
+	"touchon-server/lib/helpers"
 )
 
 // Получение источника света
@@ -26,7 +27,7 @@ func (o *Server) getLight(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	light, err := o.store.Lights().GetLight(id)
+	light, err := store.I.Lights().GetLight(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -65,7 +66,7 @@ func (o *Server) setLightHSVColor(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err = o.store.Lights().SetLightHSVColor(id, requestData.Hue, *requestData.Saturation, *requestData.Brightness); err != nil {
+	if err = store.I.Lights().SetLightHSVColor(id, requestData.Hue, *requestData.Saturation, *requestData.Brightness); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -101,7 +102,7 @@ func (o *Server) setLightCCTColor(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err = o.store.Lights().SetLightCCTColor(id, *requestData.Cct); err != nil {
+	if err = store.I.Lights().SetLightCCTColor(id, *requestData.Cct); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -137,7 +138,7 @@ func (o *Server) setLightBrightness(ctx *fasthttp.RequestCtx) (interface{}, int,
 		return nil, http.StatusBadRequest, err
 	}
 
-	if err = o.store.Lights().SetBrightness(id, *requestData.Brightness); err != nil {
+	if err = store.I.Lights().SetBrightness(id, *requestData.Brightness); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

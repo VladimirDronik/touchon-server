@@ -40,6 +40,7 @@ import (
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/internal/store/sqlstore"
+	"touchon-server/internal/ws"
 	"touchon-server/lib/event"
 	httpClient "touchon-server/lib/http/client"
 	mqttClient "touchon-server/lib/mqtt/client"
@@ -126,10 +127,10 @@ func main() {
 	store.I = sqlstore.New(db)
 	check(checkData(store.I))
 
-	wsServer, err := ws.New(cfg, store, logger)
+	ws.I, err = ws.New()
 	check(err)
 
-	check(wsServer.Start(cfg["ws_addr"]))
+	check(ws.I.Start(cfg["ws_addr"]))
 
 	// Инициализация клиента для MQTT
 	mqttClient.I, err = mqttClient.New(cfg["service_name"], cfg["mqtt_connection_string"], 10*time.Second, 3, logger)
@@ -139,7 +140,7 @@ func main() {
 	// Создаем скриптовый движок
 	scripts.I = scripts.NewScripts(10*time.Second, objects.NewExecutor())
 
-	mqttService.I, err = mqttService.New(1000, 4)
+	mqttService.I, err = mqttService.New(1000, 4, cfg["push_sender_address"])
 	check(err)
 
 	// Загружает все объекты БД в память
@@ -180,7 +181,7 @@ func main() {
 		logger.Error(err)
 	}
 
-	if err := wsServer.Shutdown(); err != nil {
+	if err := ws.I.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 

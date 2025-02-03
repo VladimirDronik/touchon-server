@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"translator/internal/helpers"
-	"translator/internal/model"
+	"touchon-server/internal/helpers"
+	"touchon-server/internal/model"
 )
 
 type Users struct {

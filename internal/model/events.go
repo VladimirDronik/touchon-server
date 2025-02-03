@@ -1,6 +1,6 @@
 package model
 
-type Event struct {
+type TrEvent struct {
 	ID         int    `json:"id"`
 	TargetType string `json:"target_type"`
 	EventName  string `json:"event" gorm:"column:event"`
