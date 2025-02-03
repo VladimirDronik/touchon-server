@@ -1,0 +1,92 @@
+def func_telegram_sendMessage(message, token, chatid) {
+    try {
+        sh """
+            curl -s -X POST https://api.telegram.org/bot${token}/sendMessage \
+            -d chat_id=${chatid} -d parse_mode=markdown \
+            -d text='${message}'
+        """
+    } catch(Exception e) {
+        currentBuild.result = 'SUCCESS'
+    }
+}
+
+pipeline {
+    agent any
+    environment {
+        SERVICE = 'touchon-server'
+        WORKDIR = '/opt/cicd/stage1/'
+        TOKEN = credentials('telegram_bot_token')
+        CHAT = credentials('telegram_chat_id')
+        MESSAGE_BASE = "\\[ STAGE1 ] *${env.SERVICE}*: "
+        REGISTRY = credentials('docker_registry_host')
+        TARGET_SRV = credentials('stage1_ssh_cmd')
+    }
+    stages {
+        stage('Notification') {
+            steps {
+                script {
+                    initMessage = "${env.MESSAGE_BASE}STARTED"
+                }
+                func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
+            }
+        }
+        stage('Pull') {
+            steps {
+                sh """
+                    git -C ${env.WORKDIR}${env.SERVICE} fetch
+                    git -C ${env.WORKDIR}${env.SERVICE} checkout release/1.0
+                    git -C ${env.WORKDIR}${env.SERVICE} pull
+                """
+            }
+        }
+        stage('Build') {
+            steps {
+                sh """
+                    docker buildx build \
+                    -t ${env.REGISTRY}/${env.SERVICE}:2.0 \
+                    --platform linux/arm64 \
+                    --push \
+                    ${env.WORKDIR}${env.SERVICE}
+                """
+            }
+        }
+        stage('Publish') {
+            steps {
+                sh """
+                    set -e
+                    ssh ${env.TARGET_SRV} << EOF
+                    cd /opt/touchon
+                    sudo docker compose stop ${env.SERVICE}
+                    sudo docker compose pull ${env.SERVICE}
+                    sudo docker compose up -d --build --force-recreate ${env.SERVICE}
+                    sudo docker system prune -af
+                    << EOF
+                """
+            }
+        }
+    }
+    
+    post {
+        success {
+            script {
+                gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
+                gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
+                gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
+                successMessage = "${env.MESSAGE_BASE}SUCSESS%0ACommit $gitCommit by $gitCommiter$gitCommitComment"
+                func_telegram_sendMessage("$successMessage", "${env.TOKEN}", "${env.CHAT}")
+            }
+        }
+        aborted {
+            script {
+                abortMessage = "${env.MESSAGE_BASE}ABORTED"
+                func_telegram_sendMessage("$abortMessage", "${env.TOKEN}", "${env.CHAT}")
+            }
+        }
+        failure {
+            script {
+                failMessage = "${env.MESSAGE_BASE}FAILURE"
+                func_telegram_sendMessage("$failMessage", "${env.TOKEN}", "${env.CHAT}")
+            }
+        }
+    }
+}

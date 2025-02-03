@@ -1,5 +1,11 @@
 .idea/
 .vscode/
+docs/
+bin/touchon-server
+bin/touchon_server
+bin/cmd
+cmd/cmd
 _etc/
 .DS_Store
 remarks.txt
+*_mock.go

@@ -1,0 +1,22 @@
+# Библиотека sqlean содержит в себе исправленный модуль для корректной работы с юникодом в sqlite.
+#
+# Тут https://github.com/nalgeon/sqlean/Makefile можно посмотреть, под какие платформы и архитектуры
+# можно скомпилировать библиотеку.
+#
+# docker build -f Dockerfile-build-sqlean-unicode-so --progress=plain --platform=linux/amd64 -t build_sqlean . && docker run --rm -it -v .:/out --name build_sqlean build_sqlean
+# После сборки и запуска контейнера файл появится в текущей директории.
+
+FROM debian:12.5
+
+RUN apt update
+RUN apt install -y unzip git make curl gcc
+RUN cd / && git clone https://github.com/nalgeon/sqlean
+
+WORKDIR /sqlean
+RUN ls -la
+RUN make prepare-dist
+RUN make download-sqlite
+RUN make download-external
+RUN make compile-linux
+
+ENTRYPOINT ["/bin/sh", "-c", "cp /sqlean/dist/unicode.so /out"]

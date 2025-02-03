@@ -1,0 +1,100 @@
+package objects
+
+import (
+	"encoding/json"
+	"time"
+
+	"touchon-server/lib/mqtt/messages"
+
+	"touchon-server/internal/model"
+)
+
+// Object Абстрактный тип объекта
+type Object interface {
+	// Init заполняет модель данными из БД
+	Init(storeObj *model.StoreObject, childType model.ChildType) error
+	Save() error
+
+	GetID() int
+	SetID(int)
+
+	GetParentID() *int
+	SetParentID(*int)
+
+	GetZoneID() int
+	SetZoneID(int)
+
+	// GetCategory Возвращает категорию объекта (controller, sensor, module, ext,  etc)
+	GetCategory() model.Category
+	SetCategory(model.Category)
+
+	// GetType Возвращает конкретный тип объекта (MegaD)
+	GetType() string
+	SetType(string)
+
+	GetInternal() bool
+	SetInternal(bool)
+
+	// GetName Возвращает название объекта (MegaD2561)
+	GetName() string
+	SetName(string)
+
+	GetStatus() model.ObjectStatus
+	SetStatus(model.ObjectStatus)
+
+	// GetProps Возвращает объект для работы со свойствами
+	GetProps() *Props
+
+	GetChildren() *Children
+	GetEvents() *Events
+	GetMethods() *Methods
+
+	GetTags() []string
+	ReplaceTags(tags ...string)
+	SetTags(tags ...string)
+	DeleteTags(tags ...string)
+	GetTagsMap() map[string]bool
+	SetTagsMap(map[string]bool)
+
+	// Start запускает логику объекта
+	Start() error
+
+	// Shutdown завершает логику объекта
+	Shutdown() error
+
+	GetStoreObject() *model.StoreObject
+
+	DeleteChildren() error
+
+	// Marshaler Объект должен уметь генерировать json-модель.
+	json.Marshaler
+
+	// Unmarshaler Объект должен создаваться из json
+	json.Unmarshaler
+}
+
+type ObjectModel struct {
+	ID       int  `json:"id"`
+	ParentID *int `json:"parent_id"`
+	ZoneID   int  `json:"zone_id"`
+
+	Category model.Category     `json:"category"`
+	Type     string             `json:"type"`
+	Internal bool               `json:"internal"` // Признак внутреннего объекта (port, sensor_value)
+	Name     string             `json:"name"`
+	Status   model.ObjectStatus `json:"status"`
+	Tags     []string           `json:"tags,omitempty"`
+
+	Props    *Props    `json:"props,omitempty"`
+	Children *Children `json:"children,omitempty"`
+	Events   *Events   `json:"events,omitempty"`
+	Methods  *Methods  `json:"methods,omitempty"`
+}
+
+type Port interface {
+	GetPortState(command string, params map[string]string, timeout time.Duration) (string, error)
+	On(args map[string]interface{}) ([]messages.Message, error)
+	Off(args map[string]interface{}) ([]messages.Message, error)
+	Toggle(args map[string]interface{}) ([]messages.Message, error)
+	SetTypeMode(typePt string, modePt string, title string, params map[string]string) error
+}

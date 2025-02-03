@@ -1,0 +1,59 @@
+package service
+
+import (
+	"github.com/pkg/errors"
+	"touchon-server/lib/event"
+	"touchon-server/lib/info"
+	"touchon-server/lib/models"
+	"touchon-server/lib/mqtt/messages"
+)
+
+func init() {
+	maker := func() (*event.Event, error) {
+		e := &event.Event{
+			Code:        "service.on_info",
+			Name:        "on_info",
+			Description: "Информация о сервисе",
+			Props:       event.NewProps(),
+			TargetType:  messages.TargetTypeService,
+		}
+
+		msg := &event.Prop{
+			Code: "info",
+			Name: "Информация",
+			Item: &models.Item{
+				Type: models.DataTypeInterface,
+			},
+		}
+
+		if err := e.Props.Add(msg); err != nil {
+			return nil, errors.Wrap(err, "init.maker")
+		}
+
+		return e, nil
+	}
+
+	// Для регистрации событий надо в service/init.go добавить импорт данного _пакета_!
+	if err := event.Register(maker); err != nil {
+		panic(err)
+	}
+}
+
+func NewOnInfoMessage(topic string) (messages.Message, error) {
+	nfo, err := info.GetInfo()
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnInfoMessage")
+	}
+
+	e, err := event.MakeEvent("service.on_info", messages.TargetTypeService, 0, map[string]interface{}{"info": nfo})
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnInfoMessage")
+	}
+
+	m, err := e.ToMqttMessage(topic)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnInfoMessage")
+	}
+
+	return m, nil
+}
