@@ -3,8 +3,8 @@ package sqlstore
 import (
 	"encoding/json"
 
-	"action-router/internal/model"
 	"github.com/pkg/errors"
+	"touchon-server/internal/model"
 )
 
 type EventActionsRepo struct {
@@ -51,7 +51,7 @@ func (o *EventActionsRepo) GetActionsCount(eventIDs ...int) (map[int]int, error)
 	err := o.store.db.
 		Select("event_id, count(id) as count").
 		Where("event_id in ?", eventIDs).
-		Table("event_actions").
+		Table("ar_event_actions").
 		Group("event_id").
 		Find(&rows).Error
 
@@ -110,7 +110,7 @@ func (o *EventActionsRepo) SaveAction(act *model.EventAction) error {
 // DeleteAction удаляет действие.
 func (o *EventActionsRepo) DeleteAction(actID int) error {
 	// foreign_keys - для каскадного удаления записей
-	err := o.store.db.Exec("PRAGMA foreign_keys = ON; DELETE FROM event_actions WHERE id = ?", actID).Error
+	err := o.store.db.Exec("DELETE FROM ar_event_actions WHERE id = ?", actID).Error
 	if err != nil {
 		return errors.Wrap(err, "DeleteAction")
 	}
@@ -121,7 +121,7 @@ func (o *EventActionsRepo) DeleteAction(actID int) error {
 // DeleteAction удаляет действие.
 func (o *EventActionsRepo) DeleteActionByObject(targetType string, objectID int) error {
 	// foreign_keys - для каскадного удаления записей
-	err := o.store.db.Exec("DELETE FROM event_actions WHERE target_type = ? AND target_id = ?", targetType, objectID).Error
+	err := o.store.db.Exec("DELETE FROM ar_event_actions WHERE target_type = ? AND target_id = ?", targetType, objectID).Error
 	if err != nil {
 		return errors.Wrap(err, "DeleteAction")
 	}

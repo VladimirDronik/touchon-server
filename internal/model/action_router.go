@@ -12,7 +12,7 @@ type CronTask struct {
 }
 
 func (o *CronTask) TableName() string {
-	return "cron_tasks"
+	return "ar_cron_tasks"
 }
 
 type ActionType = string
@@ -38,7 +38,7 @@ type CronAction struct {
 }
 
 func (o *CronAction) TableName() string {
-	return "cron_actions"
+	return "ar_cron_actions"
 }
 
 type Event struct {
@@ -51,7 +51,7 @@ type Event struct {
 }
 
 func (o *Event) TableName() string {
-	return "events"
+	return "ar_events"
 }
 
 type EventAction struct {
@@ -69,5 +69,5 @@ type EventAction struct {
 }
 
 func (o *EventAction) TableName() string {
-	return "event_actions"
+	return "ar_event_actions"
 }

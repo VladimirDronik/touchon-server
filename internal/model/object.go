@@ -93,5 +93,5 @@ func StoreObjectToJsonObject(o *StoreObject) *JsonObject {
 }
 
 func (o *StoreObject) TableName() string {
-	return "objects"
+	return "om_objects"
 }

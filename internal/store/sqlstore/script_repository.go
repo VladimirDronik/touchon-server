@@ -5,7 +5,7 @@ import (
 	"touchon-server/internal/model"
 )
 
-//create table if not exists scripts
+//create table if not exists om_scripts
 //(
 //    id          INTEGER primary key autoincrement,
 //    code        TEXT not null,
@@ -15,7 +15,7 @@ import (
 //    body        TEXT not null
 //);
 //
-//CREATE UNIQUE INDEX if not exists code ON scripts(code);
+//CREATE UNIQUE INDEX if not exists code ON om_scripts(code);
 
 type ScriptRepository struct {
 	store *Store

@@ -9,10 +9,10 @@ import (
 	"touchon-server/internal/model"
 )
 
-// create table if not exists objects
+// create table if not exists om_objects
 //(
 //    id        INTEGER primary key autoincrement,
-//    parent_id INTEGER not null default 0 constraint objects_parent_id_fk references objects(parent_id) on update cascade on delete cascade,
+//    parent_id INTEGER not null default 0 constraint om_objects_parent_id_fk references om_objects(parent_id) on update cascade on delete cascade,
 //    zone_id   INTEGER default 0 not null, -- В какой зоне находится объект
 //    category  TEXT not null, -- controller
 //    type      TEXT not null, -- MegaD
@@ -22,19 +22,19 @@ import (
 //    tags      JSON not null default '{}'
 //);
 //
-//CREATE INDEX if not exists parent_id ON objects(parent_id); -- Для построения дерева
-//CREATE INDEX if not exists zone_id ON objects(zone_id); -- Для получения объектов в указанной зоне
-//CREATE INDEX if not exists tags ON objects(tags);
+//CREATE INDEX if not exists parent_id ON om_objects(parent_id); -- Для построения дерева
+//CREATE INDEX if not exists zone_id ON om_objects(zone_id); -- Для получения объектов в указанной зоне
+//CREATE INDEX if not exists tags ON om_objects(tags);
 //
-//create table if not exists props
+//create table if not exists om_props
 //(
 //    id        INTEGER primary key autoincrement,
-//    object_id INTEGER not null constraint objects_id_fk references objects(id) on update cascade on delete cascade,
+//    object_id INTEGER not null constraint om_objects_id_fk references om_objects(id) on update cascade on delete cascade,
 //    code      TEXT not null,
 //    value     TEXT not null default ''
 //);
 //
-//CREATE UNIQUE INDEX if not exists object_id_code ON props(object_id, code);
+//CREATE UNIQUE INDEX if not exists object_id_code ON om_props(object_id, code);
 
 type ObjectRepository struct {
 	store *Store
@@ -59,7 +59,7 @@ func (o *ObjectRepository) GetProp(objectID int, code string) (string, error) {
 
 // SetProp устанавливает значение свойства объекта
 func (o *ObjectRepository) SetProp(objectID int, code, value string) error {
-	q := `INSERT INTO props (object_id, code, value) VALUES (?, ?, ?) ON CONFLICT(object_id, code) DO UPDATE SET value = ?;`
+	q := `INSERT INTO om_props (object_id, code, value) VALUES (?, ?, ?) ON CONFLICT(object_id, code) DO UPDATE SET value = ?;`
 	if err := o.store.db.Exec(q, objectID, code, value, value).Error; err != nil {
 		return errors.Wrap(err, "SetProp")
 	}
@@ -371,7 +371,7 @@ func (o *ObjectRepository) GetObjectChildren(childType model.ChildType, objectID
 // DelObject удаляет объект
 func (o *ObjectRepository) DelObject(objectID int) error {
 	// foreign_keys - для каскадного удаления записей
-	err := o.store.db.Exec("DELETE FROM objects WHERE id = ?", objectID).Error
+	err := o.store.db.Exec("DELETE FROM om_objects WHERE id = ?", objectID).Error
 	if err != nil {
 		return errors.Wrap(err, "DelObject")
 	}
@@ -404,8 +404,8 @@ func (o *ObjectRepository) GetAllTags() (map[string]int, error) {
 }
 
 func (o *ObjectRepository) GetObjectsByAddress(address []string) ([]*model.StoreObject, error) {
-	q := o.store.db.Table("objects")
-	q.Joins("INNER JOIN props on props.object_id = objects.id")
+	q := o.store.db.Table("om_objects")
+	q.Joins("INNER JOIN om_props on om_props.object_id = om_objects.id")
 	q.Where("code = ?", "address")
 
 	q.Where("value LIKE ?", "%"+address[0]+"%")

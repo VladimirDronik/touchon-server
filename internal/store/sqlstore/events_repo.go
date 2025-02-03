@@ -1,10 +1,10 @@
 package sqlstore
 
 import (
-	"action-router/internal/model"
-	"action-router/internal/store"
-	"github.com/VladimirDronik/touchon-server/mqtt/messages"
 	"github.com/pkg/errors"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
+	"touchon-server/lib/mqtt/messages"
 )
 
 type EventsRepo struct {
@@ -79,9 +79,9 @@ func (o *EventsRepo) DeleteEvent(targetType messages.TargetType, targetID int, e
 	// foreign_keys - для каскадного удаления записей
 
 	if eventName == "all" {
-		sqlString = "PRAGMA foreign_keys = ON; DELETE FROM events WHERE target_type = ? AND target_id = ?"
+		sqlString = "DELETE FROM ar_events WHERE target_type = ? AND target_id = ?"
 	} else {
-		sqlString = "PRAGMA foreign_keys = ON; DELETE FROM events WHERE target_type = ? AND target_id = ? AND event_name = ?"
+		sqlString = "DELETE FROM ar_events WHERE target_type = ? AND target_id = ? AND event_name = ?"
 	}
 
 	err := o.store.db.
@@ -104,7 +104,7 @@ func (o *EventsRepo) GetAllEventsName() ([]string, error) {
 	rows := make([]*Row, 0, 100)
 
 	err := o.store.db.
-		Table("events").
+		Table("ar_events").
 		Distinct("event_name").
 		Where("enabled").
 		Find(&rows).Error

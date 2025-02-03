@@ -11,7 +11,7 @@ type StoreProp struct {
 }
 
 func (o *StoreProp) TableName() string {
-	return "props"
+	return "om_props"
 }
 
 // StoreScript Скрипт
@@ -25,5 +25,5 @@ type StoreScript struct {
 }
 
 func (o *StoreScript) TableName() string {
-	return "scripts"
+	return "om_scripts"
 }

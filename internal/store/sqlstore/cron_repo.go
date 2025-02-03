@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"sort"
 
-	"action-router/internal/model"
 	"github.com/pkg/errors"
+	"touchon-server/internal/model"
 )
 
 type CronRepo struct {
@@ -23,8 +23,8 @@ func (o *CronRepo) GetEnabledTasks() ([]*model.CronTask, error) {
 
 	q := `
 SELECT t.*, a.*
-FROM cron_tasks as t
-     inner join cron_actions as a on a.task_id = t.id
+FROM ar_cron_tasks as t
+     inner join ar_cron_actions as a on a.task_id = t.id
 WHERE t.enabled = 1 AND a.enabled = 1
 order by t.id, a.sort, a.id`
 
@@ -112,13 +112,13 @@ func (o *CronRepo) DeleteTask(objectID int, targetType string) error {
 	}
 
 	err = o.store.db.
-		Exec("DELETE FROM cron_actions WHERE target_id = ? AND target_type = ?", objectID, targetType).Error
+		Exec("DELETE FROM ar_cron_actions WHERE target_id = ? AND target_type = ?", objectID, targetType).Error
 	if err != nil {
 		return errors.Wrap(err, "DeleteCronActions")
 	}
 
 	err = o.store.db.
-		Exec("DELETE FROM cron_tasks WHERE id = ?", cronAction.TaskID).Error
+		Exec("DELETE FROM ar_cron_tasks WHERE id = ?", cronAction.TaskID).Error
 	if err != nil {
 		return errors.Wrap(err, "DeleteCronTask")
 	}

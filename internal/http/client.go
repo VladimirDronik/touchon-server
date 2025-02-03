@@ -8,7 +8,7 @@ import (
 	"touchon-server/lib/mqtt/messages"
 )
 
-// deleteEvents удаляет события для объекта в action-router
+// deleteEvents удаляет события для объекта
 func deleteEvent(objectID int) error {
 	arBaseUrl := "http://" + context.Config["action_router_addr"]
 	params := map[string]string{
