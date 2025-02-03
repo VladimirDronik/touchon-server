@@ -10,4 +10,6 @@ remarks_om.txt
 remarks_tr.txt
 *_mock.go
 .DS_Store
-
+Dockerfile
+Dockerfile-w64
+translator.zip

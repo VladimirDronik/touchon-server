@@ -5,8 +5,8 @@
 // ./bin $ swag init --dir=../cmd,../internal,../lib --output=../docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 // mockery --dir=internal --all --inpackage --inpackage-suffix --with-expecter
 // mockery --dir=lib --all --inpackage --inpackage-suffix --with-expecter
-// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://vn:1q2w3e4r@127.0.0.1:1883/#" LOG_LEVEL=debug HTTP_ADDR=localhost:8082 ./cmd
-// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://services:12345678@10.35.16.1:1883/#" LOG_LEVEL=debug HTTP_ADDR=localhost:8082 ./cmd
+// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://vn:1q2w3e4r@127.0.0.1:1883/#" HTTP_ADDR=localhost:8082 TOKEN_SECRET=disable_auth ./cmd
+// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://services:12345678@10.35.16.1:1883/#" HTTP_ADDR=localhost:8082 TOKEN_SECRET=disable_auth ./cmd
 // docker build --progress=plain -t ts . && docker run --rm -it --network=host --name ts ts
 // docker build --progress=plain -t ts . && docker run --rm -it --network=host -e MQTT_CONNECTION_STRING="mqtt://services:12345678@10.35.16.1:1883/#" --name ts ts
 //
@@ -73,8 +73,9 @@ func init() {
 }
 
 var defaults = map[string]string{
-	"http_addr":              "0.0.0.0:8082",
-	"action_router_addr":     "0.0.0.0:8082",
+	"http_addr":              "0.0.0.0:8081",
+	"action_router_addr":     "0.0.0.0:8081", // TODO delete
+	"object_manager_addr":    "0.0.0.0:8081", // TODO delete
 	"database_url":           "./db.sqlite?_foreign_keys=true",
 	"server_key":             "c041d36e381a835afce48c91686370c8",
 	"mqtt_connection_string": "mqtt://services:12345678@mqtt:1883/#",
@@ -82,6 +83,19 @@ var defaults = map[string]string{
 	"version":                "0.1",
 	"service_name":           "touchon_server",
 	"mqtt_max_travel_time":   "50ms",
+
+	"access_token_ttl":          "30m",
+	"refresh_token_ttl":         "43200m",
+	"token_secret":              "Alli80ed!",
+	"ws_addr":                   "0.0.0.0:8092",
+	"server_id":                 "id=dev4",
+	"mdns_instance":             "touchon",
+	"mdns_service":              "_touchon._tcp",
+	"mdns_domain":               "local.",
+	"mdns_connection_interface": "en0", // eth0
+	"cctv_port":                 "8093",
+	"web_port":                  "8080",
+	"push_sender_address":       "http://localhost:8088",
 }
 
 const banner = `
@@ -100,6 +114,9 @@ var Version string
 // BuildAt заполняется компилятором
 var BuildAt string
 
+// @securityDefinitions.apikey TokenAuth
+// @in header
+// @name token
 func main() {
 	cfg, logger, rb, db, err := service.Prolog(banner, defaults, Version, BuildAt)
 	check(err)
@@ -108,6 +125,11 @@ func main() {
 
 	store.I = sqlstore.New(db)
 	check(checkData(store.I))
+
+	wsServer, err := ws.New(cfg, store, logger)
+	check(err)
+
+	check(wsServer.Start(cfg["ws_addr"]))
 
 	// Инициализация клиента для MQTT
 	mqttClient.I, err = mqttClient.New(cfg["service_name"], cfg["mqtt_connection_string"], 10*time.Second, 3, logger)
@@ -155,6 +177,10 @@ func main() {
 	}
 
 	if err := mqttService.I.Shutdown(); err != nil {
+		logger.Error(err)
+	}
+
+	if err := wsServer.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 

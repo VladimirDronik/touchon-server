@@ -52,8 +52,8 @@ pipeline {
         stage('Publish') {
             steps {
                 sh """
-                    set -e
                     ssh ${env.DEV_SRV} << EOF
+                    set -e
                     cd /opt/touchon/gobin
                     docker-compose pull ${env.SERVICE}
                     docker create --name temp_${env.SERVICE}_container ${env.REGISTRY}/${env.SERVICE}:develop
