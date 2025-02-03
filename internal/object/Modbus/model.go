@@ -11,8 +11,8 @@ import (
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
-	"touchon-server/internal/priority_queue"
 	"touchon-server/lib/models"
+	"touchon-server/lib/priority_queue"
 )
 
 const QueueCapabilities = 1000

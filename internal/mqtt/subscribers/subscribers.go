@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/intset"
 	"touchon-server/lib/event"
+	"touchon-server/lib/intset"
 	"touchon-server/lib/mqtt/messages"
 )
 
