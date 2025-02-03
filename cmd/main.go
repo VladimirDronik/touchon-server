@@ -4,10 +4,10 @@
 // go install github.com/swaggo/swag/cmd/swag@latest
 // ./bin $ swag init --dir=../cmd,../internal,../lib --output=../docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 // mockery --dir=internal --all --inpackage --inpackage-suffix --with-expecter
-// mockery --dir=lib --all --inpackage --inpackage-suffix --with-expecter
-// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://vn:1q2w3e4r@127.0.0.1:1883/#" HTTP_ADDR=localhost:8082 TOKEN_SECRET=disable_auth ./cmd
-// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://services:12345678@10.35.16.1:1883/#" HTTP_ADDR=localhost:8082 TOKEN_SECRET=disable_auth ./cmd
-// docker build --progress=plain -t ts . && docker run --rm -it --network=host --name ts ts
+// mockery --dir=lib --all --inpackage --inpackage-suffix --with-expectermockery --dir=lib --all --inpackage --inpackage-suffix --with-expecter
+// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://vn:1q2w3e4r@127.0.0.1:1883/#" HTTP_ADDR=localhost:8081 TOKEN_SECRET=disable_auth ./cmd
+// ./bin $ go build -C ../cmd -o ../bin/cmd && MQTT_CONNECTION_STRING="mqtt://services:12345678@10.35.16.1:1883/#" HTTP_ADDR=localhost:8081 TOKEN_SECRET=disable_auth ./cmd
+// docker build --progress=plain -t ts . && docker run --rm -it --network=host -e MQTT_CONNECTION_STRING="mqtt://vn:1q2w3e4r@127.0.0.1:1883/#" --name ts ts
 // docker build --progress=plain -t ts . && docker run --rm -it --network=host -e MQTT_CONNECTION_STRING="mqtt://services:12345678@10.35.16.1:1883/#" --name ts ts
 //
 // Получение информации о сервисе по mqtt: {

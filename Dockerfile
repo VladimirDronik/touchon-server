@@ -11,7 +11,7 @@ RUN go install github.com/vektra/mockery/v2@latest
 
 COPY . ./
 # RUN go mod tidy
-RUN swag init --dir=cmd,internal,vendor/github.com/VladimirDronik/touchon-server/http --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
+RUN swag init --dir=cmd,internal,lib --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 
 # Запускаем тесты
 RUN mockery --dir=internal --all --inpackage --inpackage-suffix --with-expecter

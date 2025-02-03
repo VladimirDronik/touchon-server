@@ -1,5 +1,5 @@
 # docker build --file Dockerfile-w64 -t tr_w64 . && docker run --rm --mount type=bind,src="$(pwd)",dst=/host tr_w64
-# set DATABASE_URL=translator_db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\translator.exe
+# set DATABASE_URL=db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\translator.exe
 
 FROM golang:1.23.2 AS builder
 
@@ -12,7 +12,7 @@ ENV GO111MODULE=on
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 COPY translator ./
-RUN swag init --dir=cmd,internal,vendor/github.com/VladimirDronik/touchon-server/http --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
+RUN swag init --dir=cmd,internal,lib --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 
 RUN GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" CC="x86_64-w64-mingw32-gcc" go build -C cmd -mod vendor \
 -ldflags="-X 'main.Version=$(git rev-parse --verify --short HEAD)' -X \"main.BuildAt=$(date '+%d.%m.%Y %H:%M:%S')\" -extldflags=-static" \
