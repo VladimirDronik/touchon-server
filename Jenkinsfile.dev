@@ -57,7 +57,7 @@ pipeline {
                     cd /opt/touchon/gobin
                     docker-compose pull ${env.SERVICE}
                     docker create --name temp_${env.SERVICE}_container ${env.REGISTRY}/${env.SERVICE}:develop
-                    docker cp temp_${env.SERVICE}_container:/opt/service/${env.SERVICE}_db.sqlite ./${env.SERVICE}/${env.SERVICE}_db.sqlite
+                    docker cp temp_${env.SERVICE}_container:/opt/service/db.sqlite ./${env.SERVICE}/db.sqlite
                     docker rm -f temp_${env.SERVICE}_container
                     docker-compose up --force-recreate --build -d ${env.SERVICE}
                     docker system prune -af
