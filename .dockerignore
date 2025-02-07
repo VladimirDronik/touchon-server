@@ -6,6 +6,7 @@ bin/touchon_server
 bin/cmd
 cmd/cmd
 _etc/
+remarks.txt
 remarks_om.txt
 remarks_tr.txt
 *_mock.go

@@ -7,6 +7,7 @@ bin/cmd
 cmd/cmd
 _etc/
 .DS_Store
+remarks.txt
 remarks_om.txt
 remarks_tr.txt
 *_mock.go
