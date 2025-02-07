@@ -261,6 +261,7 @@ func (o *PortModel) SetTypeMode(typePt string, modePt string, title string, extP
 		params[modeParam[0]] = modeParam[1]
 	}
 
+	time.Sleep(300 * time.Millisecond)
 	//Второй раз отправляем на контроллер команду, потому что сразу он не может поменять и тип порта и режим
 	code, _, err = o.sendCommand(o.GetContrAddr(), o.GetPortNumber(), false, command, params, time.Duration(5)*time.Second)
 	if err != nil || code > 299 {
