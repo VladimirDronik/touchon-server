@@ -8,7 +8,6 @@ ENV GO111MODULE=on
 
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 RUN go install github.com/vektra/mockery/v2@latest
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 COPY . ./
 # RUN go mod tidy
@@ -25,11 +24,6 @@ RUN if [ "$TARGETARCH" = "arm64" ] ; then export CC=aarch64-linux-gnu-gcc; fi &&
 GOOS=$TARGETOS GOARCH=$TARGETARCH CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go build -C cmd -mod vendor \
 -ldflags="-X 'main.Version=$(git rev-parse --verify --short HEAD)' -X \"main.BuildAt=$(date '+%d.%m.%Y %H:%M:%S')\" -extldflags=-static" \
 -o ../bin/svc
-
-env GOOSE_DRIVER=sqlite
-env GOOSE_DBSTRING=bin/db.sqlite?_foreign_keys=true
-env GOOSE_MIGRATION_DIR=./migrations
-RUN goose up
 
 # вторая ступень
 FROM alpine:3.20

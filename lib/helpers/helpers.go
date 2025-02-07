@@ -1,16 +1,20 @@
 package helpers
 
 import (
+	"database/sql"
 	"math"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/pressly/goose/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"touchon-server/migrations"
 )
 
 // GetParam отдает любой параметр, который был получен из GET запроса
@@ -96,25 +100,35 @@ func Round(v float32) float32 {
 //		path := fmt.Sprintf("sqlean/%s_%s/unicode%s", runtime.GOOS, runtime.GOARCH, exts[runtime.GOOS])
 //		sql.Register("sqlite3_with_extensions", &sqlite3.SQLiteDriver{Extensions: []string{path}})
 //	}
-func NewDB(connString string) (*gorm.DB, error) {
-	d := sqlite.Dialector{DriverName: "sqlite3_with_extensions", DSN: connString}
-	db, err := gorm.Open(d, &gorm.Config{})
-	if err != nil {
+func NewDB(connString string, logger *logrus.Logger) (*gorm.DB, error) {
+	// Запускаем миграции (с отключенной опцией _foreign_keys=true)
+	path := strings.Split(connString, "?")
+	if len(path) == 0 {
+		return nil, errors.Wrap(errors.New("connString is empty"), "NewDB")
+	}
+
+	sqlDB, err := sql.Open("sqlite3", path[0])
+
+	goose.SetBaseFS(migrations.EmbedMigrations)
+	goose.SetLogger(logger)
+
+	if err := goose.SetDialect(string(goose.DialectSQLite3)); err != nil {
 		return nil, errors.Wrap(err, "NewDB")
 	}
 
-	sqlDB, err := db.DB()
-	if err != nil {
+	logger.Info("Текущая версия данных:")
+	if err := goose.Version(sqlDB, "."); err != nil {
 		return nil, errors.Wrap(err, "NewDB")
 	}
 
-	// TODO для чего здесь сетевые настройки для sqlite?
-	//sqlDB.SetConnMaxLifetime(time.Second * config.MaxLifetime)
-	//sqlDB.SetConnMaxIdleTime(time.Second * config.MaxIdleTime)
-	//sqlDB.SetMaxOpenConns(config.MaxOpenConns)
-	//sqlDB.SetMaxIdleConns(config.MaxIdleConns)
+	logger.Info("Запускаем миграции...")
+	if err := goose.Up(sqlDB, "."); err != nil {
+		return nil, errors.Wrap(err, "NewDB")
+	}
 
-	if err := sqlDB.Ping(); err != nil {
+	// Подключаемся к БД с указанными (в строке подключения) параметрами
+	db, err := gorm.Open(sqlite.Dialector{DriverName: "sqlite3_with_extensions", DSN: connString}, &gorm.Config{})
+	if err != nil {
 		return nil, errors.Wrap(err, "NewDB")
 	}
 

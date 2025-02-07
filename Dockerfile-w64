@@ -11,7 +11,6 @@ WORKDIR /opt/service
 ENV GO111MODULE=on
 
 RUN go install github.com/swaggo/swag/cmd/swag@latest
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 COPY . ./
 RUN swag init --dir=cmd,internal,lib --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
@@ -22,11 +21,6 @@ RUN go build -C cmd -mod vendor -o ../bin/ts.exe
 #RUN GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" CC="x86_64-w64-mingw32-gcc" go build -C cmd -mod vendor \
 #-ldflags="-X 'main.Version=$(git rev-parse --verify --short HEAD)' -X \"main.BuildAt=$(date '+%d.%m.%Y %H:%M:%S')\" -extldflags=-static" \
 #-o ../bin/ts.exe
-
-env GOOSE_DRIVER=sqlite
-env GOOSE_DBSTRING=bin/db.sqlite?_foreign_keys=true
-env GOOSE_MIGRATION_DIR=./migrations
-RUN goose up
 
 RUN echo 'set DATABASE_URL=db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\\ts.exe' > bin/start.bat
 RUN echo 'pause' >> bin/start.bat

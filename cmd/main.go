@@ -35,17 +35,6 @@ import (
 	"touchon-server/internal/cron"
 	httpServer "touchon-server/internal/http"
 	mqttService "touchon-server/internal/mqtt"
-	"touchon-server/internal/objects"
-	"touchon-server/internal/scripts"
-	"touchon-server/internal/store"
-	memStore "touchon-server/internal/store/memstore"
-	"touchon-server/internal/store/sqlstore"
-	"touchon-server/internal/ws"
-	"touchon-server/lib/event"
-	httpClient "touchon-server/lib/http/client"
-	mqttClient "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/service"
-
 	_ "touchon-server/internal/object/PortMegaD"
 	_ "touchon-server/internal/object/Regulator"
 	_ "touchon-server/internal/object/Relay"
@@ -60,11 +49,22 @@ import (
 	_ "touchon-server/internal/object/Sensor/scd4x"
 	_ "touchon-server/internal/object/SensorValue"
 	_ "touchon-server/internal/object/WirenBoard/wb_mrm2_mini"
-	// Объявляем объекты для их регистрации в реестре
+	"touchon-server/internal/objects"
+	"touchon-server/internal/scripts"
+	"touchon-server/internal/store"
+	memStore "touchon-server/internal/store/memstore"
+	"touchon-server/internal/store/sqlstore"
+	"touchon-server/internal/ws"
+	"touchon-server/lib/event"
+	httpClient "touchon-server/lib/http/client"
+	mqttClient "touchon-server/lib/mqtt/client"
+	"touchon-server/lib/service"
+
 	_ "touchon-server/internal/object/GenericInput"
 	_ "touchon-server/internal/object/MegaD"
 	_ "touchon-server/internal/object/Modbus"
 	_ "touchon-server/internal/object/Onokom/Conditioner"
+	_ "touchon-server/migrations"
 )
 
 func init() {
@@ -77,7 +77,7 @@ var defaults = map[string]string{
 	"http_addr":              "0.0.0.0:8081",
 	"action_router_addr":     "0.0.0.0:8081", // TODO delete
 	"object_manager_addr":    "0.0.0.0:8081", // TODO delete
-	"database_url":           "./db.sqlite?_foreign_keys=true",
+	"database_url":           "db.sqlite?_foreign_keys=true",
 	"server_key":             "c041d36e381a835afce48c91686370c8",
 	"mqtt_connection_string": "mqtt://services:12345678@mqtt:1883/#",
 	"log_level":              "debug",

@@ -48,7 +48,7 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 
 	logger.Debugf("ENV: %#v", cfg)
 
-	db, err := helpers.NewDB(cfg["database_url"])
+	db, err := helpers.NewDB(cfg["database_url"], logger)
 	if err != nil {
 		return nil, nil, nil, nil, errors.Wrap(err, "Prolog")
 	}
