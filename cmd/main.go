@@ -10,6 +10,9 @@
 // docker build --progress=plain -t ts . && docker run --rm -it --network=host -e MQTT_CONNECTION_STRING="mqtt://vn:1q2w3e4r@127.0.0.1:1883/#" --name ts ts
 // docker build --progress=plain -t ts . && docker run --rm -it --network=host -e MQTT_CONNECTION_STRING="mqtt://services:12345678@10.35.16.1:1883/#" --name ts ts
 //
+// go install github.com/pressly/goose/v3/cmd/goose@latest
+// GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=bin/db.sqlite GOOSE_MIGRATION_DIR=migrations goose status
+//
 // Получение информации о сервисе по mqtt: {
 //   "target_type": "service",
 //   "type": "command",

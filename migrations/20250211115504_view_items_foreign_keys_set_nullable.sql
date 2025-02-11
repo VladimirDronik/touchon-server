@@ -22,7 +22,10 @@ create table view_items_dg_tmp (
 insert into view_items_dg_tmp(
 id, parent_id, zone_id, type, status, icon, title, sort, params,
 color, auth, description, position_left, scene, position_top, enabled)
-select id, parent_id, zone_id, type, status, icon, title, sort,
+select id,
+       case when parent_id == 0 then null else parent_id end,
+       case when zone_id == 0 then null else zone_id end,
+       type, status, icon, title, sort,
        params, color, auth, description, position_left, scene,
        position_top, enabled
 from view_items;
@@ -57,7 +60,7 @@ CREATE TABLE view_items_dg_tmp_2 (
 insert into view_items_dg_tmp_2 (
     id, parent_id, zone_id, type, status, icon, title, sort, params,
     color, auth, description, position_left, scene, position_top, enabled)
-select id, parent_id, zone_id, type, status, icon, title, sort,
+select id, ifnull(parent_id, 0), ifnull(zone_id, 0), type, status, icon, title, sort,
        params, color, auth, description, position_left, scene,
        position_top, enabled
 from view_items;
