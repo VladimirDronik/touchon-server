@@ -2,7 +2,9 @@ package http
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
 	"net/http"
+	"touchon-server/internal/objects"
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/model"
@@ -48,7 +50,30 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 	if err := json.Unmarshal(ctx.Request.Body(), sensor); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	sensor.Enabled = true
+
+	//Если включена регулировка датчика, то выставляем пороговые значения у параметра сенсора
+	if sensor.Enabled == true {
+		obj, err := store.I.ObjectRepository().GetObjectByParent(sensor.ObjectID, sensor.Type)
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Get Object By ParentID")
+		}
+		objModel, err := objects.LoadObject(obj.ID, "", "", model.ChildTypeNobody)
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "LoadObject By ID")
+		}
+
+		minThreshold, err := objModel.GetProps().Get("min_threshold")
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "GetProps For Object")
+		}
+		minThreshold.SetValue(sensor.MinThreshold)
+
+		maxThreshold, err := objModel.GetProps().Get("max_threshold")
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "GetProps For Object")
+		}
+		maxThreshold.SetValue(sensor.MaxThreshold)
+	}
 
 	item := &model.ViewItem{
 		Type:    "sensor",

@@ -53,6 +53,7 @@ type ObjectRepository interface {
 
 	SetObjectStatus(objectID int, status string) error
 	GetObject(objectID int) (*model.StoreObject, error)
+	GetObjectByParent(parentID int, typeObject string) (*model.StoreObject, error)
 	SetParent(objectID int, parentID *int) error //Установка родителя для объекта
 	SaveObject(object *model.StoreObject) error  // create, update
 	GetObjects(filters map[string]interface{}, tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
