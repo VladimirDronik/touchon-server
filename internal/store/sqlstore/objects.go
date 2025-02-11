@@ -181,6 +181,10 @@ func (o *ObjectRepository) SaveObject(object *model.StoreObject) error {
 		object.ParentID = nil
 	}
 
+	if object.ZoneID != nil && *object.ZoneID <= 0 {
+		object.ZoneID = nil
+	}
+
 	if err := o.store.db.Save(object).Error; err != nil {
 		return errors.Wrap(err, "SaveObject")
 	}

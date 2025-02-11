@@ -56,7 +56,7 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 type ObjectModelImpl struct {
 	id       int
 	parentID *int
-	zoneID   int
+	zoneID   *int
 
 	category model.Category
 	objType  string
@@ -89,11 +89,11 @@ func (o *ObjectModelImpl) SetParentID(parentID *int) {
 	o.parentID = parentID
 }
 
-func (o *ObjectModelImpl) GetZoneID() int {
+func (o *ObjectModelImpl) GetZoneID() *int {
 	return o.zoneID
 }
 
-func (o *ObjectModelImpl) SetZoneID(zoneID int) {
+func (o *ObjectModelImpl) SetZoneID(zoneID *int) {
 	o.zoneID = zoneID
 }
 

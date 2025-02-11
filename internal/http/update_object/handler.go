@@ -42,11 +42,11 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return nil, 0, err
 	}
 
-	objModel.SetParentID(&req.ParentID)
+	objModel.SetParentID(req.ParentID)
 	objModel.SetZoneID(req.ZoneID)
 	objModel.SetName(req.Name)
 
-	if req.ParentID <= 0 {
+	if req.ParentID == nil || *req.ParentID <= 0 {
 		objModel.SetStatus(model.StatusDisabled)
 	}
 

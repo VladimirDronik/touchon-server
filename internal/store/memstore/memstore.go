@@ -223,7 +223,7 @@ func (o *MemStore) GetObjects(params map[string]interface{}, offset, limit int, 
 			equal = false
 		case filters.ParentID > 0 && parentID != nil && *parentID != filters.ParentID:
 			equal = false
-		case filters.ZoneID > 0 && obj.GetZoneID() != filters.ZoneID:
+		case filters.ZoneID > 0 && obj.GetZoneID() != nil && *obj.GetZoneID() != filters.ZoneID:
 			equal = false
 		case filters.Category != "" && string(obj.GetCategory()) != filters.Category:
 			equal = false

@@ -9,8 +9,8 @@ import (
 
 type Request struct {
 	Object struct {
-		ParentID int                    `json:"parent_id,omitempty"`
-		ZoneID   int                    `json:"zone_id,omitempty"`
+		ParentID *int                   `json:"parent_id,omitempty"`
+		ZoneID   *int                   `json:"zone_id,omitempty"`
 		Category model.Category         `json:"category"`
 		Type     string                 `json:"type"`
 		Name     string                 `json:"name"`

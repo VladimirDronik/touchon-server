@@ -304,7 +304,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 			row.Status = ""
 			row.Category = ""
 			row.Children = nil
-			row.ZoneID = 0
+			row.ZoneID = nil
 			items = append(items, row)
 		}
 	}

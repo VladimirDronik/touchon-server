@@ -21,8 +21,8 @@ type Object interface {
 	GetParentID() *int
 	SetParentID(*int)
 
-	GetZoneID() int
-	SetZoneID(int)
+	GetZoneID() *int
+	SetZoneID(*int)
 
 	// GetCategory Возвращает категорию объекта (controller, sensor, module, ext,  etc)
 	GetCategory() model.Category
@@ -76,7 +76,7 @@ type Object interface {
 type ObjectModel struct {
 	ID       int  `json:"id"`
 	ParentID *int `json:"parent_id"`
-	ZoneID   int  `json:"zone_id"`
+	ZoneID   *int `json:"zone_id"`
 
 	Category model.Category     `json:"category"`
 	Type     string             `json:"type"`

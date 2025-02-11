@@ -30,7 +30,7 @@ const (
 type StoreObject struct {
 	ID       int             `json:"id"`                  // ID объекта
 	ParentID *int            `json:"parent_id,omitempty"` // ID родительского объекта
-	ZoneID   int             `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
+	ZoneID   *int            `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
 	Category Category        `json:"category"`            // Категория объекта
 	Type     string          `json:"type"`                // Тип объекта
 	Internal bool            `json:"internal"`            // Признак внутреннего объекта (port, sensor_value)
@@ -50,7 +50,7 @@ type Method struct {
 type JsonObject struct {
 	ID       int          `json:"id"`                  // ID объекта
 	ParentID *int         `json:"parent_id,omitempty"` // ID родительского объекта
-	ZoneID   int          `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
+	ZoneID   *int         `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
 	Category Category     `json:"category"`            // Категория объекта
 	Type     string       `json:"type"`                // Тип объекта
 	Internal bool         `json:"internal"`            // Признак внутреннего объекта (port, sensor_value)

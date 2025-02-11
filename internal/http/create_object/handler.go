@@ -153,9 +153,7 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 		return 0, errors.Wrap(err, "createObject")
 	}
 
-	if req.Object.ParentID > 0 {
-		objModel.SetParentID(&req.Object.ParentID)
-	}
+	objModel.SetParentID(req.Object.ParentID)
 	objModel.SetZoneID(req.Object.ZoneID)
 	objModel.SetName(req.Object.Name)
 
