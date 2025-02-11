@@ -171,16 +171,22 @@ func ConfigureDevice(interfaceConnection string, addressObject string, options m
 		modePt[0] = "1wbus"
 	case "I2C":
 		ports := strings.Split(addressObject, ";")
-		port[0], _ = strconv.Atoi(ports[0])
-		port[1], _ = strconv.Atoi(ports[1])
+		if len(ports) > 0 {
+			port[0], _ = strconv.Atoi(ports[0])
+		}
+		if len(ports) > 1 {
+			port[1], _ = strconv.Atoi(ports[1])
+		}
 		typePt[0] = "i2c"
 		typePt[1] = "i2c"
 		modePt[0] = "sda"
 		modePt[1] = "scl"
 
-		portSCLObj, _ := getObjects(port[1], "", "")
-		portSCL, _ := portSCLObj[0].GetProps().GetIntValue("number")
-		params[0]["misc"] = strconv.Itoa(portSCL) //указываем порт, на котором находится SCL
+		if portSCLObject, err := getObjects(port[1], "", ""); err == nil && len(portSCLObject) > 0 {
+			if portSCL, err := portSCLObject[0].GetProps().GetIntValue("number"); err == nil {
+				params[0]["misc"] = strconv.Itoa(portSCL) //указываем порт, на котором находится SCL
+			}
+		}
 		params[0]["gr"] = options["gr"]
 		params[0]["d"] = options["d"]
 	}

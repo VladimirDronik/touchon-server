@@ -26,7 +26,7 @@ type Request struct {
 
 type Child struct {
 	Props    map[string]interface{} `json:"props"`
-	Children []*Child               `json:"children"`
+	Children []*Child               `json:"children,omitempty"`
 }
 
 type Action struct {

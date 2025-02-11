@@ -9,33 +9,6 @@ import (
 	"touchon-server/internal/model"
 )
 
-// create table if not exists om_objects
-//(
-//    id        INTEGER primary key autoincrement,
-//    parent_id INTEGER not null default 0 constraint om_objects_parent_id_fk references om_objects(parent_id) on update cascade on delete cascade,
-//    zone_id   INTEGER default 0 not null, -- В какой зоне находится объект
-//    category  TEXT not null, -- controller
-//    type      TEXT not null, -- MegaD
-//    internal  bool not null default false,
-//    name      TEXT not null, -- MegaD-2561
-//    status    TEXT not null default 'N/A',
-//    tags      JSON not null default '{}'
-//);
-//
-//CREATE INDEX if not exists parent_id ON om_objects(parent_id); -- Для построения дерева
-//CREATE INDEX if not exists zone_id ON om_objects(zone_id); -- Для получения объектов в указанной зоне
-//CREATE INDEX if not exists tags ON om_objects(tags);
-//
-//create table if not exists om_props
-//(
-//    id        INTEGER primary key autoincrement,
-//    object_id INTEGER not null constraint om_objects_id_fk references om_objects(id) on update cascade on delete cascade,
-//    code      TEXT not null,
-//    value     TEXT not null default ''
-//);
-//
-//CREATE UNIQUE INDEX if not exists object_id_code ON om_props(object_id, code);
-
 type ObjectRepository struct {
 	store *Store
 }
@@ -204,20 +177,12 @@ func (o *ObjectRepository) SaveObject(object *model.StoreObject) error {
 		return errors.Wrap(errors.New("object is nil"), "SaveObject")
 	}
 
-	count := int64(0)
-	if err := o.store.db.Model(object).Where("id = ?", object.ID).Count(&count).Error; err != nil {
-		return errors.Wrap(err, "SaveObject")
+	if object.ParentID != nil && *object.ParentID <= 0 {
+		object.ParentID = nil
 	}
-	objectIsExists := count == 1
 
-	if objectIsExists {
-		if err := o.store.db.Updates(object).Error; err != nil {
-			return errors.Wrap(err, "SaveObject(update)")
-		}
-	} else {
-		if err := o.store.db.Create(&object).Error; err != nil {
-			return errors.Wrap(err, "SaveObject(create)")
-		}
+	if err := o.store.db.Save(object).Error; err != nil {
+		return errors.Wrap(err, "SaveObject")
 	}
 
 	return nil
