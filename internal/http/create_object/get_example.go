@@ -57,7 +57,10 @@ func GetExample(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	}
 
 	for _, p := range obj.GetProps().GetAll().GetValueList() {
-		if p.DefaultValue != nil {
+		switch {
+		case p.GetValue() != nil:
+			resp.Object.Props[p.Code] = p.GetValue()
+		case p.DefaultValue != nil:
 			resp.Object.Props[p.Code] = p.DefaultValue
 		}
 	}
@@ -74,7 +77,10 @@ func getChildProps(obj objects.Object) []*Child {
 		c := &Child{Props: map[string]interface{}{}}
 
 		for _, p := range child.GetProps().GetAll().GetValueList() {
-			if p.DefaultValue != nil {
+			switch {
+			case p.GetValue() != nil:
+				c.Props[p.Code] = p.GetValue()
+			case p.DefaultValue != nil:
 				c.Props[p.Code] = p.DefaultValue
 			}
 		}
