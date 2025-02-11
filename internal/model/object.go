@@ -36,7 +36,8 @@ type StoreObject struct {
 	Internal bool            `json:"internal"`            // Признак внутреннего объекта (port, sensor_value)
 	Name     string          `json:"name"`                // Название объекта
 	Status   ObjectStatus    `json:"status,omitempty"`    // Состояние объекта
-	Tags     map[string]bool `gorm:"serializer:json"`
+	Tags     map[string]bool `gorm:"serializer:json"`     //
+	Enabled  bool            `json:"enabled"`             // Включает методы Start/Shutdown
 	Methods  []Method        `gorm:"-"`
 
 	Children []*StoreObject `json:"children,omitempty" gorm:"-"` // Дочерние объекты
@@ -56,7 +57,8 @@ type JsonObject struct {
 	Internal bool         `json:"internal"`            // Признак внутреннего объекта (port, sensor_value)
 	Name     string       `json:"name"`                // Название объекта
 	Status   ObjectStatus `json:"status,omitempty"`    // Состояние объекта
-	Tags     []string     `json:"tags"`
+	Tags     []string     `json:"tags"`                //
+	Enabled  bool         `json:"enabled"`             // Включает методы Start/Shutdown
 	Methods  []Method     `json:"methods,omitempty"`
 
 	Children []*JsonObject `json:"children,omitempty" gorm:"-"` // Дочерние объекты
@@ -76,6 +78,7 @@ func StoreObjectToJsonObject(o *StoreObject) *JsonObject {
 		Internal: o.Internal,
 		Name:     o.Name,
 		Status:   o.Status,
+		Enabled:  o.Enabled,
 		Methods:  o.Methods,
 	}
 

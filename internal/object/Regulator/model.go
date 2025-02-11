@@ -31,18 +31,6 @@ func init() {
 func MakeModel() (objects.Object, error) {
 	props := []*objects.Prop{
 		{
-			Code:        "enable",
-			Name:        "Состояние регулятора",
-			Description: "true - автоматический режим, false - регулятор выключен",
-			Item: &models.Item{
-				Type:         models.DataTypeBool,
-				DefaultValue: false,
-			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
-		},
-		{
 			Code:        "type",
 			Name:        "Тип регулятора",
 			Description: "",
@@ -194,14 +182,7 @@ type RegulatorModel struct {
 }
 
 func (o *RegulatorModel) sensorOnCheckHandler(messages.Message) ([]messages.Message, error) {
-	// Получаем значения свойств
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
-	}
-
-	if !enable {
+	if !o.GetEnabled() {
 		return nil, nil
 	}
 
@@ -327,15 +308,6 @@ func (o *RegulatorModel) Start() error {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "RegulatorModel.Start")
-	}
-
-	if !enable {
-		return nil
-	}
-
 	parentID := o.GetParentID()
 	if parentID == nil {
 		return errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.Start")
@@ -373,13 +345,7 @@ func (o *RegulatorModel) Start() error {
 }
 
 func (o *RegulatorModel) timerHandler() {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
-		return
-	}
-
-	if !enable {
+	if !o.GetEnabled() {
 		return
 	}
 
@@ -409,15 +375,6 @@ func (o *RegulatorModel) timerHandler() {
 func (o *RegulatorModel) Shutdown() error {
 	if err := o.ObjectModelImpl.Shutdown(); err != nil {
 		return errors.Wrap(err, "RegulatorModel.Shutdown")
-	}
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "RegulatorModel.Shutdown")
-	}
-
-	if !enable {
-		return nil
 	}
 
 	o.timer.Stop()

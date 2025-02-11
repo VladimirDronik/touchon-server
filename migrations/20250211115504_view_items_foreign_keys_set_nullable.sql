@@ -33,7 +33,6 @@ from view_items;
 drop table view_items;
 
 alter table view_items_dg_tmp rename to view_items;
-
 -- +goose StatementEnd
 
 -- +goose Down
@@ -68,5 +67,4 @@ from view_items;
 drop table view_items;
 
 alter table view_items_dg_tmp_2 rename to view_items;
-
 -- +goose StatementEnd

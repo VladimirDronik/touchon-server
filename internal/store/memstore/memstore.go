@@ -59,11 +59,7 @@ type treeItem struct {
 	Children []*treeItem
 }
 
-func (o *MemStore) Start() error {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	// Строим дерево, чтобы сначала запускались родительские объекты, и только после них дочерние
+func (o *MemStore) makeTree() ([]*treeItem, error) {
 	tree := make(map[int]*treeItem, len(o.objects))
 	for _, obj := range o.objects {
 		tree[obj.GetID()] = &treeItem{Object: obj}
@@ -73,7 +69,7 @@ func (o *MemStore) Start() error {
 		if parentID := item.Object.GetParentID(); parentID != nil {
 			parent, ok := tree[*parentID]
 			if !ok {
-				return errors.Wrap(errors.Errorf("parentID %d not found for item %d", *parentID, item.Object.GetID()), "Start")
+				return nil, errors.Wrap(errors.Errorf("parentID %d not found for item %d", *parentID, item.Object.GetID()), "Start")
 			}
 
 			parent.Children = append(parent.Children, item)
@@ -88,6 +84,19 @@ func (o *MemStore) Start() error {
 		}
 	}
 
+	return list, nil
+}
+
+func (o *MemStore) Start() error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	// Строим дерево, чтобы сначала запускались родительские объекты, и только после них дочерние
+	list, err := o.makeTree()
+	if err != nil {
+		return errors.Wrap(err, "Start")
+	}
+
 	if err := startTree(list); err != nil {
 		return errors.Wrap(err, "Start")
 	}
@@ -97,8 +106,12 @@ func (o *MemStore) Start() error {
 
 func startTree(items []*treeItem) error {
 	for _, item := range items {
+		if !item.Object.GetEnabled() {
+			continue
+		}
+
 		if err := item.Object.Start(); err != nil {
-			return errors.Wrap(err, "Start")
+			return errors.Wrap(err, "startTree")
 		}
 
 		if len(item.Children) > 0 {
@@ -115,18 +128,47 @@ func (o *MemStore) Shutdown() error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	errs := make([]error, 0, len(o.objects))
-	for _, obj := range o.objects {
-		if err := obj.Shutdown(); err != nil {
-			errs = append(errs, err)
-		}
+	// Строим дерево, чтобы сначала останавливались дочерние объекты, и только после них родительские
+	list, err := o.makeTree()
+	if err != nil {
+		return errors.Wrap(err, "Shutdown")
 	}
 
+	errs := shutdownTree(list)
+
+	// Выводим в лог все ошибки
+	for _, err := range errs {
+		context.Logger.Error(errors.Wrap(err, "Shutdown"))
+	}
+
+	// Возвращаем первую
 	if len(errs) > 0 {
 		return errors.Wrap(errs[0], "Shutdown")
 	}
 
 	return nil
+}
+
+func shutdownTree(items []*treeItem) (errs []error) {
+	for _, item := range items {
+		if !item.Object.GetEnabled() {
+			continue
+		}
+
+		// Сначала останавливаем дочерние объекты
+		if len(item.Children) > 0 {
+			if childrenErrs := shutdownTree(item.Children); len(childrenErrs) > 0 {
+				errs = append(errs, childrenErrs...)
+			}
+		}
+
+		// Затем останавливаем сам объект
+		if err := item.Object.Shutdown(); err != nil {
+			errs = append(errs, errors.Wrap(err, "shutdownTree"))
+		}
+	}
+
+	return errs
 }
 
 func (o *MemStore) GetObject(objectID int) (objects.Object, error) {
@@ -324,8 +366,26 @@ func (o *MemStore) SaveObject(obj objects.Object) error {
 
 	o.objects[obj.GetID()] = obj
 
-	if err := obj.Start(); err != nil {
+	if err := o.startObjectTree(obj); err != nil {
 		return errors.Wrap(err, "SaveObject")
+	}
+
+	return nil
+}
+
+func (o *MemStore) startObjectTree(obj objects.Object) error {
+	if !obj.GetEnabled() {
+		return nil
+	}
+
+	if err := obj.Start(); err != nil {
+		return errors.Wrap(err, "startObjectTree")
+	}
+
+	for _, child := range obj.GetChildren().GetAll() {
+		if err := o.startObjectTree(child); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -338,10 +398,36 @@ func (o *MemStore) DeleteObject(objectID int) error {
 	if obj, ok := o.objects[objectID]; ok {
 		delete(o.objects, objectID)
 
-		if err := obj.Shutdown(); err != nil {
-			return errors.Wrap(err, "DeleteObject")
+		errs := o.shutdownObjectTree(obj)
+
+		// Выводим в лог все ошибки
+		for _, err := range errs {
+			context.Logger.Error(errors.Wrap(err, "DeleteObject"))
+		}
+
+		// Возвращаем первую
+		if len(errs) > 0 {
+			return errors.Wrap(errs[0], "DeleteObject")
 		}
 	}
 
 	return nil
+}
+
+func (o *MemStore) shutdownObjectTree(obj objects.Object) (errs []error) {
+	if !obj.GetEnabled() {
+		return nil
+	}
+
+	for _, child := range obj.GetChildren().GetAll() {
+		if childrenErrs := o.shutdownObjectTree(child); len(childrenErrs) > 0 {
+			errs = append(errs, childrenErrs...)
+		}
+	}
+
+	if err := obj.Shutdown(); err != nil {
+		errs = append(errs, errors.Wrap(err, "shutdownObjectTree"))
+	}
+
+	return errs
 }

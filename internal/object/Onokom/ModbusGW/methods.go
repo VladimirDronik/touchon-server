@@ -47,13 +47,7 @@ type checkDoActionResult struct {
 
 // check опрашивает устройство, обновляет данные в БД и памяти, оповещает об изменениях
 func (o *GatewayModel) check() {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
-		return
-	}
-
-	if !enable {
+	if !o.GetEnabled() {
 		return
 	}
 

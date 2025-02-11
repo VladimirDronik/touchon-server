@@ -24,7 +24,6 @@ alter table om_objects_dg_tmp rename to om_objects;
 create index parent_id on om_objects (parent_id);
 create index tags on om_objects (tags);
 create index zone_id on om_objects (zone_id);
-
 -- +goose StatementEnd
 
 -- +goose Down
@@ -51,5 +50,4 @@ alter table om_objects_dg_tmp_2 rename to om_objects;
 create index parent_id on om_objects (parent_id);
 create index tags on om_objects (tags);
 create index zone_id on om_objects (zone_id);
-
 -- +goose StatementEnd
