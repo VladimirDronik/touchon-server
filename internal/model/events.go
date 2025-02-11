@@ -8,3 +8,7 @@ type TrEvent struct {
 	Value      string `json:"value"`
 	ItemID     int    `json:"item_id"`
 }
+
+func (o *TrEvent) TableName() string {
+	return "events"
+}

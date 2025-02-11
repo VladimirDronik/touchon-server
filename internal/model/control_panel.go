@@ -3,8 +3,8 @@ package model
 // ViewItem Структура основных итемов (кнопок панели управления)
 type ViewItem struct {
 	ID            int    `json:"item_id"`                           //
-	ParentID      int    `json:"id_group,omitempty"`                //
-	ZoneID        int    `json:"zone_id,omitempty"`                 //
+	ParentID      *int   `json:"id_group,omitempty"`                //
+	ZoneID        *int   `json:"zone_id,omitempty"`                 //
 	Type          string `json:"type,omitempty"`                    //
 	Status        string `json:"status,omitempty"`                  //
 	Icon          string `json:"icon,omitempty"`                    //

@@ -148,7 +148,7 @@ type Users interface {
 }
 
 type Items interface {
-	SaveItem(item *model.ViewItem) (int, error)
+	SaveItem(item *model.ViewItem) error
 	GetItem(itemID int) (*model.ViewItem, error)
 	UpdateItem(viewItem *model.ViewItem) error
 	DeleteItem(itemID int) error

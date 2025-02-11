@@ -14,30 +14,24 @@ type Items struct {
 }
 
 // SaveItem создает/обновляет элемент
-func (o *Items) SaveItem(item *model.ViewItem) (int, error) {
+func (o *Items) SaveItem(item *model.ViewItem) error {
 	if item == nil {
-		return 0, errors.Wrap(errors.New("item is nil"), "SaveItem")
+		return errors.Wrap(errors.New("item is nil"), "SaveItem")
 	}
 
-	count := int64(0)
-	if err := o.store.db.Model(item).Where("id = ?", item.ID).Count(&count).Error; err != nil {
-		return 0, errors.Wrap(err, "SaveItem")
-	}
-	objectIsExists := count == 1
-
-	if objectIsExists {
-		if err := o.store.db.Updates(item).Error; err != nil {
-			return item.ID, errors.Wrap(err, "SaveItem(update)")
-		}
-	} else {
-		result := o.store.db.Create(&item)
-		if result.Error != nil {
-			return 0, errors.Wrap(result.Error, "SaveItem(create)")
-		}
-		return item.ID, nil
+	if item.ParentID != nil && *item.ParentID <= 0 {
+		item.ParentID = nil
 	}
 
-	return 0, nil
+	if item.ZoneID != nil && *item.ZoneID <= 0 {
+		item.ZoneID = nil
+	}
+
+	if err := o.store.db.Save(item).Error; err != nil {
+		return errors.Wrap(err, "SaveItem")
+	}
+
+	return nil
 }
 
 // GetItem получение итема по его ID

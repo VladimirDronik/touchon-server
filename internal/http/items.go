@@ -45,28 +45,29 @@ func (o *Server) handleCreateItem(ctx *fasthttp.RequestCtx) (interface{}, int, e
 // @Router /private/item/sensor [post]
 func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	sensor := &model.Sensor{}
-	item := &model.ViewItem{}
-	event := &model.TrEvent{}
-
 	if err := json.Unmarshal(ctx.Request.Body(), sensor); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
+	sensor.Enabled = true
 
-	item.Type = "sensor"
-	item.Enabled = true
-	item.ZoneID = sensor.ZoneID
-	itemID, err := store.I.Items().SaveItem(item)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
+	item := &model.ViewItem{
+		Type:    "sensor",
+		Enabled: true,
+		ZoneID:  &sensor.ZoneID,
 	}
 
-	event.EventName = "object.sensor.on_check"
-	event.TargetType = "object"
-	event.TargetID = sensor.ObjectID
-	event.Value = sensor.Type
-	event.ItemID = itemID
-	sensor.ViewItemID = itemID
-	sensor.Enabled = true
+	if err := store.I.Items().SaveItem(item); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	sensor.ViewItemID = item.ID
+
+	event := &model.TrEvent{
+		EventName:  "object.sensor.on_check",
+		TargetType: "object",
+		TargetID:   sensor.ObjectID,
+		Value:      sensor.Type,
+		ItemID:     item.ID,
+	}
 
 	if err := store.I.Events().AddEvent(event); err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -129,7 +130,7 @@ func (o *Server) saveItem(requestBody []byte) (*model.ViewItem, int, error) {
 
 	item.Enabled = true
 
-	if _, err := store.I.Items().SaveItem(item); err != nil {
+	if err := store.I.Items().SaveItem(item); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
