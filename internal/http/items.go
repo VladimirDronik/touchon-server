@@ -53,11 +53,11 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 
 	//Если включена регулировка датчика, то выставляем пороговые значения у параметра сенсора
 	if sensor.Enabled == true {
-		obj, err := store.I.ObjectRepository().GetObjectByParent(sensor.ObjectID, sensor.Type)
+		sensorValue, err := store.I.ObjectRepository().GetObjectByParent(sensor.ObjectID, sensor.Type)
 		if err != nil {
-			return nil, http.StatusInternalServerError, errors.Wrap(err, "Get Object By ParentID")
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Get valueSensor by sensorID")
 		}
-		objModel, err := objects.LoadObject(obj.ID, "", "", model.ChildTypeNobody)
+		objModel, err := objects.LoadObject(sensorValue.ID, "", "", model.ChildTypeNobody)
 		if err != nil {
 			return nil, http.StatusInternalServerError, errors.Wrap(err, "LoadObject By ID")
 		}
@@ -73,6 +73,29 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 			return nil, http.StatusInternalServerError, errors.Wrap(err, "GetProps For Object")
 		}
 		maxThreshold.SetValue(sensor.MaxThreshold)
+
+		if err := objModel.Save(); err != nil {
+			return nil, http.StatusInternalServerError, err
+		}
+
+		//Ищем регулятор для сенсора, если находим, то включаем, если не находим, то создаем
+		reg, err := store.I.ObjectRepository().GetObjectByParent(sensorValue.ID, "regulator")
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Get regulator by sensorID")
+		}
+		if reg != nil {
+			objRegulator, err := objects.LoadObject(reg.ID, "", "", model.ChildTypeNobody)
+			if err != nil {
+				return nil, http.StatusInternalServerError, errors.Wrap(err, "LoadObject By ID")
+			}
+			enableValue, err := objRegulator.GetProps().Get("enable")
+			if err != nil {
+				return nil, http.StatusInternalServerError, errors.Wrap(err, "GetProps \"enable\" for Object")
+			}
+			enableValue.SetValue(true)
+		} else {
+			//TODO: сделать здесь создание регулятора
+		}
 	}
 
 	item := &model.ViewItem{
