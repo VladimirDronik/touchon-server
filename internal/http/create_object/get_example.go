@@ -41,8 +41,8 @@ func GetExample(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 
 	resp := &Request{
 		Object: struct {
-			ParentID int                    `json:"parent_id,omitempty"`
-			ZoneID   int                    `json:"zone_id,omitempty"`
+			ParentID *int                   `json:"parent_id,omitempty"`
+			ZoneID   *int                   `json:"zone_id,omitempty"`
 			Category model.Category         `json:"category"`
 			Type     string                 `json:"type"`
 			Name     string                 `json:"name"`

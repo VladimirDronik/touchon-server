@@ -122,17 +122,6 @@ func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockM
 	}
 	require.NoError(t, a.SetValue(a.DefaultValue))
 
-	e := &objects.Prop{
-		Code:        "enable",
-		Name:        "Состояние шлюза",
-		Description: "вкл/выкл",
-		Item: &models.Item{
-			Type:         models.DataTypeBool,
-			DefaultValue: true,
-		},
-	}
-	require.NoError(t, e.SetValue(e.DefaultValue))
-
 	p := &objects.Prop{
 		Code:        "update_interval",
 		Name:        "Интервал опроса (с)",
@@ -144,7 +133,7 @@ func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockM
 	}
 	require.NoError(t, p.SetValue(p.DefaultValue))
 
-	require.NoError(t, pList.Add(a, e, p))
+	require.NoError(t, pList.Add(a, p))
 
 	return gateway, mockModbusDevice, st, mqttClient, pList
 }
@@ -205,6 +194,12 @@ func TestDeviceModel_check(t *testing.T) {
 			gateway, modbusDevice, st, mqttClient, pList := setUp(t, gwModelCode)
 			objRepo := new(store.MockObjectRepository)
 
+			enabled := 2
+			modbusDevice.EXPECT().GetEnabled().RunAndReturn(func() bool {
+				// Отключаем повторные запуски метода check()
+				enabled -= 1
+				return enabled > 0
+			})
 			modbusDevice.EXPECT().GetDefaultTries().Return(3)
 
 			doActionResponse, expectedPayload := getDoActionResponse(t, gwModelCode, pList)
@@ -234,8 +229,6 @@ func TestDeviceModel_check(t *testing.T) {
 			require.NoError(t, gateway.Start())
 
 			time.Sleep(1500 * time.Millisecond)
-			// Отключаем повторные запуски метода check()
-			require.NoError(t, pList.Set("enable", false))
 
 			modbusDevice.AssertExpectations(t)
 			mqttClient.AssertExpectations(t)
@@ -254,6 +247,12 @@ func TestDeviceModel_check(t *testing.T) {
 			gateway, modbusDevice, _, mqttClient, pList := setUp(t, gwModelCode)
 			objRepo := new(store.MockObjectRepository)
 
+			enabled := 2
+			modbusDevice.EXPECT().GetEnabled().RunAndReturn(func() bool {
+				// Отключаем повторные запуски метода check()
+				enabled -= 1
+				return enabled > 0
+			})
 			modbusDevice.EXPECT().Start().Return(nil)
 			modbusDevice.EXPECT().GetProps().Return(pList)
 			modbusDevice.EXPECT().GetID().Return(objectID)
@@ -269,18 +268,12 @@ func TestDeviceModel_check(t *testing.T) {
 			require.NoError(t, gateway.Start())
 
 			time.Sleep(1500 * time.Millisecond)
-			// Отключаем повторные запуски метода check()
-			require.NoError(t, pList.Set("enable", false))
 
 			modbusDevice.AssertExpectations(t)
 			mqttClient.AssertNotCalled(t, "Send")
 			objRepo.AssertNotCalled(t, "SetProp")
 
 			for _, prop := range pList.GetAll().GetValueList() {
-				if prop.Code == "enable" {
-					continue
-				}
-
 				require.Equal(t, prop.DefaultValue, prop.GetValue(), prop.Code)
 			}
 		})

@@ -293,15 +293,6 @@ func (o *GatewayModel) Start() error {
 		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
 	}
 
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
-	}
-
-	if !enable {
-		return nil
-	}
-
 	address, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
@@ -324,15 +315,6 @@ func (o *GatewayModel) Start() error {
 func (o *GatewayModel) Shutdown() error {
 	if err := o.ModbusDevice.Shutdown(); err != nil {
 		return errors.Wrap(err, "ModbusGW.GatewayModel.Shutdown")
-	}
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "ModbusGW.GatewayModel.Shutdown")
-	}
-
-	if !enable {
-		return nil
 	}
 
 	context.Logger.Debugf("ModbusGW.GatewayModel(%d) stopped", o.GetID())

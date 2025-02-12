@@ -2,12 +2,15 @@ package objects
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"touchon-server/lib/mqtt/messages"
 
 	"touchon-server/internal/model"
 )
+
+var ErrObjectDisabled = errors.New("object disabled")
 
 // Object Абстрактный тип объекта
 type Object interface {
@@ -21,8 +24,8 @@ type Object interface {
 	GetParentID() *int
 	SetParentID(*int)
 
-	GetZoneID() int
-	SetZoneID(int)
+	GetZoneID() *int
+	SetZoneID(*int)
 
 	// GetCategory Возвращает категорию объекта (controller, sensor, module, ext,  etc)
 	GetCategory() model.Category
@@ -56,6 +59,15 @@ type Object interface {
 	GetTagsMap() map[string]bool
 	SetTagsMap(map[string]bool)
 
+	GetEnabled() bool
+	SetEnabled(bool)
+
+	// CheckEnabled метод проверяет, включен ли объект.
+	// Вызывается в методах Start и Shutdown.
+	// Присутствует в интерфейсе для того, чтобы можно было
+	// его вызвать "вручную" в производных типах.
+	CheckEnabled() error
+
 	// Start запускает логику объекта
 	Start() error
 
@@ -76,7 +88,7 @@ type Object interface {
 type ObjectModel struct {
 	ID       int  `json:"id"`
 	ParentID *int `json:"parent_id"`
-	ZoneID   int  `json:"zone_id"`
+	ZoneID   *int `json:"zone_id"`
 
 	Category model.Category     `json:"category"`
 	Type     string             `json:"type"`
@@ -84,6 +96,7 @@ type ObjectModel struct {
 	Name     string             `json:"name"`
 	Status   model.ObjectStatus `json:"status"`
 	Tags     []string           `json:"tags,omitempty"`
+	Enabled  bool               `json:"enabled,omitempty"`
 
 	Props    *Props    `json:"props,omitempty"`
 	Children *Children `json:"children,omitempty"`

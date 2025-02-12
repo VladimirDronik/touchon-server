@@ -33,18 +33,6 @@ func MakeModel() (objects.Object, error) {
 			CheckValue: objects.Between(1, 0xFFFF),
 		},
 		{
-			Code:        "enable",
-			Name:        "Состояние",
-			Description: "вкл/выкл",
-			Item: &models.Item{
-				Type:         models.DataTypeBool,
-				DefaultValue: false,
-			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
-		},
-		{
 			Code:        "update_interval",
 			Name:        "Интервал опроса (с)",
 			Description: "Интервал опроса устройства",
@@ -87,15 +75,6 @@ type ModbusDeviceImpl struct {
 func (o *ModbusDeviceImpl) Start() error {
 	if err := o.Object.Start(); err != nil {
 		return errors.Wrap(err, "ModbusDeviceImpl.Start")
-	}
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
-	}
-
-	if !enable {
-		return nil
 	}
 
 	parentID := o.GetParentID()

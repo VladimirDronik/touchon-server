@@ -28,6 +28,7 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 		events:   NewEvents(),
 		methods:  NewMethods(),
 		tags:     make(map[string]bool, len(tags)),
+		enabled:  true,
 	}
 
 	if err := o.GetProps().Add(props...); err != nil {
@@ -56,7 +57,7 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 type ObjectModelImpl struct {
 	id       int
 	parentID *int
-	zoneID   int
+	zoneID   *int
 
 	category model.Category
 	objType  string
@@ -69,6 +70,7 @@ type ObjectModelImpl struct {
 	events   *Events
 	methods  *Methods
 	tags     map[string]bool
+	enabled  bool
 
 	mqttMsgHandlerIDs []int
 }
@@ -89,11 +91,11 @@ func (o *ObjectModelImpl) SetParentID(parentID *int) {
 	o.parentID = parentID
 }
 
-func (o *ObjectModelImpl) GetZoneID() int {
+func (o *ObjectModelImpl) GetZoneID() *int {
 	return o.zoneID
 }
 
-func (o *ObjectModelImpl) SetZoneID(zoneID int) {
+func (o *ObjectModelImpl) SetZoneID(zoneID *int) {
 	o.zoneID = zoneID
 }
 
@@ -180,6 +182,7 @@ func (o *ObjectModelImpl) MarshalJSON() ([]byte, error) {
 		Events:   events,
 		Methods:  methods,
 		Tags:     o.GetTags(),
+		Enabled:  o.GetEnabled(),
 	})
 }
 
@@ -214,6 +217,7 @@ func (o *ObjectModelImpl) UnmarshalJSON(data []byte) error {
 	o.SetName(v.Name)
 	// o.SetStatus(v.Status)     // Нельзя переопределять с фронта
 	o.SetTags(v.Tags...)
+	o.SetEnabled(v.Enabled)
 
 	return nil
 }
@@ -236,6 +240,7 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 	o.SetName(storeObj.Name)
 	o.SetStatus(storeObj.Status)
 	o.SetTagsMap(storeObj.Tags)
+	o.SetEnabled(storeObj.Enabled)
 
 	// Загружаем свойства объекта
 	props, err := store.I.ObjectRepository().GetProps(storeObj.ID)
@@ -318,7 +323,19 @@ func (o *ObjectModelImpl) Subscribe(publisher, topic string, msgType messages.Me
 	return nil
 }
 
+func (o *ObjectModelImpl) CheckEnabled() error {
+	if !o.enabled {
+		return ErrObjectDisabled
+	}
+
+	return nil
+}
+
 func (o *ObjectModelImpl) Start() error {
+	if err := o.CheckEnabled(); err != nil {
+		return errors.Wrap(err, "ObjectModelImpl.Start")
+	}
+
 	err := o.Subscribe("", "", messages.MessageTypeCommand, "", messages.TargetTypeObject, &o.id, o.mqttMsgHandler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
@@ -343,6 +360,10 @@ func (o *ObjectModelImpl) mqttMsgHandler(msg messages.Message) ([]messages.Messa
 }
 
 func (o *ObjectModelImpl) Shutdown() error {
+	if err := o.CheckEnabled(); err != nil {
+		return errors.Wrap(err, "ObjectModelImpl.Shutdown")
+	}
+
 	mqttService.I.Unsubscribe(o.mqttMsgHandlerIDs...)
 
 	return nil
@@ -406,6 +427,14 @@ func (o *ObjectModelImpl) SetTagsMap(tags map[string]bool) {
 	for tag := range tags {
 		o.SetTags(tag)
 	}
+}
+
+func (o *ObjectModelImpl) GetEnabled() bool {
+	return o.enabled
+}
+
+func (o *ObjectModelImpl) SetEnabled(v bool) {
+	o.enabled = v
 }
 
 func (o *ObjectModelImpl) DeleteChildren() error {
