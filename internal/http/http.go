@@ -72,15 +72,16 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	o.AddHandler("GET", "/mega", o.handleGetMegaD)                             // прием команд с megad
 	o.AddHandler("GET", "/controllers/{id}/ports", o.handleGetControllerPorts) // получение портов контроллера
 
-	o.AddHandler("GET", "/objects/types", o.handleGetObjectsTypes)    // получение категорий и типов объектов
-	o.AddHandler("GET", "/objects/model", o.handleGetObjectModel)     // получение модели объекта
-	o.AddHandler("GET", "/objects", o.handleGetObjects)               // получение объектов
-	o.AddHandler("GET", "/objects/{id}", o.handleGetObject)           // получение объекта
-	o.AddHandler("POST", "/objects", create_object.Handler)           // добавление объекта с методами
-	o.AddHandler("PUT", "/objects", update_object.Handler)            // обновление объекта
-	o.AddHandler("DELETE", "/objects/{id}", o.handleDeleteObject)     // удаление объекта
-	o.AddHandler("GET", "/objects/tags", o.handleGetAllObjectsTags)   // получение всех тегов
-	o.AddHandler("GET", "/objects/by_tags", o.handleGetObjectsByTags) // получение объектов по тегам
+	o.AddHandler("GET", "/objects/types", o.handleGetObjectsTypes)          // получение категорий и типов объектов
+	o.AddHandler("GET", "/objects/model", o.handleGetObjectModel)           // получение модели объекта
+	o.AddHandler("GET", "/objects", o.handleGetObjects)                     // получение объектов
+	o.AddHandler("GET", "/objects/{id}", o.handleGetObject)                 // получение объекта
+	o.AddHandler("POST", "/objects", create_object.Handler)                 // добавление объекта с методами
+	o.AddHandler("PUT", "/objects", update_object.Handler)                  // обновление объекта
+	o.AddHandler("DELETE", "/objects/{id}", o.handleDeleteObject)           // удаление объекта
+	o.AddHandler("GET", "/objects/tags", o.handleGetAllObjectsTags)         // получение всех тегов
+	o.AddHandler("GET", "/objects/by_tags", o.handleGetObjectsByTags)       // получение объектов по тегам
+	o.AddHandler("POST", "/objects/{id}/exec/{method}", o.handleExecMethod) // Запуск метода объекта
 
 	o.AddHandler("GET", "/scripts/model", o.handleGetScriptModel)
 	o.AddHandler("GET", "/scripts", o.handleGetScripts)
@@ -92,8 +93,6 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 
 	// Метод для тестирования
 	o.AddHandler("POST", "/_/mqtt", send_to_mqtt.Handler)
-
-	//o.AddHandler("POST", "/wizard/create_object", o.handleWizardCreateObject)
 
 	// AR
 

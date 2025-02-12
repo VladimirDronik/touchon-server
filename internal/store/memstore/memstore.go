@@ -359,8 +359,16 @@ func (o *MemStore) SaveObject(obj objects.Object) error {
 	defer o.mu.Unlock()
 
 	if _, ok := o.objects[obj.GetID()]; ok {
-		if err := obj.Shutdown(); err != nil {
-			return errors.Wrap(err, "SaveObject")
+		errs := o.shutdownObjectTree(obj)
+
+		// Выводим в лог все ошибки
+		for _, err := range errs {
+			context.Logger.Error(errors.Wrap(err, "SaveObject"))
+		}
+
+		// Возвращаем первую
+		if len(errs) > 0 {
+			return errors.Wrap(errs[0], "SaveObject")
 		}
 	}
 
