@@ -410,10 +410,25 @@ func (o *ObjectRepository) GetObjectsByAddress(address []string) ([]*model.Store
 }
 
 func (o *ObjectRepository) SetParent(objectID int, parentID *int) error {
-	q := o.store.db.Model(&model.StoreObject{})
-	q.Where("id = ?", objectID)
-	q.Update("parent_id", parentID)
-	err := q.Error
+	err := o.store.db.
+		Model(&model.StoreObject{}).
+		Where("id", objectID).
+		Update("parent_id", parentID).
+		Error
+
+	if err != nil {
+		return errors.Wrap(err, "SetParent")
+	}
+
+	return nil
+}
+
+func (o *ObjectRepository) SetEnabled(objectID int, enabled bool) error {
+	err := o.store.db.
+		Model(&model.StoreObject{}).
+		Where("id", objectID).
+		Update("enabled", enabled).
+		Error
 
 	if err != nil {
 		return errors.Wrap(err, "SetParent")

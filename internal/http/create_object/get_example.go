@@ -47,12 +47,14 @@ func GetExample(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 			Type     string                 `json:"type"`
 			Name     string                 `json:"name"`
 			Props    map[string]interface{} `json:"props,omitempty"`
+			Enabled  bool                   `json:"enabled"`
 			Children []*Child               `json:"children,omitempty"`
 		}{
 			Category: obj.GetCategory(),
 			Type:     obj.GetType(),
 			Name:     obj.GetName(),
 			Props:    make(map[string]interface{}, obj.GetProps().Len()),
+			Enabled:  obj.GetEnabled(),
 		},
 	}
 

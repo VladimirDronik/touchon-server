@@ -431,3 +431,42 @@ func (o *MemStore) shutdownObjectTree(obj objects.Object) (errs []error) {
 
 	return errs
 }
+
+// EnableObject включает объект и запускает его (метод Start())
+func (o *MemStore) EnableObject(objectID int) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	if obj, ok := o.objects[objectID]; ok {
+		obj.SetEnabled(true)
+
+		if err := o.startObjectTree(obj); err != nil {
+			return errors.Wrap(err, "EnableObject")
+		}
+	}
+
+	return nil
+}
+
+// DisableObject останавливает объект и отключает его запуск
+func (o *MemStore) DisableObject(objectID int) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	if obj, ok := o.objects[objectID]; ok {
+		errs := o.shutdownObjectTree(obj)
+		obj.SetEnabled(false)
+
+		// Выводим в лог все ошибки
+		for _, err := range errs {
+			context.Logger.Error(errors.Wrap(err, "DisableObject"))
+		}
+
+		// Возвращаем первую
+		if len(errs) > 0 {
+			return errors.Wrap(errs[0], "DisableObject")
+		}
+	}
+
+	return nil
+}

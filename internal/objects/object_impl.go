@@ -380,6 +380,7 @@ func (o *ObjectModelImpl) GetStoreObject() *model.StoreObject {
 		Name:     o.name,
 		Status:   o.status,
 		Tags:     o.GetTagsMap(),
+		Enabled:  o.enabled,
 	}
 }
 

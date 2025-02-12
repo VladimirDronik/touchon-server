@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/context"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
@@ -98,7 +99,9 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	}
 	e = objects.ConfigureDevice(interfaceConnection, addressObject, options, title)
 
-	objects.ResetParentAndAddress(objectsToReset)
+	if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
+		return nil, http.StatusBadRequest, err
+	}
 
 	//Если объект является сенсором, то создаем в экшен-роутере действия для его проверки
 	if req.Object.Category == "sensor" {
@@ -156,6 +159,7 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 	objModel.SetParentID(req.Object.ParentID)
 	objModel.SetZoneID(req.Object.ZoneID)
 	objModel.SetName(req.Object.Name)
+	objModel.SetEnabled(req.Object.Enabled)
 
 	// Выставляем сначала значения по умолчанию
 	for _, p := range objModel.GetProps().GetAll().GetValueList() {

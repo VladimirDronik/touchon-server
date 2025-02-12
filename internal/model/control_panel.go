@@ -17,7 +17,7 @@ type ViewItem struct {
 	PositionLeft  int    `json:"position_left"`                     //
 	PositionTop   int    `json:"position_top"`                      //
 	Scene         int    `json:"scene"`                             //
-	Enabled       bool   `json:"enabled,omitempty"`                 //
+	Enabled       bool   `json:"enabled"`                           //
 	ControlObject int    `json:"control_object,omitempty" gorm:"-"` // Объект, статус которого влияет на статус итема
 
 	Value        float32     `json:"value,omitempty" gorm:"-"`  //

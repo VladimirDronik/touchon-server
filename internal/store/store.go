@@ -65,6 +65,7 @@ type ObjectRepository interface {
 	GetObjectChildren(childType model.ChildType, objectID ...int) ([]*model.StoreObject, error)
 	DelObject(objectID int) error
 	GetAllTags() (map[string]int, error)
+	SetEnabled(objectID int, enabled bool) error
 }
 
 type PortRepository interface {

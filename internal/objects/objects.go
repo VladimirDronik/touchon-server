@@ -96,7 +96,7 @@ type ObjectModel struct {
 	Name     string             `json:"name"`
 	Status   model.ObjectStatus `json:"status"`
 	Tags     []string           `json:"tags,omitempty"`
-	Enabled  bool               `json:"enabled,omitempty"`
+	Enabled  bool               `json:"enabled"`
 
 	Props    *Props    `json:"props,omitempty"`
 	Children *Children `json:"children,omitempty"`
