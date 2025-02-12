@@ -31,7 +31,6 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 	fmt.Print("Version: ", cfg["version"], "\n\n\n")
 
 	info.Config = cfg
-	info.Name = cfg["service_name"]
 
 	logger, err := models.NewLogger(cfg["log_level"])
 	if err != nil {

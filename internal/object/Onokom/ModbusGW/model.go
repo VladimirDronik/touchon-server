@@ -12,8 +12,8 @@ import (
 	"touchon-server/internal/scripts"
 	"touchon-server/lib/event"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 // Шлюз напрямую не используем, только в виде кондиционера с поддержкой управления по modbus.
@@ -137,7 +137,7 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 
 	// Добавляем свои события
 	for _, eventName := range []string{"object.onokom.gateway.on_check", "object.onokom.gateway.on_change"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
+		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "ModbusGW.MakeModel")
 		}

@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
@@ -14,8 +15,8 @@ import (
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	mqttClient "touchon-server/lib/mqtt/client"
 	"touchon-server/lib/mqtt/messages"
 )
 
@@ -107,7 +108,7 @@ func MakeModel() (objects.Object, error) {
 
 	// Добавляем свои события
 	for _, eventName := range []string{"object.sensor.on_motion_on", "object.sensor.on_motion_off"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
+		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "motion.MakeModel")
 		}
@@ -125,7 +126,7 @@ type MotionSensorModel struct {
 	periodTimer *helpers.Timer
 }
 
-func (o *MotionSensorModel) Check(args map[string]interface{}) ([]messages.Message, error) {
+func (o *MotionSensorModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
 	// Данный датчик сам не проверяет значения, а получает значения от порта
 	//TODO:: реализовать метод check всё равно, т.к. пользователь может запросить состояние датчика
 	return nil, errors.Wrap(errors.New("method 'check' not supported"), "MotionSensorModel.Check")
@@ -147,11 +148,9 @@ func (o *MotionSensorModel) Start() error {
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_long_press",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.onMotionOnHandler,
 	)
@@ -160,11 +159,9 @@ func (o *MotionSensorModel) Start() error {
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_release",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.onMotionOffHandler,
 	)
@@ -189,12 +186,12 @@ func (o *MotionSensorModel) Start() error {
 
 	// Если есть движение, отправляем сообщение в шину
 	if state {
-		msg, err := sensor.NewOnMotionOnMessage("object_manager/object/event", o.GetID())
+		msg, err := sensor.NewOnMotionOn(o.GetID())
 		if err != nil {
 			return errors.Wrap(err, "MotionSensorModel.Start")
 		}
 
-		if err := mqttClient.I.Send(msg); err != nil {
+		if err := msgs.I.Send(msg); err != nil {
 			return errors.Wrap(err, "MotionSensorModel.Start")
 		}
 	}
@@ -202,7 +199,7 @@ func (o *MotionSensorModel) Start() error {
 	return nil
 }
 
-func (o *MotionSensorModel) onMotionOnHandler(messages.Message) ([]messages.Message, error) {
+func (o *MotionSensorModel) onMotionOnHandler(interfaces.Message) {
 	context.Logger.Debugf("MotionSensorModel(%d): onMotionOnHandler()", o.GetID())
 
 	// Запоминаем текущее состояние движения
@@ -231,7 +228,7 @@ func (o *MotionSensorModel) onMotionOnHandler(messages.Message) ([]messages.Mess
 	return []messages.Message{msg}, nil
 }
 
-func (o *MotionSensorModel) onMotionOffHandler(messages.Message) ([]messages.Message, error) {
+func (o *MotionSensorModel) onMotionOffHandler(interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
 		return nil, errors.Wrap(err, "MotionSensorModel.onMotionOffHandler")
 	}
@@ -271,18 +268,18 @@ func (o *MotionSensorModel) periodTimerHandler() {
 		return
 	}
 
-	msg, err := sensor.NewOnMotionOffMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnMotionOff(o.GetID())
 	if err != nil {
 		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 
-		msg, err = events.NewOnErrorMessage("object_manager/error", msg.GetTargetType(), msg.GetTargetID(), err.Error())
+		msg, err = events.NewOnError(msg.GetTargetType(), msg.GetTargetID(), err.Error())
 		if err != nil {
 			context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 			return
 		}
 	}
 
-	if err := mqttClient.I.Send(msg); err != nil {
+	if err := msgs.I.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 		return
 	}

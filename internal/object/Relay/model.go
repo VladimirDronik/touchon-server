@@ -6,10 +6,11 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -106,11 +107,9 @@ func (o *RelayModel) Start() error {
 	}
 
 	err = o.Subscribe(
+		interfaces.MessageTypeEvent,
 		"",
-		"",
-		messages.MessageTypeEvent,
-		"",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.handler,
 	)
@@ -123,23 +122,28 @@ func (o *RelayModel) Start() error {
 	return nil
 }
 
-func (o *RelayModel) handler(msg messages.Message) ([]messages.Message, error) {
+func (o *RelayModel) handler(msg interfaces.Message) {
 	context.Logger.Debugf("Relay(%d): handler()", o.GetID())
 
 	var err error
 
 	switch msg.GetName() {
 	case "object.port.on_change_state":
-		msg, err = events.NewOnChangeStateMessage("object_manager/object/event", messages.TargetTypeObject, o.GetID(), strings.ToLower(msg.GetPayload()["status"].(string)), "")
+		// TODO
+		var state string // = msg.GetPayload()["status"].(string)
+		msg, err = events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), "")
 	default:
-		return nil, nil
+		return
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.handler")
+		context.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := msgs.I.Send(msg); err != nil {
+		context.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
+	}
 }
 
 func (o *RelayModel) Shutdown() error {

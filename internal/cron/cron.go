@@ -7,43 +7,26 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	svcContext "touchon-server/internal/context"
 	"touchon-server/internal/model"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
-	"touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/messages"
 )
 
-func New(store store.Store, cfg map[string]string, mqttClient client.Client) (*Scheduler, error) {
-	switch {
-	case store == nil:
-		return nil, errors.Wrap(errors.New("store is nil"), "cron.New")
-	case cfg == nil:
-		return nil, errors.Wrap(errors.New("cfg is nil"), "cron.New")
-	case mqttClient == nil:
-		return nil, errors.Wrap(errors.New("mqttClient is nil"), "cron.New")
-	}
-
+func New() (*Scheduler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Scheduler{
-		logger:     logrus.New(),
-		store:      store,
-		config:     cfg,
-		mqttClient: mqttClient,
-		ctx:        ctx,
-		cancel:     cancel,
+		ctx:    ctx,
+		cancel: cancel,
 	}, nil
 }
 
 type Scheduler struct {
-	logger     *logrus.Logger
-	store      store.Store
-	config     map[string]string
-	mqttClient client.Client
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 func (o *Scheduler) Start() error {
@@ -54,7 +37,7 @@ func (o *Scheduler) Start() error {
 
 		tasks, err := store.I.CronRepo().GetEnabledTasks()
 		if err != nil {
-			o.logger.Error(err)
+			svcContext.Logger.Error(err)
 		}
 
 		for {
@@ -66,7 +49,7 @@ func (o *Scheduler) Start() error {
 				if _, _, sec := time.Now().Clock(); sec == 0 {
 					tasks, err = store.I.CronRepo().GetEnabledTasks()
 					if err != nil {
-						o.logger.Error(err)
+						svcContext.Logger.Error(err)
 						continue
 					}
 				}
@@ -77,7 +60,7 @@ func (o *Scheduler) Start() error {
 				}
 
 				if err := o.task(m); err != nil {
-					o.logger.Error(err)
+					svcContext.Logger.Error(err)
 					continue
 				}
 			}
@@ -155,9 +138,7 @@ func (o *Scheduler) doAction(tasks []*model.CronTask) error {
 					return errors.Wrap(err, "doAction")
 				}
 
-				msg.SetTopic(msg.GetPublisher() + "/command")
-
-				if err := o.mqttClient.Send(msg); err != nil {
+				if err := msgs.I.Send(msg); err != nil {
 					return errors.Wrap(err, "doAction")
 				}
 

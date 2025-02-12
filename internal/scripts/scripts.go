@@ -15,10 +15,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/traefik/yaegi/interp"
+	svcContext "touchon-server/internal/context"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/script"
 	"touchon-server/lib/helpers/orderedmap"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // Global instance
@@ -250,24 +251,25 @@ func (o *Scripts) execScript(script *Script, args map[string]interface{}) (inter
 	return string(data), nil
 }
 
-// MqttMsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *Scripts) MqttMsgHandler(msg messages.Message) ([]messages.Message, error) {
+// MsgHandler позволяет обрабатывать сообщения из брокера сообщений
+func (o *Scripts) MsgHandler(svc interfaces.MessageSender, msg interfaces.Message) {
 	s, err := o.GetScript(msg.GetTargetID())
 	if err != nil {
-		return nil, errors.Wrap(err, "Scripts.MqttMsgHandler")
+		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
+		return
 	}
 
 	r, err := o.ExecScript(s, msg.GetPayload())
 	if err != nil {
-		return nil, errors.Wrap(err, "Scripts.MqttMsgHandler")
+		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
+		return
 	}
 
 	msg, err = script.NewOnCompleteMessage("object_manager/script/event", msg.GetTargetID(), r)
 	if err != nil {
-		return nil, errors.Wrap(err, "Scripts.MqttMsgHandler")
+		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
+		return
 	}
-
-	return []messages.Message{msg}, nil
 }
 
 func returnResult(stdOut io.Writer, data interface{}) {

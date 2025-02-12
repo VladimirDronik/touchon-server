@@ -6,11 +6,12 @@ import (
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/model"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/item"
 	"touchon-server/lib/helpers"
-	mqttClient "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 )
 
 // Создание элемента
@@ -410,26 +411,29 @@ func (o *Server) itemChange(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 		return nil, http.StatusInternalServerError, err
 	}
 
-	var msg messages.Message
+	var msg interfaces.Message
 	var err error
 
 	switch req.State {
 	case "on":
-		msg, err = item.NewOnChangeStateOnMessage("touchon-server/item/event", req.ItemID)
+		msg, err = item.NewOnChangeStateOn(req.ItemID)
 	case "off":
-		msg, err = item.NewOnChangeStateOffMessage("touchon-server/item/event", req.ItemID)
+		msg, err = item.NewOnChangeStateOff(req.ItemID)
 	default:
-		msg, err = messages.NewEvent(req.Event, messages.TargetTypeItem, req.ItemID, nil)
+		msg, err = messages.NewEvent(interfaces.TargetTypeItem, req.ItemID)
+		if err == nil {
+			msg.SetName(req.Event)
+		}
 	}
 
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	msg.SetTopic("touchon-server/item/event")
-	msg.SetPayload(req.Params)
+	// TODO ???
+	// msg.SetPayload(req.Params)
 
-	if err := mqttClient.I.Send(msg); err != nil {
+	if err := msgs.I.Send(msg); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

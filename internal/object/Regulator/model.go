@@ -7,13 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/regulator"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	mqttClient "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
 )
 
 type Type string // Тип регулятора
@@ -181,9 +181,9 @@ type RegulatorModel struct {
 	timer *helpers.Timer
 }
 
-func (o *RegulatorModel) sensorOnCheckHandler(messages.Message) ([]messages.Message, error) {
+func (o *RegulatorModel) sensorOnCheckHandler(interfaces.Message) {
 	if !o.GetEnabled() {
-		return nil, nil
+		return
 	}
 
 	// Раз попали сюда, значит значение датчика обновилось
@@ -195,98 +195,113 @@ func (o *RegulatorModel) sensorOnCheckHandler(messages.Message) ([]messages.Mess
 
 	regTypeS, err := o.GetProps().GetStringValue("type")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 	regType := Type(regTypeS)
 
 	fallbackSensorValueID, err := o.GetProps().GetIntValue("fallback_sensor_value_id")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	//minSP, err := o.GetProps().GetFloatValue("min_sp")
 	//if err != nil {
-	//	return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+	//context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	//return
 	//}
 	//
 	//maxSP, err := o.GetProps().GetFloatValue("max_sp")
 	//if err != nil {
-	//	return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+	//context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	//return
 	//}
 
 	targetSP, err := o.GetProps().GetFloatValue("target_sp")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	aboveTolerance, err := o.GetProps().GetFloatValue("above_tolerance")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	belowTolerance, err := o.GetProps().GetFloatValue("below_tolerance")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	complexTolerance, err := o.GetProps().GetFloatValue("complex_tolerance")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	parentID := o.GetParentID()
 	if parentID == nil {
-		return nil, errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	// Запрос данных TargetSensor
 	sensorValue, err := o.requestSensorValue(*parentID)
 	if err != nil {
 		if fallbackSensorValueID < 1 {
-			return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+			context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			return
 		}
 
 		sensorValue, err = o.requestSensorValue(fallbackSensorValueID)
 		if err != nil {
-			return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+			context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			return
 		}
 	}
 
-	var msg messages.Message
+	var msg interfaces.Message
 
 	switch regType {
 	case TypeSimple:
 		switch {
 		case sensorValue < (targetSP - belowTolerance): // TODO minSP ???
-			msg, err = regulator.NewOnBelowMessage("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnBelow(*parentID, sensorValue)
 		case sensorValue > (targetSP + aboveTolerance): // TODO maxSP ???
-			msg, err = regulator.NewOnAboveMessage("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnAbove(*parentID, sensorValue)
 		}
 
 	case TypeComplex:
 		switch {
 		case sensorValue < (targetSP - complexTolerance - belowTolerance):
-			msg, err = regulator.NewOnComplexBelow1Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexBelow1(*parentID, sensorValue)
 		case sensorValue < (targetSP - complexTolerance + aboveTolerance):
-			msg, err = regulator.NewOnComplexAbove1Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexAbove1(*parentID, sensorValue)
 		case sensorValue > (targetSP + complexTolerance - belowTolerance):
-			msg, err = regulator.NewOnComplexBelow2Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexBelow2(*parentID, sensorValue)
 		case sensorValue > (targetSP + complexTolerance + aboveTolerance):
-			msg, err = regulator.NewOnComplexAbove2Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexAbove2(*parentID, sensorValue)
 		}
 
 	case TypePID:
 		err = errors.New("regulator(TypePID) logic not implemented")
 
 	default:
-		return nil, errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := msgs.I.Send(msg); err != nil {
+		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	}
 }
 
 func (o *RegulatorModel) requestSensorValue(sensorValueID int) (float32, error) {
@@ -319,11 +334,9 @@ func (o *RegulatorModel) Start() error {
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.sensor.on_check",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		sensorValue.ParentID,
 		o.sensorOnCheckHandler,
 	)
@@ -358,13 +371,13 @@ func (o *RegulatorModel) timerHandler() {
 
 	}
 
-	msg, err := regulator.NewOnStaleMessage("object_manager/object/event", *parentID)
+	msg, err := regulator.NewOnStale(*parentID)
 	if err != nil {
 		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
 		return
 	}
 
-	if err := mqttClient.I.Send(msg); err != nil {
+	if err := msgs.I.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
 		return
 	}

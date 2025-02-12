@@ -12,11 +12,11 @@ import (
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // ResCommand прием команды от megaD
-func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value string) ([]messages.Message, error) {
+func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value string) ([]interfaces.Message, error) {
 	objectID, err := store.I.PortRepository().GetPortObjectID(controllerID, portNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "ResCommand")
@@ -39,7 +39,7 @@ func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCou
 		return nil, errors.Wrap(errors.New("Поддержка расширителя не реализована"), "ResCommand")
 	}
 
-	msgs := make([]messages.Message, 0, 10)
+	msgs := make([]interfaces.Message, 0, 10)
 
 	switch {
 	case clickCount == "2":

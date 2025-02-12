@@ -37,7 +37,7 @@ import (
 	"touchon-server/internal/context"
 	"touchon-server/internal/cron"
 	httpServer "touchon-server/internal/http"
-	mqttService "touchon-server/internal/mqtt"
+	"touchon-server/internal/msgs"
 	_ "touchon-server/internal/object/PortMegaD"
 	_ "touchon-server/internal/object/Regulator"
 	_ "touchon-server/internal/object/Relay"
@@ -60,7 +60,7 @@ import (
 	"touchon-server/internal/ws"
 	"touchon-server/lib/event"
 	httpClient "touchon-server/lib/http/client"
-	mqttClient "touchon-server/lib/mqtt/client"
+	"touchon-server/lib/messages"
 	"touchon-server/lib/service"
 
 	_ "touchon-server/internal/object/GenericInput"
@@ -77,16 +77,13 @@ func init() {
 }
 
 var defaults = map[string]string{
-	"http_addr":              "0.0.0.0:8081",
-	"action_router_addr":     "0.0.0.0:8081", // TODO delete
-	"object_manager_addr":    "0.0.0.0:8081", // TODO delete
-	"database_url":           "db.sqlite?_foreign_keys=true",
-	"server_key":             "c041d36e381a835afce48c91686370c8",
-	"mqtt_connection_string": "mqtt://services:12345678@mqtt:1883/#",
-	"log_level":              "debug",
-	"version":                "0.1",
-	"service_name":           "touchon_server",
-	"mqtt_max_travel_time":   "50ms",
+	"http_addr":           "0.0.0.0:8081",
+	"action_router_addr":  "0.0.0.0:8081", // TODO delete
+	"object_manager_addr": "0.0.0.0:8081", // TODO delete
+	"database_url":        "db.sqlite?_foreign_keys=true",
+	"server_key":          "c041d36e381a835afce48c91686370c8",
+	"log_level":           "debug",
+	"version":             "0.1",
 
 	"access_token_ttl":          "30m",
 	"refresh_token_ttl":         "43200m",
@@ -135,16 +132,11 @@ func main() {
 
 	check(ws.I.Start(cfg["ws_addr"]))
 
-	// Инициализация клиента для MQTT
-	mqttClient.I, err = mqttClient.New(cfg["service_name"], cfg["mqtt_connection_string"], 10*time.Second, 3, logger)
+	msgs.I, err = messages.NewService(runtime.NumCPU(), 2000)
 	check(err)
-	mqttClient.I.SetIgnoreSelfMsgs(false)
 
 	// Создаем скриптовый движок
 	scripts.I = scripts.NewScripts(10*time.Second, objects.NewExecutor())
-
-	mqttService.I, err = mqttService.New(1000, 4, cfg["push_sender_address"])
-	check(err)
 
 	// Загружает все объекты БД в память
 	memStore.I, err = memStore.New()
@@ -152,7 +144,7 @@ func main() {
 
 	check(memStore.I.Start())
 
-	check(mqttService.I.Start())
+	check(msgs.I.Start())
 
 	httpClient.I = httpClient.New()
 
@@ -162,7 +154,7 @@ func main() {
 	// Старт HTTP API сервера
 	check(httpServer.I.Start(cfg["http_addr"]))
 
-	sch, err := cron.New(store.I, cfg, mqttClient.I)
+	sch, err := cron.New()
 	check(err)
 
 	check(sch.Start())
@@ -180,7 +172,7 @@ func main() {
 		logger.Error(err)
 	}
 
-	if err := mqttService.I.Shutdown(); err != nil {
+	if err := msgs.I.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 

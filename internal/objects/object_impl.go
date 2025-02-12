@@ -5,12 +5,13 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"touchon-server/internal/context"
 	"touchon-server/internal/model"
-	mqttService "touchon-server/internal/mqtt"
-	"touchon-server/internal/mqtt/subscribers"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/event"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/mqtt/messages"
 )
 
@@ -72,7 +73,7 @@ type ObjectModelImpl struct {
 	tags     map[string]bool
 	enabled  bool
 
-	mqttMsgHandlerIDs []int
+	msgHandlerIDs []int
 }
 
 func (o *ObjectModelImpl) GetID() int {
@@ -312,13 +313,13 @@ func (o *ObjectModelImpl) Save() error {
 	return nil
 }
 
-func (o *ObjectModelImpl) Subscribe(publisher, topic string, msgType messages.MessageType, name string, targetType messages.TargetType, targetID *int, handler subscribers.MqttMsgHandler) error {
-	handlerID, err := mqttService.I.Subscribe(publisher, topic, msgType, name, targetType, targetID, handler)
+func (o *ObjectModelImpl) Subscribe(msgType interfaces.MessageType, name string, targetType interfaces.TargetType, targetID *int, handler interfaces.MsgHandler) error {
+	handlerID, err := msgs.I.Subscribe(msgType, name, targetType, targetID, handler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Subscribe")
 	}
 
-	o.mqttMsgHandlerIDs = append(o.mqttMsgHandlerIDs, handlerID)
+	o.msgHandlerIDs = append(o.msgHandlerIDs, handlerID)
 
 	return nil
 }
@@ -336,7 +337,7 @@ func (o *ObjectModelImpl) Start() error {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
 
-	err := o.Subscribe("", "", messages.MessageTypeCommand, "", messages.TargetTypeObject, &o.id, o.mqttMsgHandler)
+	err := o.Subscribe(messages.MessageTypeCommand, "", messages.TargetTypeObject, &o.id, o.mqttMsgHandler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
@@ -345,18 +346,22 @@ func (o *ObjectModelImpl) Start() error {
 }
 
 // MqttMsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *ObjectModelImpl) mqttMsgHandler(msg messages.Message) ([]messages.Message, error) {
+func (o *ObjectModelImpl) mqttMsgHandler(svc interfaces.MessageSender, msg interfaces.Message) {
 	method, err := o.GetMethods().Get(msg.GetName())
 	if err != nil {
-		return nil, errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler")
+		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
+		return
 	}
 
 	msgs, err := method.Func(msg.GetPayload())
 	if err != nil {
-		return nil, errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler")
+		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
+		return
 	}
 
-	return msgs, nil
+	if err := svc.Send(msgs...); err != nil {
+		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
+	}
 }
 
 func (o *ObjectModelImpl) Shutdown() error {
@@ -364,7 +369,7 @@ func (o *ObjectModelImpl) Shutdown() error {
 		return errors.Wrap(err, "ObjectModelImpl.Shutdown")
 	}
 
-	mqttService.I.Unsubscribe(o.mqttMsgHandlerIDs...)
+	msgs.I.Unsubscribe(o.msgHandlerIDs...)
 
 	return nil
 }

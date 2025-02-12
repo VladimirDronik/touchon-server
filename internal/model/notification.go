@@ -1,13 +1,15 @@
 package model
 
-import "touchon-server/lib/events"
+import (
+	"touchon-server/lib/interfaces"
+)
 
 type Notification struct {
-	ID     int               `json:"id,omitempty"`
-	Type   events.NotifyType `json:"type,omitempty"`
-	Date   string            `json:"date"`
-	Text   string            `json:"text"`
-	IsRead bool              `json:"is_read"`
+	ID     int                         `json:"id,omitempty"`
+	Type   interfaces.NotificationType `json:"type,omitempty"`
+	Date   string                      `json:"date"`
+	Text   string                      `json:"text"`
+	IsRead bool                        `json:"is_read"`
 }
 
 type GroupedNotifications struct {

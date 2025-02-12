@@ -14,7 +14,6 @@ import (
 	_ "touchon-server/docs"
 	"touchon-server/internal/context"
 	"touchon-server/internal/http/create_object"
-	"touchon-server/internal/http/send_to_mqtt"
 	"touchon-server/internal/http/update_object"
 	"touchon-server/internal/model"
 	"touchon-server/internal/scripts"
@@ -90,9 +89,6 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	o.AddHandler("PUT", "/scripts", o.handleUpdateScript)
 	o.AddHandler("DELETE", "/scripts/{id}", o.handleDeleteScript)
 	o.AddHandler("POST", "/scripts/{id}/exec", o.handleExecScript)
-
-	// Метод для тестирования
-	o.AddHandler("POST", "/_/mqtt", send_to_mqtt.Handler)
 
 	// AR
 

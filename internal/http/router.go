@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"touchon-server/internal/context"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/controller"
 	"touchon-server/lib/helpers"
-	mqttClient "touchon-server/lib/mqtt/client"
+	"touchon-server/lib/interfaces"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -16,7 +17,6 @@ import (
 	"touchon-server/internal/object/PortMegaD"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
-	"touchon-server/lib/mqtt/messages"
 )
 
 type SensorValues struct {
@@ -142,7 +142,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 	holdRelease := helpers.GetParam(ctx, "m")    // при удержании передается 2, при отпускании 1
 	value := helpers.GetParam(ctx, "v")          // Отправляется при срабатывании порта OUT
 
-	var allMsgs []messages.Message
+	var allMsgs []interfaces.Message
 
 	switch {
 	case controllerStarted == "1":
@@ -151,7 +151,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 			return nil, http.StatusInternalServerError, err
 		}
 
-		msg, err := controller.NewOnLoadMessage("object_manager/object/event", obj.ID)
+		msg, err := controller.NewOnLoad(obj.ID)
 		if err != nil {
 			return nil, http.StatusInternalServerError, err
 		}
@@ -180,7 +180,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 			err = errors.Wrap(err, "ResCommand")
 			context.Logger.Warn(err)
 
-			msg, err := events.NewOnErrorMessage("object_manager/error", messages.TargetTypeObject, 0, err.Error())
+			msg, err := events.NewOnError(interfaces.TargetTypeObject, objectID, err.Error())
 			if err != nil {
 				return nil, http.StatusInternalServerError, err
 			}
@@ -199,8 +199,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 				continue
 			}
 
-			msg.SetQoS(messages.QoSGuaranteedOne)
-			if err := mqttClient.I.Send(msg); err != nil {
+			if err := msgs.I.Send(msg); err != nil {
 				o.GetLogger().Errorf("handleGetMegaD: %v", err)
 			}
 		}

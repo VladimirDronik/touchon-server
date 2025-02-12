@@ -9,7 +9,7 @@ import (
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 func init() {
@@ -89,7 +89,7 @@ func (o *SensorModel) getValues(timeout time.Duration) (map[SensorValue.Type]flo
 	}, nil
 }
 
-func (o *SensorModel) Check(args map[string]interface{}) ([]messages.Message, error) {
+func (o *SensorModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
 	msgs, err := o.SensorModel.Check(o.getValues)
 	if err != nil {
 		return nil, errors.Wrap(err, "Check")

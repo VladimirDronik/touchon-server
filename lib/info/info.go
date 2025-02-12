@@ -11,8 +11,6 @@ import (
 	"github.com/pbnjay/memory"
 )
 
-var Name string
-
 var Config map[string]string
 
 var startedAt = time.Now()
@@ -49,7 +47,7 @@ type Info struct {
 
 func GetInfo() (*Info, error) {
 	info := &Info{
-		Service:        Name,
+		Service:        "touchon_server",
 		StartedAt:      startedAt.Format("02.01.2006 15:04:05"),
 		Uptime:         time.Since(startedAt).Round(time.Second).String(),
 		MaxMemoryUsage: fmt.Sprintf("%.1f MiB", float64(maxMem.Load())/1024/1024),

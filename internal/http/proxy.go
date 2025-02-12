@@ -36,7 +36,6 @@ func (o *Server) proxy(ctx *fasthttp.RequestCtx) {
 	}
 
 	ctx.Request.Header.Set("Original-User-Agent", string(ctx.Request.Header.UserAgent()))
-	ctx.Request.Header.SetUserAgent(o.GetConfig()["service_name"])
 	u := ctx.Request.URI()
 	u.SetScheme("http")
 	u.SetHost(addr)

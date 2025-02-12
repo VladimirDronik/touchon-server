@@ -2,68 +2,34 @@ package wb_mrm2_mini
 
 import (
 	"github.com/pkg/errors"
-	"touchon-server/lib/event"
-	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 )
 
-func init() {
-	maker := func() (*event.Event, error) {
-		e := &event.Event{
-			Code:        "object.wiren_board.wb_mrm2_mini.on_check",
-			Name:        "on_check",
-			Description: "Получено состояние выходов",
-			Props:       event.NewProps(),
-			TargetType:  messages.TargetTypeObject,
-		}
-
-		k1 := &event.Prop{
-			Code: "k1",
-			Name: "Выход 1",
-			Item: &models.Item{
-				Type: models.DataTypeBool,
-			},
-		}
-
-		k2 := &event.Prop{
-			Code: "k2",
-			Name: "Выход 2",
-			Item: &models.Item{
-				Type: models.DataTypeBool,
-			},
-		}
-
-		if err := e.Props.Add(k1, k2); err != nil {
-			return nil, errors.Wrap(err, "init.maker")
-		}
-
-		return e, nil
+func NewOnCheck(targetID int, values map[string]bool) (interfaces.Message, error) {
+	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
-	// Для регистрации событий надо в service/init.go добавить импорт данного _пакета_!
-	if err := event.Register(maker); err != nil {
-		panic(err)
+	o := &OnCheck{
+		MessageImpl: msg,
 	}
+
+	if v, ok := values["k1"]; ok {
+		o.K1 = v
+	}
+
+	if v, ok := values["k2"]; ok {
+		o.K2 = v
+	}
+
+	return o, nil
 }
 
-// NewOnCheckMessage используется при проверке состояния как всех выходов, так и при проверке отдельных выходов.
-func NewOnCheckMessage(topic string, targetID int, values map[string]bool) (messages.Message, error) {
-	payload := make(map[string]interface{}, len(values))
-	for _, k := range []string{"k1", "k2"} {
-		if v, ok := values[k]; ok {
-			payload[k] = v
-		}
-	}
-
-	e, err := event.MakeEvent("object.wiren_board.wb_mrm2_mini.on_check", messages.TargetTypeObject, targetID, payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "NewOnCheckMessage")
-	}
-
-	m, err := e.ToMqttMessage(topic)
-	if err != nil {
-		return nil, errors.Wrap(err, "NewOnCheckMessage")
-	}
-
-	return m, nil
+// OnCheck Получено состояние выходов
+type OnCheck struct {
+	*messages.MessageImpl
+	K1 bool `json:"k1"` // Выход 1
+	K2 bool `json:"k2"` // Выход 2
 }

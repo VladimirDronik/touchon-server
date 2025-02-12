@@ -16,14 +16,13 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	gw "touchon-server/lib/events/object/onokom/gateway"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	mqtt "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
 )
 
 var testError = errors.New("test error")
 
-type f = func(*GatewayModel, map[string]interface{}) ([]messages.Message, error)
+type f = func(*GatewayModel, map[string]interface{}) ([]interfaces.Message, error)
 
 func init() {
 	context.Logger = logrus.New()

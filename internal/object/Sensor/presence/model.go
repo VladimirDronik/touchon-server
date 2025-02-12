@@ -12,6 +12,7 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/lib/event"
 	"touchon-server/lib/events/object/sensor"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/mqtt/messages"
 )
 
@@ -61,7 +62,7 @@ func MakeModel() (objects.Object, error) {
 
 	// Добавляем свои события
 	for _, eventName := range []string{"object.sensor.on_presence_on", "object.sensor.on_presence_off"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
+		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "presence.MakeModel")
 		}
@@ -114,11 +115,9 @@ func (o *PresenceSensorModel) Start() error {
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_long_press",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&presencePortID,
 		o.onPresenceOnHandler,
 	)
@@ -127,11 +126,9 @@ func (o *PresenceSensorModel) Start() error {
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_release",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&presencePortID,
 		o.onPresenceOffHandler,
 	)
@@ -144,7 +141,7 @@ func (o *PresenceSensorModel) Start() error {
 	return nil
 }
 
-func (o *PresenceSensorModel) onPresenceOnHandler(messages.Message) ([]messages.Message, error) {
+func (o *PresenceSensorModel) onPresenceOnHandler(interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
 		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler")
 	}
@@ -174,7 +171,7 @@ func (o *PresenceSensorModel) onPresenceOnHandler(messages.Message) ([]messages.
 	return []messages.Message{msg}, nil
 }
 
-func (o *PresenceSensorModel) onPresenceOffHandler(messages.Message) ([]messages.Message, error) {
+func (o *PresenceSensorModel) onPresenceOffHandler(interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
 		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler")
 	}

@@ -4,10 +4,11 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/generic_input"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -93,11 +94,9 @@ func (o *GenericInputModel) Start() error {
 	}
 
 	err = o.Subscribe(
+		interfaces.MessageTypeEvent,
 		"",
-		"",
-		messages.MessageTypeEvent,
-		"",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.handler,
 	)
@@ -110,27 +109,31 @@ func (o *GenericInputModel) Start() error {
 	return nil
 }
 
-func (o *GenericInputModel) handler(msg messages.Message) ([]messages.Message, error) {
+func (o *GenericInputModel) handler(msg interfaces.Message) {
 	context.Logger.Debugf("GenericInputModel(%d): handler()", o.GetID())
 
 	var err error
 
 	switch msg.GetName() {
 	case "object.port.on_press":
-		msg, err = generic_input.NewOnClickMessage("object_manager/object/event", o.GetID())
+		msg, err = generic_input.NewOnClick(o.GetID())
 	case "object.port.on_double_click":
-		msg, err = generic_input.NewOnDoubleClickMessage("object_manager/object/event", o.GetID())
+		msg, err = generic_input.NewOnDoubleClick(o.GetID())
 	case "object.port.on_long_press":
-		msg, err = generic_input.NewOnLongPressMessage("object_manager/object/event", o.GetID())
+		msg, err = generic_input.NewOnLongPress(o.GetID())
 	default:
-		return nil, nil
+		return
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "GenericInputModel.handler")
+		context.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := msgs.I.Send(msg); err != nil {
+		context.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
+		return
+	}
 }
 
 func (o *GenericInputModel) Shutdown() error {

@@ -2,8 +2,7 @@ package event
 
 import (
 	"github.com/pkg/errors"
-	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 type Event struct {
@@ -12,12 +11,12 @@ type Event struct {
 	Description string `json:"description,omitempty"`
 	Props       *props `json:"props"`
 
-	TargetID   int                 `json:"target_id,omitempty"`
-	TargetType messages.TargetType `json:"target_type,omitempty"`
+	TargetID   int                   `json:"target_id,omitempty"`
+	TargetType interfaces.TargetType `json:"target_type,omitempty"`
 }
 
 func (o *Event) Check() error {
-	if _, ok := messages.TargetTypes[o.TargetType]; !ok {
+	if _, ok := interfaces.TargetTypes[o.TargetType]; !ok {
 		return errors.Wrap(errors.Errorf("unknown target type %q", o.TargetType), "Event.Check")
 	}
 
@@ -35,76 +34,4 @@ func (o *Event) Check() error {
 	}
 
 	return nil
-}
-
-func (o *Event) ToMqttMessage(topic string) (messages.Message, error) {
-	payload := make(map[string]interface{}, o.Props.Len())
-	for _, p := range o.Props.GetOrderedMap().GetValueList() {
-		v := p.GetValue()
-		if v != nil {
-			payload[p.Code] = p.GetValue()
-		}
-	}
-
-	m, err := messages.NewMessage(messages.MessageTypeEvent, o.Code, o.TargetType, o.TargetID, payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "ToMqttMessage")
-	}
-
-	m.SetTopic(topic)
-
-	return m, nil
-}
-
-func FromMqttMessage(msg messages.Message, parseUnknownEvent bool) (*Event, error) {
-	maker, err := GetMaker(msg.GetName())
-	if !parseUnknownEvent && err != nil {
-		// Ругаемся на незарегистрированное событие
-		return nil, errors.Wrap(err, "FromMqttMessage")
-	}
-
-	if err == nil {
-		// Разбираем известное (зарегистрированное) событие
-		e, err := maker()
-		if err != nil {
-			return nil, errors.Wrap(err, "FromMqttMessage")
-		}
-
-		e.Code = msg.GetName()
-		e.TargetID = msg.GetTargetID()
-		e.TargetType = msg.GetTargetType()
-
-		for k, v := range msg.GetPayload() {
-			p, err := e.Props.Get(k)
-			if err != nil {
-				return nil, errors.Wrap(err, "FromMqttMessage")
-			}
-
-			if err := p.SetValue(v); err != nil {
-				return nil, errors.Wrap(err, "FromMqttMessage")
-			}
-		}
-
-		return e, nil
-	} else {
-		// Разбираем неизвестное (не зарегистрированное) событие
-		e := &Event{Props: NewProps()}
-
-		e.Code = msg.GetName()
-		e.TargetID = msg.GetTargetID()
-		e.TargetType = msg.GetTargetType()
-
-		for k, v := range msg.GetPayload() {
-			p := Prop{
-				Code: k,
-				Item: &models.Item{},
-			}
-
-			if err := p.SetValue(v); err != nil {
-				return nil, errors.Wrap(err, "FromMqttMessage")
-			}
-		}
-
-		return e, nil
-	}
 }

@@ -10,10 +10,10 @@ import (
 	"touchon-server/lib/events"
 	_ "touchon-server/lib/events"
 	"touchon-server/lib/events/object/relay"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
-func (o *RelayModel) On(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) On(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (o *RelayModel) On(args map[string]interface{}) ([]messages.Message, error)
 		return nil, errors.Wrap(err, "getValues")
 	}
 
-	relayMsg, err := relay.NewOnStateMessage("object_manager/object/event", o.GetID())
+	relayMsg, err := relay.NewOnStateOn(o.GetID())
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (o *RelayModel) On(args map[string]interface{}) ([]messages.Message, error)
 	return append(portMsg, relayMsg), nil
 }
 
-func (o *RelayModel) Off(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) Off(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]messages.Message, error
 		return nil, errors.Wrap(err, "getValues")
 	}
 
-	relayMsg, err := relay.NewOffStateMessage("object_manager/object/event", o.GetID())
+	relayMsg, err := relay.NewOnStateOff(o.GetID())
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]messages.Message, error
 	return append(portMsg, relayMsg), nil
 }
 
-func (o *RelayModel) Toggle(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return nil, err
@@ -81,7 +81,18 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]messages.Message, er
 		return nil, err
 	}
 
-	relayMsg, err := events.NewOnChangeStateMessage("object_manager/object/event", messages.TargetTypeObject, o.GetID(), strings.ToLower(portMsg[0].GetPayload()["state"].(string)), "")
+	var state string
+	if len(portMsg) > 0 {
+		// TODO
+		var payload map[string]interface{} // = portMsg[0].GetPayload()
+		if v, ok := payload["state"]; ok {
+			if v, ok := v.(string); ok {
+				state = v
+			}
+		}
+	}
+
+	relayMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), "")
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +102,7 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]messages.Message, er
 	return append(portMsg, relayMsg), nil
 }
 
-func (o *RelayModel) Check(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return nil, err
@@ -107,10 +118,10 @@ func (o *RelayModel) Check(args map[string]interface{}) ([]messages.Message, err
 		return nil, errors.Wrap(err, "getValues")
 	}
 
-	relayMsg, err := relay.NewCheckMessage("object_manager/object/event", messages.TargetTypeObject, o.GetID(), strings.ToLower(stateRelay), "")
+	relayMsg, err := relay.NewOnCheck(o.GetID(), strings.ToLower(stateRelay), "")
 	if err != nil {
 		return nil, err
 	}
 
-	return []messages.Message{relayMsg}, nil
+	return []interfaces.Message{relayMsg}, nil
 }
