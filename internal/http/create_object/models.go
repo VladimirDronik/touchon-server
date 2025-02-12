@@ -15,6 +15,7 @@ type Request struct {
 		Type     string                 `json:"type"`
 		Name     string                 `json:"name"`
 		Props    map[string]interface{} `json:"props,omitempty"`
+		Enabled  bool                   `json:"enabled"`
 		Children []*Child               `json:"children,omitempty"`
 	} `json:"object"`
 

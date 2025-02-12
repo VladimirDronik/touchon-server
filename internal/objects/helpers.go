@@ -310,15 +310,6 @@ func FindRelatedObjects(addressObject string, typeInterface string, objectID int
 	return objResetGroup, objRelatedGroup, nil
 }
 
-// ResetParentAndAddress Убирает у объекта родителя и адрес в свойствах
-func ResetParentAndAddress(objectsToReset map[int]string) {
-	for objectID, _ := range objectsToReset {
-		store.I.ObjectRepository().SetProp(objectID, "address", "0")
-		store.I.ObjectRepository().SetParent(objectID, nil)
-		store.I.ObjectRepository().SetObjectStatus(objectID, string(model.StatusDisabled))
-	}
-}
-
 func ResetPortToDefault(objectsToReset map[int]string, relatedObjects map[int]string) {
 	var portsToReset = make(map[string]bool)
 

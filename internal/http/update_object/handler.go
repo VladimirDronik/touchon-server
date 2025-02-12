@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/context"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	memStore "touchon-server/internal/store/memstore"
@@ -45,6 +46,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	objModel.SetParentID(req.ParentID)
 	objModel.SetZoneID(req.ZoneID)
 	objModel.SetName(req.Name)
+	objModel.SetEnabled(req.Enabled)
 
 	if req.ParentID == nil || *req.ParentID <= 0 {
 		objModel.SetStatus(model.StatusDisabled)
@@ -105,7 +107,10 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 						return err
 					}
 
-					objects.ResetParentAndAddress(objectsToReset)
+					if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
+						return err
+					}
+
 					objects.ResetPortToDefault(objectsToReset, relatedObjects)
 				}
 
@@ -115,8 +120,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 					return err
 				}
 
-				err = objects.ConfigureDevice(interfaceConnectionString, newAddress, options, title)
-				if err != nil {
+				if err = objects.ConfigureDevice(interfaceConnectionString, newAddress, options, title); err != nil {
 					return err
 				}
 
