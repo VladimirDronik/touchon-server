@@ -20,8 +20,6 @@ pipeline {
         CHAT = credentials('telegram_chat_id')
         MESSAGE_BASE = "${env.BRANCH_NAME == "develop" ? "\\[ DEV4 ] *${env.SERVICE}*: " : "\\[ STAGE1 ] *${env.SERVICE}*: "}"
         REGISTRY = credentials('docker_registry_host')
-        // DEV_SRV = credentials('dev_server_ssh_cmd')
-        // TARGET_SRV = credentials('stage1_ssh_cmd')
         TARGET_SRV = "${env.BRANCH_NAME == "develop" ? credentials('dev_server_ssh_cmd') : credentials('stage1_ssh_cmd')}"
         TARGET_PATH = "${env.BRANCH_NAME == "develop" ? "/opt/touchon/gobin" : "/opt/touchon"}"
     }
@@ -43,30 +41,30 @@ pipeline {
                 """
             }
         }
-    //     stage('Build') {
-    //         steps {
-    //             sh """
-    //                 docker buildx build \
-    //                 -t ${env.REGISTRY}/${env.SERVICE}:${env.BRANCH_NAME} \
-    //                 --platform linux/arm64 \
-    //                 --push \
-    //                 ${env.WORKDIR}${env.SERVICE}
-    //             """
-    //         }
-    //     }
-    //     stage('Publish') {
-    //         steps {
-    //             sh """
-    //                 ssh ${env.DEV_SRV} << EOF
-    //                 set -e
-    //                 cd ${env.TARGET_PATH}
-    //                 docker-compose pull ${env.SERVICE}
-    //                 docker-compose up --force-recreate --build -d ${env.SERVICE}
-    //                 docker system prune -af
-    //                 << EOF
-    //             """
-    //         }
-    //     }
+        stage('Build') {
+            steps {
+                sh """
+                    docker buildx build \
+                    -t ${env.REGISTRY}/${env.SERVICE}:${env.BRANCH_NAME} \
+                    --platform linux/arm64 \
+                    --push \
+                    ${env.WORKDIR}${env.SERVICE}
+                """
+            }
+        }
+        stage('Publish') {
+            steps {
+                sh """
+                    ssh ${env.DEV_SRV} << EOF
+                    set -e
+                    cd ${env.TARGET_PATH}
+                    docker-compose pull ${env.SERVICE}
+                    docker-compose up --force-recreate --build -d ${env.SERVICE}
+                    docker system prune -af
+                    << EOF
+                """
+            }
+        }
     }
     
     post {
