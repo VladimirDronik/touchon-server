@@ -37,8 +37,6 @@ func NewMessage(msgType interfaces.MessageType, name string, targetType interfac
 	switch {
 	case msgType != interfaces.MessageTypeCommand && msgType != interfaces.MessageTypeEvent:
 		return nil, errors.Wrap(errors.Errorf("unknown message type %q", msgType), "NewMessage")
-	case name == "":
-		return nil, errors.Wrap(errors.New("name is empty"), "NewMessage")
 	case targetID < 0:
 		return nil, errors.Wrap(errors.New("object ID < 0"), "NewMessage")
 	}

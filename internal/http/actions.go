@@ -8,7 +8,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
-	"touchon-server/lib/event"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 )
@@ -140,9 +139,10 @@ func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 	}
 
 	eventName := helpers.GetParam(ctx, "event_name")
-	if _, err := event.GetMaker(eventName); err != nil {
-		return nil, http.StatusBadRequest, err
-	}
+	// TODO
+	//if _, err := event.GetMaker(eventName); err != nil {
+	//	return nil, http.StatusBadRequest, err
+	//}
 
 	act := &model.EventAction{}
 	if err := json.Unmarshal(ctx.Request.Body(), act); err != nil {

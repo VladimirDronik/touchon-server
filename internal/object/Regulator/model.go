@@ -148,6 +148,41 @@ func MakeModel() (objects.Object, error) {
 		},
 	}
 
+	onBelow, err := regulator.NewOnBelow(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onAbove, err := regulator.NewOnAbove(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onStale, err := regulator.NewOnStale(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexBelow1, err := regulator.NewOnComplexBelow1(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexBelow2, err := regulator.NewOnComplexBelow2(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexAbove1, err := regulator.NewOnComplexAbove1(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexAbove2, err := regulator.NewOnComplexAbove2(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryRegulator,
 		"regulator",
@@ -155,15 +190,7 @@ func MakeModel() (objects.Object, error) {
 		"Регулятор",
 		props,
 		nil,
-		[]string{
-			"object.regulator.on_below",
-			"object.regulator.on_above",
-			"object.regulator.on_stale",
-			"object.regulator.on_complex_below_1",
-			"object.regulator.on_complex_above_1",
-			"object.regulator.on_complex_below_2",
-			"object.regulator.on_complex_above_2",
-		},
+		[]interfaces.Event{onBelow, onAbove, onStale, onComplexBelow1, onComplexBelow2, onComplexAbove1, onComplexAbove2},
 		nil,
 		[]string{"regulator"},
 	)

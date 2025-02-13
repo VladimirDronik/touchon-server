@@ -94,29 +94,3 @@ func (o *EventsRepo) DeleteEvent(targetType interfaces.TargetType, targetID int,
 
 	return nil
 }
-
-// GetAllEventsName возвращает названия всех событий, используемых в таблице.
-// Используется для проверки правильности указанных имен.
-func (o *EventsRepo) GetAllEventsName() ([]string, error) {
-	type Row struct {
-		EventName string
-	}
-	rows := make([]*Row, 0, 100)
-
-	err := o.store.db.
-		Table("ar_events").
-		Distinct("event_name").
-		Where("enabled").
-		Find(&rows).Error
-
-	if err != nil {
-		return nil, errors.Wrap(err, "GetAllEventsName")
-	}
-
-	r := make([]string, 0, len(rows))
-	for _, row := range rows {
-		r = append(r, row.EventName)
-	}
-
-	return r, nil
-}

@@ -79,6 +79,16 @@ func MakeModel() (objects.Object, error) {
 		},
 	}
 
+	onCheck, err := sensor.NewOnCheck(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "Sensor.MakeModel")
+	}
+
+	onAlarm, err := sensor.NewOnAlarm(0, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Sensor.MakeModel")
+	}
+
 	impl, err := objects.NewObjectModelImpl(
 		model.CategorySensor,
 		"",
@@ -86,7 +96,7 @@ func MakeModel() (objects.Object, error) {
 		"",
 		props,
 		nil,
-		[]string{"object.sensor.on_check", "object.sensor.on_alarm"},
+		[]interfaces.Event{onCheck, onAlarm},
 		nil,
 		[]string{"sensor"},
 	)

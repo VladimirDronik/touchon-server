@@ -13,6 +13,8 @@ import (
 	"touchon-server/internal/object/PortMegaD"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
+	"touchon-server/lib/events/object/controller"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
 )
 
@@ -212,6 +214,16 @@ func MakeModel() (objects.Object, error) {
 		children = append(children, port)
 	}
 
+	onLoad, err := controller.NewOnLoad(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "MegaD.MakeModel")
+	}
+
+	onUnavailable, err := controller.NewOnUnavailable(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "MegaD.MakeModel")
+	}
+
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryController,
 		"mega_d",
@@ -219,7 +231,7 @@ func MakeModel() (objects.Object, error) {
 		"MegaD",
 		props,
 		children,
-		[]string{"object.controller.on_load", "object.controller.on_unavailable"},
+		[]interfaces.Event{onLoad, onUnavailable},
 		nil,
 		[]string{"controller", "mega_d"},
 	)

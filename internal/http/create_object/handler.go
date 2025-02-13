@@ -14,7 +14,6 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
-	"touchon-server/lib/event"
 	httpClient "touchon-server/lib/http/client"
 	_ "touchon-server/lib/http/server"
 	"touchon-server/lib/interfaces"
@@ -45,9 +44,10 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 
 	// Проверяем названия событий на валидность
 	for _, item := range req.Events {
-		if _, err := event.GetMaker(item.Name); err != nil {
-			return nil, http.StatusBadRequest, err
-		}
+		// TODO
+		//if _, err := event.GetMaker(item.Name); err != nil {
+		//	return nil, http.StatusBadRequest, err
+		//}
 
 		if len(item.Actions) == 0 {
 			return nil, http.StatusBadRequest, errors.Errorf("event %q: actions list is empty", item.Name)

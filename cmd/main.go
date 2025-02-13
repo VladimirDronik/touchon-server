@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/mattn/go-sqlite3"
-	"github.com/pkg/errors"
 	_ "touchon-server/docs"
 	"touchon-server/internal/context"
 	"touchon-server/internal/cron"
@@ -48,7 +47,6 @@ import (
 	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/internal/store/sqlstore"
 	"touchon-server/internal/ws"
-	"touchon-server/lib/event"
 	httpClient "touchon-server/lib/http/client"
 	"touchon-server/lib/messages"
 	"touchon-server/lib/service"
@@ -115,7 +113,6 @@ func main() {
 	context.Config = cfg
 
 	store.I = sqlstore.New(db)
-	check(checkData(store.I))
 
 	ws.I, err = ws.New()
 	check(err)
@@ -173,22 +170,6 @@ func main() {
 	if err := memStore.I.Shutdown(); err != nil {
 		logger.Error(err)
 	}
-}
-
-func checkData(store store.Store) error {
-	// Проверяем, что все указанные в таблице events названия событий правильные.
-	eventNames, err := store.EventsRepo().GetAllEventsName()
-	if err != nil {
-		return errors.Wrap(err, "checkData")
-	}
-
-	for _, eventName := range eventNames {
-		if _, err := event.GetMaker(eventName); err != nil {
-			return errors.Wrap(err, "checkData")
-		}
-	}
-
-	return nil
 }
 
 func check(err error) {

@@ -9,6 +9,7 @@ import (
 	"touchon-server/internal/msgs"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
+	"touchon-server/lib/events/object/relay"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
 )
@@ -45,6 +46,26 @@ func MakeModel() (objects.Object, error) {
 		},
 	}
 
+	onChangeState, err := events.NewOnChangeState(interfaces.TargetTypeObject, 0, "", "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
+	}
+
+	onStateOn, err := relay.NewOnStateOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
+	}
+
+	onStateOff, err := relay.NewOnStateOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
+	}
+
+	onCheck, err := relay.NewOnCheck(0, "", "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
+	}
+
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryRelay,
 		"relay",
@@ -52,12 +73,7 @@ func MakeModel() (objects.Object, error) {
 		"Реле",
 		props,
 		nil,
-		[]string{
-			"on_change_state",
-			"object.relay.on_state_on",
-			"object.relay.on_state_off",
-			"object.relay.on_check",
-		},
+		[]interfaces.Event{onChangeState, onStateOn, onStateOff, onCheck},
 		nil,
 		[]string{"Лампа", "relay", "output", "Насос", "Вентилятор", "Розетка", "Реле"},
 	)

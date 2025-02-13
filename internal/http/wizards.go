@@ -9,7 +9,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
-	"touchon-server/lib/event"
 	"touchon-server/lib/interfaces"
 )
 
@@ -61,9 +60,10 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 
 	// Проверяем названия событий на валидность
 	for _, item := range req.Events {
-		if _, err := event.GetMaker(item.Name); err != nil {
-			return nil, http.StatusBadRequest, err
-		}
+		// TODO
+		//if _, err := event.GetMaker(item.Name); err != nil {
+		//	return nil, http.StatusBadRequest, err
+		//}
 
 		if len(item.Actions) == 0 {
 			return nil, http.StatusBadRequest, errors.Errorf("event %q: actions list is empty", item.Name)

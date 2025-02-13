@@ -99,10 +99,6 @@ type EventsRepo interface {
 
 	// DeleteEvent удаляет событие.
 	DeleteEvent(targetType interfaces.TargetType, targetID int, eventName string) error
-
-	// GetAllEventsName возвращает названия всех событий, используемых в таблице.
-	// Используется для проверки правильности указанных имен.
-	GetAllEventsName() ([]string, error)
 }
 
 type EventActionsRepo interface {
