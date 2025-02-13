@@ -14,11 +14,16 @@ pipeline {
     agent any
     environment {
         SERVICE = "${GIT_URL.tokenize('/.')[-2]}"
-        GIT_BRANCH='origin/release/2.1'
         BRANCH_NAME = "${GIT_BRANCH.replaceFirst('origin/', '')}"
         WORKDIR = '/opt/cicd_v2/'
         TOKEN = credentials('telegram_bot_token')
         CHAT = credentials('telegram_chat_id')
+        if (${env.BRANCH_NAME} == 'develop') {
+            echo 'develop'
+        }
+        else {
+            echo 'stage'
+        }
         MESSAGE_BASE = "\\[ DEV4 ] *${env.SERVICE}*: "
         REGISTRY = credentials('docker_registry_host')
         DEV_SRV = credentials('dev_server_ssh_cmd')
@@ -30,10 +35,6 @@ pipeline {
                 //     initMessage = "${env.MESSAGE_BASE}STARTED"
                 // }
                 // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
-
-                echo "${env.SERVICE}"
-                echo "${env.BRANCH_NAME}"
-                // sh 'printenv'
             }
         }
         // stage('Pull') {
