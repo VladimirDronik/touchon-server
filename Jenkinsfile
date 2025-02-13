@@ -26,7 +26,7 @@ pipeline {
     stages {
         stage('Notification') {
             steps {
-                echo ${env.NV_NAME}
+                echo "${env.NV_NAME}"
                 // script {
                 //     initMessage = "${env.MESSAGE_BASE}STARTED"
                 // }
