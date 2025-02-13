@@ -13,14 +13,14 @@ def func_telegram_sendMessage(message, token, chatid) {
 pipeline {
     agent any
     environment {
-        SERVICE = 'touchon-server'
+        SERVICE = ${GIT_URL.tokenize('/.')[-2]}
+        BRANCH_NAME = "${GIT_BRANCH.replaceFirst(/^.*\//, '')}"
         WORKDIR = '/opt/cicd_v2/'
         TOKEN = credentials('telegram_bot_token')
         CHAT = credentials('telegram_chat_id')
-        MESSAGE_BASE = "\\[ DEV4 ] *${GIT_URL.tokenize('/.')[-2]}*: "
+        MESSAGE_BASE = "\\[ DEV4 ] *${env.SERVICE}*: "
         REGISTRY = credentials('docker_registry_host')
         DEV_SRV = credentials('dev_server_ssh_cmd')
-        
     }
     stages {
         stage('Notification') {
@@ -29,10 +29,9 @@ pipeline {
                 //     initMessage = "${env.MESSAGE_BASE}STARTED"
                 // }
                 // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
-                echo 'Pulling...' + env.GIT_BRANCH
-                
-                println scm.branches
-                echo "${env.MESSAGE_BASE}"
+
+                echo "${env.SERVICE}"
+                echo "${env.BRANCH_NAME}"
                 // sh 'printenv'
             }
         }
