@@ -61,8 +61,8 @@ pipeline {
                     ssh ${env.TARGET_SRV} << EOF
                     set -e
                     cd ${env.TARGET_PATH}
-                    docker-compose pull ${env.SERVICE}
-                    docker-compose up --force-recreate --build -d ${env.SERVICE}
+                    docker compose pull ${env.SERVICE}
+                    docker compose up --force-recreate --build -d ${env.SERVICE}
                     docker system prune -af
                     << EOF
                 """
