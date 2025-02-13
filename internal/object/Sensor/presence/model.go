@@ -11,7 +11,6 @@ import (
 	"touchon-server/internal/object/Sensor/motion"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
-	"touchon-server/lib/event"
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/interfaces"
 )
@@ -61,15 +60,18 @@ func MakeModel() (objects.Object, error) {
 	obj.GetChildren().Add(p)
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.sensor.on_presence_on", "object.sensor.on_presence_off"} {
-		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "presence.MakeModel")
-		}
+	onPresenceOn, err := sensor.NewOnPresenceOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "presence.MakeModel")
-		}
+	onPresenceOff, err := sensor.NewOnPresenceOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onPresenceOn, onPresenceOff); err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
 	}
 
 	return obj, nil

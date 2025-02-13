@@ -55,6 +55,21 @@ func MakeModel() (objects.Object, error) {
 		},
 	}
 
+	onClick, err := generic_input.NewOnClick(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "GenericInput.MakeModel")
+	}
+
+	onDoubleClick, err := generic_input.NewOnDoubleClick(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "GenericInput.MakeModel")
+	}
+
+	onLongPress, err := generic_input.NewOnLongPress(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "GenericInput.MakeModel")
+	}
+
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryGenericInput,
 		"generic_input",
@@ -62,11 +77,7 @@ func MakeModel() (objects.Object, error) {
 		"Универсальный вход",
 		props,
 		nil,
-		[]string{
-			"object.generic_input.on_click",
-			"object.generic_input.on_double_click",
-			"object.generic_input.on_long_press",
-		},
+		[]interfaces.Event{onClick, onDoubleClick, onLongPress},
 		nil,
 		[]string{"generic", "input"},
 	)

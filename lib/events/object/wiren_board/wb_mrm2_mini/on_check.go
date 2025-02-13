@@ -2,18 +2,24 @@ package wb_mrm2_mini
 
 import (
 	"github.com/pkg/errors"
+	"touchon-server/lib/event"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/messages"
 )
 
-func NewOnCheck(targetID int, values map[string]bool) (interfaces.Message, error) {
+func NewOnCheck(targetID int, values map[string]bool) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
 	o := &OnCheck{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.wiren_board.wb_mrm2_mini.on_check",
+			EventName:        "on_check",
+			EventDescription: "Получено состояние выходов",
+		},
 	}
 
 	if v, ok := values["k1"]; ok {
@@ -29,7 +35,7 @@ func NewOnCheck(targetID int, values map[string]bool) (interfaces.Message, error
 
 // OnCheck Получено состояние выходов
 type OnCheck struct {
-	*messages.MessageImpl
-	K1 bool `json:"k1"` // Выход 1
-	K2 bool `json:"k2"` // Выход 2
+	interfaces.Event
+	K1 bool `json:"k1,omitempty"` // Выход 1
+	K2 bool `json:"k2,omitempty"` // Выход 2
 }

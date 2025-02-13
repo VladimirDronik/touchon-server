@@ -10,7 +10,6 @@ import (
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
-	"touchon-server/lib/event"
 	"touchon-server/lib/events/object/wiren_board/wb_mrm2_mini"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
@@ -42,15 +41,13 @@ func MakeModel() (objects.Object, error) {
 	obj.SetTags("wb_mrm2_mini")
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.wiren_board.wb_mrm2_mini.on_check"} {
-		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
-		}
+	onCheck, err := wb_mrm2_mini.NewOnCheck(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
-		}
+	if err := obj.GetEvents().Add(onCheck); err != nil {
+		return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
 	}
 
 	getOutputsState, err := objects.NewMethod("get_outputs_state", "Получение состояния всех выходов", nil, obj.GetOutputsState)

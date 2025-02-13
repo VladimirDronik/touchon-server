@@ -2,18 +2,24 @@ package port
 
 import (
 	"github.com/pkg/errors"
+	"touchon-server/lib/event"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/messages"
 )
 
-func NewOnPress(targetID int) (interfaces.Message, error) {
+func NewOnPress(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnPress")
 	}
 
 	o := &OnPress{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.port.on_press",
+			EventName:        "on_press",
+			EventDescription: "Порт замкнут",
+		},
 	}
 
 	return o, nil
@@ -21,17 +27,22 @@ func NewOnPress(targetID int) (interfaces.Message, error) {
 
 // OnPress Порт замкнут
 type OnPress struct {
-	*messages.MessageImpl
+	interfaces.Event
 }
 
-func NewOnLongPress(targetID int) (interfaces.Message, error) {
+func NewOnLongPress(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnLongPress")
 	}
 
 	o := &OnLongPress{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.port.on_long_press",
+			EventName:        "on_long_press",
+			EventDescription: "Порт удерживается в замкнутом состоянии",
+		},
 	}
 
 	return o, nil
@@ -39,17 +50,22 @@ func NewOnLongPress(targetID int) (interfaces.Message, error) {
 
 // OnLongPress Порт удерживается в замкнутом состоянии
 type OnLongPress struct {
-	*messages.MessageImpl
+	interfaces.Event
 }
 
-func NewOnRelease(targetID int) (interfaces.Message, error) {
+func NewOnRelease(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnRelease")
 	}
 
 	o := &OnRelease{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.port.on_release",
+			EventName:        "on_release",
+			EventDescription: "Порт разомкнут",
+		},
 	}
 
 	return o, nil
@@ -57,17 +73,22 @@ func NewOnRelease(targetID int) (interfaces.Message, error) {
 
 // OnRelease Порт разомкнут
 type OnRelease struct {
-	*messages.MessageImpl
+	interfaces.Event
 }
 
-func NewOnDoubleClick(targetID int) (interfaces.Message, error) {
+func NewOnDoubleClick(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnDoubleClick")
 	}
 
 	o := &OnDoubleClick{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.port.on_double_click",
+			EventName:        "on_double_click",
+			EventDescription: "Порт замкнут дважды",
+		},
 	}
 
 	return o, nil
@@ -75,19 +96,24 @@ func NewOnDoubleClick(targetID int) (interfaces.Message, error) {
 
 // OnDoubleClick Двойное замыкание
 type OnDoubleClick struct {
-	*messages.MessageImpl
+	interfaces.Event
 }
 
-func NewOnCheck(targetID int, state, value string) (interfaces.Message, error) {
+func NewOnCheck(targetID int, state, value string) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
 	o := &OnCheck{
-		MessageImpl: msg,
-		State:       state,
-		Value:       value,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.port.on_check",
+			EventName:        "on_check",
+			EventDescription: "Событие возникает, когда проверяется состояние порта, но при этом новое пришедшее состояние порта не различается с тем, что хранится в БД",
+		},
+		State: state,
+		Value: value,
 	}
 
 	return o, nil
@@ -96,7 +122,7 @@ func NewOnCheck(targetID int, state, value string) (interfaces.Message, error) {
 // OnCheck Событие возникает, когда проверяется состояние порта,
 // но при этом новое пришедшее состояние порта не различается с тем, что хранится в БД
 type OnCheck struct {
-	*messages.MessageImpl
-	State string `json:"state"` // Состояние
-	Value string `json:"value"` // Значение
+	interfaces.Event
+	State string `json:"state,omitempty"` // Состояние
+	Value string `json:"value,omitempty"` // Значение
 }

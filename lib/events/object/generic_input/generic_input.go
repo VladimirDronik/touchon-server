@@ -2,18 +2,24 @@ package generic_input
 
 import (
 	"github.com/pkg/errors"
+	"touchon-server/lib/event"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/messages"
 )
 
-func NewOnClick(targetID int) (interfaces.Message, error) {
+func NewOnClick(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnClick")
 	}
 
 	o := &OnClick{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.generic_input.on_click",
+			EventName:        "on_click",
+			EventDescription: "Одиночное замыкание",
+		},
 	}
 
 	return o, nil
@@ -21,17 +27,22 @@ func NewOnClick(targetID int) (interfaces.Message, error) {
 
 // OnClick Одиночное замыкание
 type OnClick struct {
-	*messages.MessageImpl
+	interfaces.Event
 }
 
-func NewOnDoubleClick(targetID int) (interfaces.Message, error) {
+func NewOnDoubleClick(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnDoubleClick")
 	}
 
 	o := &OnDoubleClick{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.generic_input.on_double_click",
+			EventName:        "on_double_click",
+			EventDescription: "Двойное замыкание",
+		},
 	}
 
 	return o, nil
@@ -39,17 +50,22 @@ func NewOnDoubleClick(targetID int) (interfaces.Message, error) {
 
 // OnDoubleClick Двойное замыкание
 type OnDoubleClick struct {
-	*messages.MessageImpl
+	interfaces.Event
 }
 
-func NewOnLongPress(targetID int) (interfaces.Message, error) {
+func NewOnLongPress(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnLongPress")
 	}
 
 	o := &OnLongPress{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.generic_input.on_long_press",
+			EventName:        "on_long_press",
+			EventDescription: "Длительное замыкание",
+		},
 	}
 
 	return o, nil
@@ -57,5 +73,5 @@ func NewOnLongPress(targetID int) (interfaces.Message, error) {
 
 // OnLongPress Длительное замыкание
 type OnLongPress struct {
-	*messages.MessageImpl
+	interfaces.Event
 }

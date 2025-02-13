@@ -11,7 +11,6 @@ import (
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
-	"touchon-server/lib/event"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/helpers"
@@ -106,15 +105,18 @@ func MakeModel() (objects.Object, error) {
 	obj.GetEvents().Delete("object.sensor.on_check", "object.sensor.on_alarm")
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.sensor.on_motion_on", "object.sensor.on_motion_off"} {
-		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "motion.MakeModel")
-		}
+	onMotionOn, err := sensor.NewOnMotionOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "motion.MakeModel")
-		}
+	onMotionOff, err := sensor.NewOnMotionOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onMotionOn, onMotionOff); err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
 	}
 
 	return obj, nil

@@ -2,18 +2,24 @@ package controller
 
 import (
 	"github.com/pkg/errors"
+	"touchon-server/lib/event"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/messages"
 )
 
-func NewOnLoad(targetID int) (interfaces.Message, error) {
+func NewOnLoad(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnLoad")
 	}
 
 	o := &OnLoad{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.controller.on_load",
+			EventName:        "on_load",
+			EventDescription: "Инициализация контроллера после включения питания",
+		},
 	}
 
 	return o, nil
@@ -21,17 +27,22 @@ func NewOnLoad(targetID int) (interfaces.Message, error) {
 
 // OnLoad Инициализация контроллера после включения питания
 type OnLoad struct {
-	*messages.MessageImpl
+	interfaces.Event
 }
 
-func NewOnUnavailable(targetID int) (interfaces.Message, error) {
+func NewOnUnavailable(targetID int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnUnavailable")
 	}
 
 	o := &OnUnavailable{
-		MessageImpl: msg,
+		Event: &event.EventImpl{
+			Message:          msg,
+			EventCode:        "object.controller.on_unavailable",
+			EventName:        "on_unavailable",
+			EventDescription: "Контроллер стал недоступен",
+		},
 	}
 
 	return o, nil
@@ -39,5 +50,5 @@ func NewOnUnavailable(targetID int) (interfaces.Message, error) {
 
 // OnUnavailable Контроллер стал недоступен
 type OnUnavailable struct {
-	*messages.MessageImpl
+	interfaces.Event
 }

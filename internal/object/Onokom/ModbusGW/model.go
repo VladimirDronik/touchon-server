@@ -10,9 +10,8 @@ import (
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
-	"touchon-server/lib/event"
+	"touchon-server/lib/events/object/onokom/gateway"
 	"touchon-server/lib/helpers"
-	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
 )
 
@@ -136,15 +135,18 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 	}
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.onokom.gateway.on_check", "object.onokom.gateway.on_change"} {
-		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "ModbusGW.MakeModel")
-		}
+	onCheck, err := gateway.NewOnCheck(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "ModbusGW.MakeModel")
-		}
+	onChange, err := gateway.NewOnChange(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onCheck, onChange); err != nil {
+		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
 	}
 
 	// Регистрируем методы

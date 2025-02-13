@@ -9,14 +9,13 @@ import (
 	"touchon-server/internal/model"
 	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
-	"touchon-server/lib/event"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 )
 
 // Implementation of Object interface
 
-func NewObjectModelImpl(category model.Category, objType string, internal bool, name string, props []*Prop, children []Object, events []string, methods []*Method, tags []string) (*ObjectModelImpl, error) {
+func NewObjectModelImpl(category model.Category, objType string, internal bool, name string, props []*Prop, children []Object, events []interfaces.Event, methods []*Method, tags []string) (*ObjectModelImpl, error) {
 	o := &ObjectModelImpl{
 		category: category,
 		objType:  objType,
@@ -38,15 +37,8 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 	o.GetChildren().Add(children...)
 	o.GetMethods().Add(methods...)
 
-	for _, eventName := range events {
-		event, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "NewObjectModelImpl")
-		}
-
-		if err := o.GetEvents().Add(event); err != nil {
-			return nil, errors.Wrap(err, "NewObjectModelImpl")
-		}
+	if err := o.GetEvents().Add(events...); err != nil {
+		return nil, errors.Wrap(err, "NewObjectModelImpl")
 	}
 
 	o.SetTags(tags...)

@@ -5,7 +5,7 @@ import (
 	"touchon-server/lib/interfaces"
 )
 
-type Maker func() (*Event, error)
+type Maker func() (interfaces.Event, error)
 
 var register = make(map[string]Maker, 20)
 
@@ -19,15 +19,15 @@ func Register(maker Maker) error {
 		return errors.Wrap(err, "event.Register")
 	}
 
-	if _, ok := register[e.Code]; ok {
-		return errors.Wrap(errors.Errorf("event %q is exists", e.Code), "Register")
+	if _, ok := register[e.GetEventCode()]; ok {
+		return errors.Wrap(errors.Errorf("event %q is exists", e.GetEventCode()), "Register")
 	}
 
-	if err := e.Check(); err != nil {
+	if err := e.CheckEvent(); err != nil {
 		return errors.Wrap(err, "Register")
 	}
 
-	register[e.Code] = maker
+	register[e.GetEventCode()] = maker
 
 	return nil
 }
@@ -41,28 +41,22 @@ func GetMaker(eventName string) (Maker, error) {
 	return maker, nil
 }
 
-func MakeEvent(eventName string, targetType interfaces.TargetType, targetID int, payload map[string]interface{}) (*Event, error) {
+func MakeEvent(eventName string, targetType interfaces.TargetType, targetID int) (interfaces.Event, error) {
 	maker, ok := register[eventName]
 	if !ok {
-		return nil, errors.Wrap(errors.Errorf("event %q not registered", eventName), "GetEvent")
+		return nil, errors.Wrap(errors.Errorf("event %q not registered", eventName), "MakeEvent")
 	}
 
 	event, err := maker()
 	if err != nil {
-		return nil, errors.Wrap(err, "GetEvent")
+		return nil, errors.Wrap(err, "MakeEvent")
 	}
 
 	if targetType != "" {
-		event.TargetType = targetType
+		event.SetTargetType(targetType)
 	}
 
-	event.TargetID = targetID
-
-	for k, v := range payload {
-		if err := event.Props.Set(k, v); err != nil {
-			return nil, errors.Wrap(err, "GetEvent")
-		}
-	}
+	event.SetTargetID(targetID)
 
 	return event, nil
 }
