@@ -18,12 +18,7 @@ pipeline {
         WORKDIR = '/opt/cicd_v2/'
         TOKEN = credentials('telegram_bot_token')
         CHAT = credentials('telegram_chat_id')
-        if (${env.BRANCH_NAME} == 'develop') {
-            echo 'develop'
-        }
-        else {
-            echo 'stage'
-        }
+        
         MESSAGE_BASE = "\\[ DEV4 ] *${env.SERVICE}*: "
         REGISTRY = credentials('docker_registry_host')
         DEV_SRV = credentials('dev_server_ssh_cmd')
@@ -31,6 +26,12 @@ pipeline {
     stages {
         stage('Notification') {
             steps {
+                if (${env.BRANCH_NAME} == 'develop') {
+                    echo 'develop'
+                }
+                else {
+                    echo 'stage'
+                }
                 // script {
                 //     initMessage = "${env.MESSAGE_BASE}STARTED"
                 // }
