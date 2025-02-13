@@ -35,14 +35,14 @@ pipeline {
                 func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
             }
         }
-    //     stage('Pull') {
-    //         steps {
-    //             sh """
-    //               git -C ${env.WORKDIR}${env.SERVICE} checkout ${env.BRANCH_NAME}
-    //               git -C ${env.WORKDIR}${env.SERVICE} pull
-    //             """
-    //         }
-    //     }
+        stage('Pull') {
+            steps {
+                sh """
+                  git -C ${env.WORKDIR}${env.SERVICE} checkout ${env.BRANCH_NAME}
+                  git -C ${env.WORKDIR}${env.SERVICE} pull
+                """
+            }
+        }
     //     stage('Build') {
     //         steps {
     //             sh """
@@ -75,7 +75,6 @@ pipeline {
                 gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
                 gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
                 gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
-                // gitCommitComment = " _ [ ` # "
                 gitCommitComment = gitCommitComment.replaceAll(/_/, "\\_")
                 gitCommitComment = gitCommitComment.replaceAll(/\[/, "\\[")
                 gitCommitComment = gitCommitComment.replaceAll(/`/, "\\`")
