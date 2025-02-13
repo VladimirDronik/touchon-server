@@ -13,7 +13,7 @@ def func_telegram_sendMessage(message, token, chatid) {
 pipeline {
     agent any
     environment {
-        SERVICE = ${GIT_URL.tokenize('/.')[-2]}
+        SERVICE = "${GIT_URL.tokenize('/.')[-2]}"
         BRANCH_NAME = "${GIT_BRANCH.replaceFirst(/^.*\//, '')}"
         WORKDIR = '/opt/cicd_v2/'
         TOKEN = credentials('telegram_bot_token')
