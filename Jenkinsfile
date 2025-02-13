@@ -20,6 +20,7 @@ pipeline {
         MESSAGE_BASE = "\\[ DEV4 ] *${env.SERVICE}*: "
         REGISTRY = credentials('docker_registry_host')
         DEV_SRV = credentials('dev_server_ssh_cmd')
+        REPO = GIT_URL.tokenize('/.')[-2]
     }
     stages {
         stage('Notification') {
@@ -29,8 +30,9 @@ pipeline {
                 // }
                 // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
                 echo 'Pulling...' + env.GIT_BRANCH
-                echo GIT_URL.tokenize('/.')[-2]
+                
                 println scm.branches
+                echo ${env.REPO}
                 // sh 'printenv'
             }
         }
