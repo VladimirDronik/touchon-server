@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
+	"touchon-server/lib/interfaces"
 )
 
 // LoadObject создает модель объекта и заполняет его данными из БД
@@ -39,13 +40,13 @@ func LoadObject(objectID int, objCat model.Category, objType string, childType m
 	return objModel, nil
 }
 
-func LoadPort(objectID int, childType model.ChildType) (Port, error) {
+func LoadPort(objectID int, childType model.ChildType) (interfaces.Port, error) {
 	portObj, err := LoadObject(objectID, model.CategoryPort, "port_mega_d", childType)
 	if err != nil {
 		return nil, errors.Wrap(err, "LoadPort")
 	}
 
-	port, ok := portObj.(Port)
+	port, ok := portObj.(interfaces.Port)
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("object %T not implements interface Port", portObj), "LoadPort")
 	}

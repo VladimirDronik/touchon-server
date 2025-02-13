@@ -5,14 +5,14 @@ import (
 
 	"touchon-server/internal/context"
 	httpClient "touchon-server/lib/http/client"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // deleteEvents удаляет события для объекта
 func deleteEvent(objectID int) error {
 	arBaseUrl := "http://" + context.Config["action_router_addr"]
 	params := map[string]string{
-		"target_type": string(messages.TargetTypeObject),
+		"target_type": string(interfaces.TargetTypeObject),
 		"target_id":   strconv.Itoa(objectID),
 		"event_name":  "all",
 	}

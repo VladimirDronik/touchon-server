@@ -17,7 +17,6 @@ import (
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -205,7 +204,8 @@ func (o *MotionSensorModel) onMotionOnHandler(interfaces.Message) {
 	// Запоминаем текущее состояние движения
 	currState, err := o.getMotionState()
 	if err != nil {
-		return nil, errors.Wrap(err, "MotionSensorModel.onMotionOnHandler")
+		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		return
 	}
 
 	context.Logger.Debug("MotionSensorModel.onMotionOnHandler: reset periodTimer")
@@ -213,33 +213,37 @@ func (o *MotionSensorModel) onMotionOnHandler(interfaces.Message) {
 
 	// Обрабатываем только переход OFF -> ON
 	if currState {
-		return nil, nil
+		return
 	}
 
 	if err := o.setMotionState(true, true); err != nil {
-		return nil, errors.Wrap(err, "MotionSensorModel.onMotionOnHandler")
+		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		return
 	}
 
-	msg, err := sensor.NewOnMotionOnMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnMotionOn(o.GetID())
 	if err != nil {
-		return nil, errors.Wrap(err, "MotionSensorModel.onMotionOnHandler")
+		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := msgs.I.Send(msg); err != nil {
+		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+	}
 }
 
 func (o *MotionSensorModel) onMotionOffHandler(interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
-		return nil, errors.Wrap(err, "MotionSensorModel.onMotionOffHandler")
+		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
+		return
 	}
 
 	context.Logger.Debugf("MotionSensorModel(%d): onMotionOffHandler()", o.GetID())
 
 	if err := o.setMotionState(false, false); err != nil {
-		return nil, errors.Wrap(err, "MotionSensorModel.onMotionOffHandler")
+		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
+		return
 	}
-
-	return nil, nil
 }
 
 func (o *MotionSensorModel) periodTimerHandler() {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 type Items struct {
@@ -282,7 +282,7 @@ func (o *Items) ChangeItem(id int, status string) error {
 	return nil
 }
 
-func (o *Items) GetItemsForChange(targetType messages.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) {
+func (o *Items) GetItemsForChange(targetType interfaces.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) {
 	var items []*model.ItemForWS
 
 	err := o.store.db.Table("events").Select("view_items.id, target_id, status, params, view_items.type, value AS EventValue").

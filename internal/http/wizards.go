@@ -10,18 +10,15 @@ import (
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/event"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
-type ActionType = string // Enums(method,delay,notification)
-
 type EventAction struct {
-	TargetType messages.TargetType    `json:"target_type"` // Enums(not_matters,object,item,script,service)
+	TargetType interfaces.TargetType  `json:"target_type"` // Enums(not_matters,object,item,script,service)
 	TargetID   int                    `json:"target_id"`   // 8
-	Type       ActionType             `json:"type"`        // Enums(method,delay,notification)
+	Type       model.ActionType       `json:"type"`        // Enums(method,delay,notification)
 	Name       string                 `json:"name"`        // script_1, check
 	Args       map[string]interface{} `json:"args"`        // method or script args
-	QoS        messages.QoS           `json:"qos"`         // Enums(0,1,2)
 	Enabled    bool                   `json:"enabled"`     // Enums(true,false)
 	Sort       int                    `json:"sort"`        //
 	Comment    string                 `json:"comment"`     // отключено потому что...
@@ -101,7 +98,7 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 		if e != nil {
 			for _, ev := range req.Events {
 				params := map[string]string{
-					"target_type": string(messages.TargetTypeItem),
+					"target_type": interfaces.TargetTypeItem,
 					"target_id":   strconv.Itoa(item.ID),
 					"event_name":  ev.Name,
 				}
@@ -116,7 +113,7 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 
 	for _, ev := range req.Events {
 		params := map[string]string{
-			"target_type": string(messages.TargetTypeItem),
+			"target_type": interfaces.TargetTypeItem,
 			"target_id":   strconv.Itoa(item.ID),
 			"event_name":  ev.Name,
 		}

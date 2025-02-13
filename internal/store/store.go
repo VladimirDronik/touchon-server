@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -89,16 +89,16 @@ type ScriptRepository interface {
 
 type EventsRepo interface {
 	// GetEvents возвращает события сущности.
-	GetEvents(targetType messages.TargetType, targetID int) ([]*model.Event, error)
+	GetEvents(targetType interfaces.TargetType, targetID int) ([]*model.Event, error)
 
 	// GetEvent возвращает событие.
-	GetEvent(targetType messages.TargetType, targetID int, eventName string) (*model.Event, error)
+	GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*model.Event, error)
 
 	// SaveEvent добавляет или обновляет событие.
 	SaveEvent(ev *model.Event) error
 
 	// DeleteEvent удаляет событие.
-	DeleteEvent(targetType messages.TargetType, targetID int, eventName string) error
+	DeleteEvent(targetType interfaces.TargetType, targetID int, eventName string) error
 
 	// GetAllEventsName возвращает названия всех событий, используемых в таблице.
 	// Используется для проверки правильности указанных имен.
@@ -157,9 +157,9 @@ type Items interface {
 	GetZoneItems() ([]*model.GroupRoom, error)
 	GetZoneSensors(zoneID int) ([]*model.Sensor, error)
 	GetGroupElements(groupID int) ([]*model.ViewItem, error)
-	ChangeItem(itemID int, status string) error                                                                   // Изменение элементов
-	GetItemsForChange(targetType messages.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) // Найти действия для элементов, которые соответствуют событию
-	GetZones() ([]*model.Zone, error)                                                                             // Отдает список помещений, где есть элементы
+	ChangeItem(itemID int, status string) error                                                                     // Изменение элементов
+	GetItemsForChange(targetType interfaces.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) // Найти действия для элементов, которые соответствуют событию
+	GetZones() ([]*model.Zone, error)                                                                               // Отдает список помещений, где есть элементы
 	GetCountersList() ([]*model.Counter, error)
 	GetCounter(counterID int) (*model.Counter, error)
 	GetZone(zoneID int) (*model.GroupRoom, error) // отдает помещение

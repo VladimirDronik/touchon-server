@@ -57,7 +57,6 @@ order by t.id, a.sort, a.id`
 			Type:       row.CronAction.Type,
 			TargetID:   row.CronAction.TargetID,
 			TargetType: row.CronAction.TargetType,
-			QoS:        row.CronAction.QoS,
 			Args:       row.CronAction.Args,
 			Enabled:    row.CronAction.Enabled,
 			Comment:    row.CronAction.Comment,

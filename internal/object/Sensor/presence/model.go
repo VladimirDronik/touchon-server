@@ -7,13 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/object/Sensor/motion"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/event"
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/interfaces"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -143,7 +143,8 @@ func (o *PresenceSensorModel) Start() error {
 
 func (o *PresenceSensorModel) onPresenceOnHandler(interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
 	context.Logger.Debugf("PresenceSensorModel(%d): onPresenceOnHandler()", o.GetID())
@@ -151,29 +152,35 @@ func (o *PresenceSensorModel) onPresenceOnHandler(interfaces.Message) {
 	// получаем текущее значение движения
 	currState, err := o.getPresenceState()
 	if err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
 	// Если уже true, уходим
 	if currState {
-		return nil, nil
+		return
 	}
 
 	if err := o.setPresenceState(true); err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
-	msg, err := sensor.NewOnPresenceOnMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnPresenceOn(o.GetID())
 	if err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := msgs.I.Send(msg); err != nil {
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+	}
 }
 
 func (o *PresenceSensorModel) onPresenceOffHandler(interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
 	context.Logger.Debugf("PresenceSensorModel(%d): onPresenceOffHandler()", o.GetID())
@@ -181,24 +188,29 @@ func (o *PresenceSensorModel) onPresenceOffHandler(interfaces.Message) {
 	// получаем текущее значение движения
 	currState, err := o.getPresenceState()
 	if err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
 	// Если уже false, уходим
 	if !currState {
-		return nil, nil
+		return
 	}
 
 	if err := o.setPresenceState(false); err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
-	msg, err := sensor.NewOnPresenceOffMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnPresenceOff(o.GetID())
 	if err != nil {
-		return nil, errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler")
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := msgs.I.Send(msg); err != nil {
+		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+	}
 }
 
 func (o *PresenceSensorModel) getPresenceState() (bool, error) {

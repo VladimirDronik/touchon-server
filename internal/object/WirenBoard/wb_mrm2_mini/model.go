@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/object/Modbus"
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
@@ -12,9 +13,8 @@ import (
 	"touchon-server/lib/event"
 	"touchon-server/lib/events/object/wiren_board/wb_mrm2_mini"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	mqttClient "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -43,7 +43,7 @@ func MakeModel() (objects.Object, error) {
 
 	// Добавляем свои события
 	for _, eventName := range []string{"object.wiren_board.wb_mrm2_mini.on_check"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
+		ev, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
 		}
@@ -139,7 +139,7 @@ func (o *DeviceModel) Shutdown() error {
 	return nil
 }
 
-func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]messages.Message, error) {
+func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]interfaces.Message, error) {
 	action := func(client Modbus.Client) (interface{}, error) {
 		return client.ReadCoils(0x0000, uint16(o.outputCount))
 	}
@@ -161,13 +161,13 @@ func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]messages.Messag
 			args["k"+strconv.Itoa(i+1)] = v
 		}
 
-		msg, err := wb_mrm2_mini.NewOnCheckMessage("object_manager/object/event", o.GetID(), args)
+		msg, err := wb_mrm2_mini.NewOnCheck(o.GetID(), args)
 		if err != nil {
 			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 			return
 		}
 
-		if err := mqttClient.I.Send(msg); err != nil {
+		if err := msgs.I.Send(msg); err != nil {
 			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 		}
 	}
@@ -179,7 +179,7 @@ func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]messages.Messag
 	return nil, nil
 }
 
-func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]messages.Message, error) {
+func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]interfaces.Message, error) {
 	outputNumber, err := helpers.GetNumber(args["k"])
 	if err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState(k)")
@@ -210,13 +210,13 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]messages.Me
 			"k" + strconv.Itoa(outputNumber): state,
 		}
 
-		msg, err := wb_mrm2_mini.NewOnCheckMessage("object_manager/object/event", o.GetID(), payload)
+		msg, err := wb_mrm2_mini.NewOnCheck(o.GetID(), payload)
 		if err != nil {
 			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 			return
 		}
 
-		if err := mqttClient.I.Send(msg); err != nil {
+		if err := msgs.I.Send(msg); err != nil {
 			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 		}
 	}
@@ -228,7 +228,7 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]messages.Me
 	return nil, nil
 }
 
-func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]messages.Message, error) {
+func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]interfaces.Message, error) {
 	outputNumber, err := helpers.GetNumber(args["k"])
 	if err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.DeviceModel.SetOutputState(k)")

@@ -3,9 +3,6 @@ package objects
 import (
 	"encoding/json"
 	"errors"
-	"time"
-
-	"touchon-server/lib/mqtt/messages"
 
 	"touchon-server/internal/model"
 )
@@ -102,12 +99,4 @@ type ObjectModel struct {
 	Children *Children `json:"children,omitempty"`
 	Events   *Events   `json:"events,omitempty"`
 	Methods  *Methods  `json:"methods,omitempty"`
-}
-
-type Port interface {
-	GetPortState(command string, params map[string]string, timeout time.Duration) (string, error)
-	On(args map[string]interface{}) ([]messages.Message, error)
-	Off(args map[string]interface{}) ([]messages.Message, error)
-	Toggle(args map[string]interface{}) ([]messages.Message, error)
-	SetTypeMode(typePt string, modePt string, title string, params map[string]string) error
 }

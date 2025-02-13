@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/intset"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func New(handlersCount int) *Subscribers {
@@ -34,9 +33,9 @@ type Subscribers struct {
 
 func (o *Subscribers) AddHandler(msgType interfaces.MessageType, name string, targetType interfaces.TargetType, targetID *int, handler interfaces.MsgHandler) (int, error) {
 	switch {
-	case msgType != "" && msgType != messages.MessageTypeCommand && msgType != messages.MessageTypeEvent:
+	case msgType != "" && msgType != interfaces.MessageTypeCommand && msgType != interfaces.MessageTypeEvent:
 		return 0, errors.Wrap(errors.Errorf("message type is wrong %q", msgType), "Subscribers.AddHandler")
-	case targetType != "" && !messages.TargetTypes[targetType]:
+	case targetType != "" && !interfaces.TargetTypes[targetType]:
 		return 0, errors.Wrap(errors.Errorf("target type is wrong %q", targetType), "Subscribers.AddHandler")
 	case targetID != nil && *targetID < 1:
 		return 0, errors.Wrap(errors.Errorf("target id is wrong %d", targetID), "Subscribers.AddHandler")

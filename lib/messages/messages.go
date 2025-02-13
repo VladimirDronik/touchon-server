@@ -79,7 +79,7 @@ func (o *ServiceImpl) worker() {
 		}
 
 		for _, handler := range o.subscribers.GetHandlers(msg) {
-			handler(o, msg)
+			handler(msg)
 		}
 	}
 }

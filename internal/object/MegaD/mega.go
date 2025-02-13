@@ -1,7 +1,7 @@
 package MegaD
 
 import (
-	"C"
+	//"C"
 	"github.com/sirupsen/logrus"
 	"touchon-server/internal/store"
 )

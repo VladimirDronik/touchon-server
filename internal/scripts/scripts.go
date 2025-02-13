@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/traefik/yaegi/interp"
 	svcContext "touchon-server/internal/context"
+	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/script"
 	"touchon-server/lib/helpers/orderedmap"
@@ -252,23 +253,28 @@ func (o *Scripts) execScript(script *Script, args map[string]interface{}) (inter
 }
 
 // MsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *Scripts) MsgHandler(svc interfaces.MessageSender, msg interfaces.Message) {
+func (o *Scripts) MsgHandler(msg interfaces.Message) {
 	s, err := o.GetScript(msg.GetTargetID())
 	if err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
-	r, err := o.ExecScript(s, msg.GetPayload())
+	// TODO
+	r, err := o.ExecScript(s, nil) // msg.GetPayload()
 	if err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
-	msg, err = script.NewOnCompleteMessage("object_manager/script/event", msg.GetTargetID(), r)
+	msg, err = script.NewOnComplete(msg.GetTargetID(), r)
 	if err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
+	}
+
+	if err := msgs.I.Send(msg); err != nil {
+		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 	}
 }
 

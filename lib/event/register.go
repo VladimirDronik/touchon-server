@@ -2,7 +2,7 @@ package event
 
 import (
 	"github.com/pkg/errors"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 type Maker func() (*Event, error)
@@ -41,7 +41,7 @@ func GetMaker(eventName string) (Maker, error) {
 	return maker, nil
 }
 
-func MakeEvent(eventName string, targetType messages.TargetType, targetID int, payload map[string]interface{}) (*Event, error) {
+func MakeEvent(eventName string, targetType interfaces.TargetType, targetID int, payload map[string]interface{}) (*Event, error) {
 	maker, ok := register[eventName]
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("event %q not registered", eventName), "GetEvent")

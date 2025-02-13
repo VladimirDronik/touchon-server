@@ -17,7 +17,7 @@ import (
 	"touchon-server/lib/event"
 	httpClient "touchon-server/lib/http/client"
 	_ "touchon-server/lib/http/server"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // Создание объекта (с действиями)
@@ -120,7 +120,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		if e != nil {
 			for _, ev := range req.Events {
 				params := map[string]string{
-					"target_type": string(messages.TargetTypeObject),
+					"target_type": string(interfaces.TargetTypeObject),
 					"target_id":   strconv.Itoa(objectID),
 					"event_name":  ev.Name,
 				}
@@ -135,7 +135,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 
 	for _, ev := range req.Events {
 		params := map[string]string{
-			"target_type": string(messages.TargetTypeObject),
+			"target_type": string(interfaces.TargetTypeObject),
 			"target_id":   strconv.Itoa(objectID),
 			"event_name":  ev.Name,
 		}

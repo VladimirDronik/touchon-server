@@ -1,6 +1,6 @@
 package model
 
-import "touchon-server/lib/mqtt/messages"
+import "touchon-server/lib/interfaces"
 
 type CronTask struct {
 	ID          int           `json:"id"`               // 1
@@ -26,12 +26,11 @@ const (
 type CronAction struct {
 	ID         int                    `json:"id"`                      // 2
 	TaskID     int                    `json:"task_id"`                 // 4
-	TargetType messages.TargetType    `json:"target_type,omitempty"`   // object, item
+	TargetType interfaces.TargetType  `json:"target_type,omitempty"`   // object, item
 	TargetID   int                    `json:"target_id,omitempty"`     // 8
 	Type       ActionType             `json:"type"`                    // method, delay
 	Name       string                 `json:"name"`                    // script_1, check
 	Args       map[string]interface{} `json:"args,omitempty" gorm:"-"` // method or script args
-	QoS        messages.QoS           `json:"qos" gorm:"column:qos"`   // 0,1,2
 	Enabled    bool                   `json:"enabled"`                 //
 	Sort       int                    `json:"sort"`                    //
 	Comment    string                 `json:"comment,omitempty"`       // отключено потому что...
@@ -42,12 +41,12 @@ func (o *CronAction) TableName() string {
 }
 
 type Event struct {
-	ID         int                 `json:"id"`                    // 1
-	TargetType messages.TargetType `json:"target_type,omitempty"` // object, item
-	TargetID   int                 `json:"target_id,omitempty"`   // 8
-	EventName  string              `json:"event_name"`            //
-	Enabled    bool                `json:"enabled"`               //
-	Actions    []*EventAction      `json:"actions" gorm:"-"`      //
+	ID         int                   `json:"id"`                    // 1
+	TargetType interfaces.TargetType `json:"target_type,omitempty"` // object, item
+	TargetID   int                   `json:"target_id,omitempty"`   // 8
+	EventName  string                `json:"event_name"`            //
+	Enabled    bool                  `json:"enabled"`               //
+	Actions    []*EventAction        `json:"actions" gorm:"-"`      //
 }
 
 func (o *Event) TableName() string {
@@ -57,12 +56,11 @@ func (o *Event) TableName() string {
 type EventAction struct {
 	ID         int                    `json:"id"`                      // 2
 	EventID    int                    `json:"event_id,omitempty"`      // 4
-	TargetType messages.TargetType    `json:"target_type,omitempty"`   // object, item
+	TargetType interfaces.TargetType  `json:"target_type,omitempty"`   // object, item
 	TargetID   int                    `json:"target_id,omitempty"`     // 8
 	Type       ActionType             `json:"type"`                    // script, method
 	Name       string                 `json:"name"`                    // script_1, check
 	Args       map[string]interface{} `json:"args,omitempty" gorm:"-"` // method or script args
-	QoS        messages.QoS           `json:"qos" gorm:"column:qos"`   // 0,1,2
 	Enabled    bool                   `json:"enabled"`                 //
 	Sort       int                    `json:"sort"`                    //
 	Comment    string                 `json:"comment,omitempty"`       // отключено потому что...

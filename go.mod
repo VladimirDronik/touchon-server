@@ -5,7 +5,6 @@ go 1.23.2
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/fasthttp/router v1.5.2
 	github.com/fasthttp/websocket v1.5.12
 	github.com/grandcat/zeroconf v1.0.0
@@ -34,7 +33,6 @@ require (
 	github.com/go-openapi/spec v0.20.6 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/goburrow/serial v0.1.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

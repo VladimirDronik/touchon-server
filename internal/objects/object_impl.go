@@ -12,7 +12,6 @@ import (
 	"touchon-server/lib/event"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
-	"touchon-server/lib/mqtt/messages"
 )
 
 // Implementation of Object interface
@@ -40,7 +39,7 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 	o.GetMethods().Add(methods...)
 
 	for _, eventName := range events {
-		event, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
+		event, err := event.MakeEvent(eventName, interfaces.TargetTypeObject, 0, nil)
 		if err != nil {
 			return nil, errors.Wrap(err, "NewObjectModelImpl")
 		}
@@ -337,7 +336,7 @@ func (o *ObjectModelImpl) Start() error {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
 
-	err := o.Subscribe(messages.MessageTypeCommand, "", messages.TargetTypeObject, &o.id, o.mqttMsgHandler)
+	err := o.Subscribe(interfaces.MessageTypeCommand, "", interfaces.TargetTypeObject, &o.id, o.mqttMsgHandler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
@@ -346,20 +345,21 @@ func (o *ObjectModelImpl) Start() error {
 }
 
 // MqttMsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *ObjectModelImpl) mqttMsgHandler(svc interfaces.MessageSender, msg interfaces.Message) {
+func (o *ObjectModelImpl) mqttMsgHandler(msg interfaces.Message) {
 	method, err := o.GetMethods().Get(msg.GetName())
 	if err != nil {
 		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
 		return
 	}
 
-	msgs, err := method.Func(msg.GetPayload())
+	// TODO
+	msgsList, err := method.Func(nil) // msg.GetPayload()
 	if err != nil {
 		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
 		return
 	}
 
-	if err := svc.Send(msgs...); err != nil {
+	if err := msgs.I.Send(msgsList...); err != nil {
 		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 type EventsRepo struct {
@@ -12,7 +12,7 @@ type EventsRepo struct {
 }
 
 // GetEvents возвращает события сущности.
-func (o *EventsRepo) GetEvents(targetType messages.TargetType, targetID int) ([]*model.Event, error) {
+func (o *EventsRepo) GetEvents(targetType interfaces.TargetType, targetID int) ([]*model.Event, error) {
 	rows := make([]*model.Event, 0, 10)
 
 	err := o.store.db.
@@ -28,7 +28,7 @@ func (o *EventsRepo) GetEvents(targetType messages.TargetType, targetID int) ([]
 }
 
 // GetEvent возвращает событие.
-func (o *EventsRepo) GetEvent(targetType messages.TargetType, targetID int, eventName string) (*model.Event, error) {
+func (o *EventsRepo) GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*model.Event, error) {
 	row := &model.Event{}
 
 	err := o.store.db.
@@ -74,7 +74,7 @@ func (o *EventsRepo) SaveEvent(event *model.Event) error {
 }
 
 // DeleteEvent удаляет событие.
-func (o *EventsRepo) DeleteEvent(targetType messages.TargetType, targetID int, eventName string) error {
+func (o *EventsRepo) DeleteEvent(targetType interfaces.TargetType, targetID int, eventName string) error {
 	var sqlString string
 	// foreign_keys - для каскадного удаления записей
 
