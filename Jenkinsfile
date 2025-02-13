@@ -28,8 +28,9 @@ pipeline {
                 //     initMessage = "${env.MESSAGE_BASE}STARTED"
                 // }
                 // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
-                // echo 'Pulling...' + env.BRANCH_NAME
-                sh 'printenv'
+                echo 'Pulling...' + env.GIT_BRANCH
+                echo scm.branches[0].name
+                // sh 'printenv'
             }
         }
         // stage('Pull') {
