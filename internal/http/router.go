@@ -28,9 +28,9 @@ type SensorValues struct {
 
 // Получение значений датчиков
 // @Summary Получение значений датчиков
-// @Tags Server
+// @Tags Service
 // @Description Получение значений датчиков
-// @ID Server/Sensors
+// @ID ServiceSensors
 // @Produce json
 // @Success      200 {object} http.Response[[]SensorValues]
 // @Failure      400 {object} http.Response[any]
