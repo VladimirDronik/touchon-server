@@ -77,7 +77,7 @@ pipeline {
                 gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
                 gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
                 gitCommitComment = gitCommitComment.replace(/_/, "\\_")
-                gitCommitComment = gitCommitComment.replace(/*/, "\\*")
+                gitCommitComment = gitCommitComment.replace(/\*/, "\\*")
                 gitCommitComment = gitCommitComment.replace(/[/, "\\[")
                 gitCommitComment = gitCommitComment.replace(/`/, "\\`")
                 successMessage = "${env.MESSAGE_BASE}SUCSESS%0ACommit $gitCommit by $gitCommiter$gitCommitComment"
