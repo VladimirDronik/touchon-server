@@ -29,7 +29,7 @@ pipeline {
                 // }
                 // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
                 echo 'Pulling...' + env.GIT_BRANCH
-                echo scm.branches[0].name
+                println scm
                 // sh 'printenv'
             }
         }
