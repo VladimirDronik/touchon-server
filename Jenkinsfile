@@ -22,7 +22,7 @@ pipeline {
         REGISTRY = credentials('docker_registry_host')
         DEV = credentials('dev_server_ssh_cmd')
         STAGE = credentials('stage1_ssh_cmd')
-        TARGET_SRV = "${env.BRANCH_NAME == "develop" ? ${env.DEV} : ${env.STAGE}}"
+        TARGET_SRV = "${env.BRANCH_NAME == "develop" ? "${env.DEV}" : "${env.STAGE}"}"
         TARGET_PATH = "${env.BRANCH_NAME == "develop" ? "/opt/touchon/gobin" : "/opt/touchon"}"
         IMG_TAG = "${env.BRANCH_NAME == "develop" ? "develop" : "${env.BRANCH_NAME.replaceFirst('release/', '')}"}"
     }
