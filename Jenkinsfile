@@ -29,6 +29,7 @@ pipeline {
                 // }
                 // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
                 echo 'Pulling...' + env.GIT_BRANCH
+                echo GIT_URL.tokenize('/.')[-2]
                 println scm.branches
                 // sh 'printenv'
             }
