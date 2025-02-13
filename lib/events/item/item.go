@@ -8,17 +8,16 @@ import (
 )
 
 func NewOnChangeStateOn(itemID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeItem, itemID)
+	msg, err := messages.NewEvent("item.on_change_state_on", interfaces.TargetTypeItem, itemID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnChangeStateOn")
 	}
 
 	o := &OnChangeStateOn{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "item.on_change_state_on",
-			EventName:        "on_change_state_on",
-			EventDescription: "Состояние элемента 'Вкл'",
+			Message:     msg,
+			Title:       "on_change_state_on",
+			Description: "Состояние элемента 'Вкл'",
 		},
 	}
 
@@ -30,17 +29,16 @@ type OnChangeStateOn struct {
 }
 
 func NewOnChangeStateOff(itemID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeItem, itemID)
+	msg, err := messages.NewEvent("item.on_change_state_off", interfaces.TargetTypeItem, itemID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnChangeStateOff")
 	}
 
 	o := &OnChangeStateOff{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "item.on_change_state_off",
-			EventName:        "on_change_state_off",
-			EventDescription: "Состояние элемента 'Выкл'",
+			Message:     msg,
+			Title:       "on_change_state_off",
+			Description: "Состояние элемента 'Выкл'",
 		},
 	}
 

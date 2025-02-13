@@ -4,9 +4,8 @@ import "encoding/json"
 
 type Event interface {
 	Message
-	GetEventCode() string
-	GetEventName() string
-	GetEventDescription() string
+	GetTitle() string
+	GetDescription() string
 	CheckEvent() error
 
 	json.Marshaler

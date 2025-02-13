@@ -16,3 +16,4 @@ Dockerfile-w64
 Dockerfile-build-sqlean-unicode-so
 touchon-server.zip
 bin/db.sqlite
+nodered/

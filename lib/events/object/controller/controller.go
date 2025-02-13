@@ -8,17 +8,16 @@ import (
 )
 
 func NewOnLoad(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.controller.on_load", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnLoad")
 	}
 
 	o := &OnLoad{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.controller.on_load",
-			EventName:        "on_load",
-			EventDescription: "Инициализация контроллера после включения питания",
+			Message:     msg,
+			Title:       "on_load",
+			Description: "Инициализация контроллера после включения питания",
 		},
 	}
 
@@ -31,17 +30,16 @@ type OnLoad struct {
 }
 
 func NewOnUnavailable(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.controller.on_unavailable", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnUnavailable")
 	}
 
 	o := &OnUnavailable{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.controller.on_unavailable",
-			EventName:        "on_unavailable",
-			EventDescription: "Контроллер стал недоступен",
+			Message:     msg,
+			Title:       "on_unavailable",
+			Description: "Контроллер стал недоступен",
 		},
 	}
 

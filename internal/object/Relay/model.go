@@ -10,7 +10,6 @@ import (
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/relay"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 
@@ -138,7 +137,7 @@ func (o *RelayModel) Start() error {
 	return nil
 }
 
-func (o *RelayModel) handler(msg interfaces.Message) {
+func (o *RelayModel) handler(svc interfaces.MessageSender, msg interfaces.Message) {
 	context.Logger.Debugf("Relay(%d): handler()", o.GetID())
 
 	var err error
@@ -157,7 +156,7 @@ func (o *RelayModel) handler(msg interfaces.Message) {
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := svc.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
 	}
 }

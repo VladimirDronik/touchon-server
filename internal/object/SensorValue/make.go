@@ -17,7 +17,7 @@ func init() {
 	}
 }
 
-type Type string
+type Type = string
 
 const (
 	TypeTemperature  = "temperature"  // Температура

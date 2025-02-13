@@ -89,7 +89,8 @@ func (o *ServiceImpl) worker() {
 		}
 
 		for _, handler := range handlers {
-			handler(msg)
+			// TODO потенциально может быть утечка горутин
+			go handler(o, msg)
 		}
 	}
 }

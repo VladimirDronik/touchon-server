@@ -7,7 +7,6 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/generic_input"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 
@@ -120,9 +119,7 @@ func (o *GenericInputModel) Start() error {
 	return nil
 }
 
-func (o *GenericInputModel) handler(msg interfaces.Message) {
-	context.Logger.Debugf("GenericInputModel(%d): handler()", o.GetID())
-
+func (o *GenericInputModel) handler(svc interfaces.MessageSender, msg interfaces.Message) {
 	var err error
 
 	switch msg.GetName() {
@@ -141,7 +138,7 @@ func (o *GenericInputModel) handler(msg interfaces.Message) {
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := svc.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
 		return
 	}

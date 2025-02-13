@@ -8,21 +8,21 @@ import (
 )
 
 func NewOnCheck(targetID int, state, value string) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.relay.on_check", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
 	o := &OnCheck{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.relay.on_check",
-			EventName:        "on_check",
-			EventDescription: "Проверка состояния реле",
+			Message:     msg,
+			Title:       "on_check",
+			Description: "Проверка состояния реле",
 		},
-		State: state,
-		Value: value,
 	}
+
+	o.SetValue("state", state) // Состояние
+	o.SetValue("value", value) // Значение
 
 	return o, nil
 }
@@ -30,22 +30,19 @@ func NewOnCheck(targetID int, state, value string) (interfaces.Event, error) {
 // OnCheck Проверка состояния реле
 type OnCheck struct {
 	interfaces.Event
-	State string `json:"state,omitempty"` // Состояние
-	Value string `json:"value,omitempty"` // Значение
 }
 
 func NewOnStateOn(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.relay.on_state_on", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnStateOn")
 	}
 
 	o := &OnStateOn{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.relay.on_state_on",
-			EventName:        "on_state_on",
-			EventDescription: "Включение реле",
+			Message:     msg,
+			Title:       "on_state_on",
+			Description: "Включение реле",
 		},
 	}
 
@@ -58,17 +55,16 @@ type OnStateOn struct {
 }
 
 func NewOnStateOff(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.relay.on_state_off", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnStateOff")
 	}
 
 	o := &OnStateOff{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.relay.on_state_off",
-			EventName:        "on_state_off",
-			EventDescription: "Выключение реле",
+			Message:     msg,
+			Title:       "on_state_off",
+			Description: "Выключение реле",
 		},
 	}
 

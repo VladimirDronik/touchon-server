@@ -8,19 +8,21 @@ import (
 )
 
 func NewOnCheck(targetID int, props map[string]interface{}) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.onokom.gateway.on_check", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
 	o := &OnCheck{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.onokom.gateway.on_check",
-			EventName:        "on_check",
-			EventDescription: "Получение состояния устройства",
+			Message:     msg,
+			Title:       "on_check",
+			Description: "Получение состояния устройства",
 		},
-		Props: props,
+	}
+
+	for k, v := range props {
+		o.SetValue(k, v)
 	}
 
 	return o, nil
@@ -29,23 +31,24 @@ func NewOnCheck(targetID int, props map[string]interface{}) (interfaces.Event, e
 // OnCheck Получение состояния устройства
 type OnCheck struct {
 	interfaces.Event
-	Props map[string]interface{} `json:"props,omitempty"` // Свойства кондиционера
 }
 
 func NewOnChange(targetID int, props map[string]interface{}) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.onokom.gateway.on_change", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnChange")
 	}
 
 	o := &OnChange{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.onokom.gateway.on_change",
-			EventName:        "on_change",
-			EventDescription: "Изменение состояния устройства",
+			Message:     msg,
+			Title:       "on_change",
+			Description: "Изменение состояния устройства",
 		},
-		Props: props,
+	}
+
+	for k, v := range props {
+		o.SetValue(k, v)
 	}
 
 	return o, nil
@@ -54,5 +57,4 @@ func NewOnChange(targetID int, props map[string]interface{}) (interfaces.Event, 
 // OnChange Изменение состояния устройства
 type OnChange struct {
 	interfaces.Event
-	Props map[string]interface{} `json:"props,omitempty"` // Свойства кондиционера
 }

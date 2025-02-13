@@ -420,18 +420,14 @@ func (o *Server) itemChange(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 	case "off":
 		msg, err = item.NewOnChangeStateOff(req.ItemID)
 	default:
-		msg, err = messages.NewEvent(interfaces.TargetTypeItem, req.ItemID)
-		if err == nil {
-			msg.SetName(req.Event)
-		}
+		msg, err = messages.NewEvent(req.Event, interfaces.TargetTypeItem, req.ItemID)
 	}
 
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	// TODO ???
-	// msg.SetPayload(req.Params)
+	msg.SetPayload(req.Params)
 
 	if err := msgs.I.Send(msg); err != nil {
 		return nil, http.StatusInternalServerError, err

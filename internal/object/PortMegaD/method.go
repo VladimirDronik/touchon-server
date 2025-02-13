@@ -270,8 +270,13 @@ func (o *PortModel) SetTypeMode(typePt string, modePt string, title string, extP
 	}
 
 	//Если получилось поменять тип и режим порта, то в БД тоже меняем
-	store.I.ObjectRepository().SetProp(o.GetID(), "type", typePt)
-	store.I.ObjectRepository().SetProp(o.GetID(), "mode", modePt)
+	if err := store.I.ObjectRepository().SetProp(o.GetID(), "type", typePt); err != nil {
+		return errors.Wrap(err, "SetTypeMode")
+	}
+
+	if err := store.I.ObjectRepository().SetProp(o.GetID(), "mode", modePt); err != nil {
+		return errors.Wrap(err, "SetTypeMode")
+	}
 
 	return nil
 }

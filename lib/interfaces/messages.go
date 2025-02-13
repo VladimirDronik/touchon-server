@@ -3,9 +3,8 @@ package interfaces
 type MessageType = string
 
 const (
-	MessageTypeEvent        MessageType = "event"
-	MessageTypeCommand      MessageType = "command"
-	MessageTypeNotification MessageType = "notification"
+	MessageTypeEvent   MessageType = "event"
+	MessageTypeCommand MessageType = "command"
 )
 
 type TargetType = string
@@ -43,6 +42,19 @@ type Message interface {
 	SetName(string)
 	SetTargetType(TargetType)
 	SetTargetID(int)
+
+	GetPayload() map[string]interface{}
+	SetPayload(map[string]interface{})
+	GetValue(k string) interface{}
+	SetValue(k string, v interface{})
+	GetFloatValue(name string) (float32, error)
+	GetStringValue(name string) (string, error)
+	GetIntValue(name string) (int, error)
+	GetBoolValue(name string) (bool, error)
+}
+
+type MessageSender interface {
+	Send(msg ...Message) error
 }
 
 type MessagesService interface {
@@ -50,7 +62,12 @@ type MessagesService interface {
 	Shutdown() error
 	Subscribe(msgType MessageType, name string, targetType TargetType, targetID *int, handler MsgHandler) (int, error)
 	Unsubscribe(handlerIDs ...int)
-	Send(msg ...Message) error
+	MessageSender
 }
 
-type MsgHandler func(msg Message)
+type MsgHandler func(svc MessageSender, msg Message)
+
+type Command interface {
+	Message
+	GetArgs() map[string]interface{}
+}

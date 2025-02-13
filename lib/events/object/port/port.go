@@ -8,17 +8,16 @@ import (
 )
 
 func NewOnPress(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.port.on_press", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnPress")
 	}
 
 	o := &OnPress{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.port.on_press",
-			EventName:        "on_press",
-			EventDescription: "Порт замкнут",
+			Message:     msg,
+			Title:       "on_press",
+			Description: "Порт замкнут",
 		},
 	}
 
@@ -31,17 +30,16 @@ type OnPress struct {
 }
 
 func NewOnLongPress(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.port.on_long_press", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnLongPress")
 	}
 
 	o := &OnLongPress{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.port.on_long_press",
-			EventName:        "on_long_press",
-			EventDescription: "Порт удерживается в замкнутом состоянии",
+			Message:     msg,
+			Title:       "on_long_press",
+			Description: "Порт удерживается в замкнутом состоянии",
 		},
 	}
 
@@ -54,17 +52,16 @@ type OnLongPress struct {
 }
 
 func NewOnRelease(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.port.on_release", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnRelease")
 	}
 
 	o := &OnRelease{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.port.on_release",
-			EventName:        "on_release",
-			EventDescription: "Порт разомкнут",
+			Message:     msg,
+			Title:       "on_release",
+			Description: "Порт разомкнут",
 		},
 	}
 
@@ -77,17 +74,16 @@ type OnRelease struct {
 }
 
 func NewOnDoubleClick(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.port.on_double_click", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnDoubleClick")
 	}
 
 	o := &OnDoubleClick{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.port.on_double_click",
-			EventName:        "on_double_click",
-			EventDescription: "Порт замкнут дважды",
+			Message:     msg,
+			Title:       "on_double_click",
+			Description: "Порт замкнут дважды",
 		},
 	}
 
@@ -100,21 +96,21 @@ type OnDoubleClick struct {
 }
 
 func NewOnCheck(targetID int, state, value string) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.port.on_check", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
 	o := &OnCheck{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.port.on_check",
-			EventName:        "on_check",
-			EventDescription: "Событие возникает, когда проверяется состояние порта, но при этом новое пришедшее состояние порта не различается с тем, что хранится в БД",
+			Message:     msg,
+			Title:       "on_check",
+			Description: "Событие возникает, когда проверяется состояние порта, но при этом новое пришедшее состояние порта не различается с тем, что хранится в БД",
 		},
-		State: state,
-		Value: value,
 	}
+
+	o.SetValue("state", state) // Состояние
+	o.SetValue("value", value) // Значение
 
 	return o, nil
 }
@@ -123,6 +119,4 @@ func NewOnCheck(targetID int, state, value string) (interfaces.Event, error) {
 // но при этом новое пришедшее состояние порта не различается с тем, что хранится в БД
 type OnCheck struct {
 	interfaces.Event
-	State string `json:"state,omitempty"` // Состояние
-	Value string `json:"value,omitempty"` // Значение
 }

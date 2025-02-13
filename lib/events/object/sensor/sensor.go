@@ -7,21 +7,21 @@ import (
 	"touchon-server/lib/messages"
 )
 
-func NewOnAlarm(targetID int, msgText string) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+func NewOnAlarm(targetID int, message string) (interfaces.Event, error) {
+	msg, err := messages.NewEvent("object.sensor.on_alarm", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnAlarm")
 	}
 
 	o := &OnAlarm{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.sensor.on_alarm",
-			EventName:        "on_alarm",
-			EventDescription: "Данные датчика вышли за пороговые значения",
+			Message:     msg,
+			Title:       "on_alarm",
+			Description: "Данные датчика вышли за пороговые значения",
 		},
-		MsgText: msgText,
 	}
+
+	o.SetValue("message", message) // Сообщение
 
 	return o, nil
 }
@@ -29,23 +29,24 @@ func NewOnAlarm(targetID int, msgText string) (interfaces.Event, error) {
 // OnAlarm Данные датчика вышли за пороговые значения
 type OnAlarm struct {
 	interfaces.Event
-	MsgText string `json:"message,omitempty"` // Сообщение
 }
 
 func NewOnCheck(targetID int, values map[string]float32) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.sensor.on_check", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
 	o := &OnCheck{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.sensor.on_check",
-			EventName:        "on_check",
-			EventDescription: "Данные датчика обновлены",
+			Message:     msg,
+			Title:       "on_check",
+			Description: "Данные датчика обновлены",
 		},
-		Values: values,
+	}
+
+	for k, v := range values {
+		o.SetValue(k, v) // Значения
 	}
 
 	return o, nil
@@ -54,21 +55,19 @@ func NewOnCheck(targetID int, values map[string]float32) (interfaces.Event, erro
 // OnCheck Данные датчика обновлены
 type OnCheck struct {
 	interfaces.Event
-	Values map[string]float32 `json:"values,omitempty"` // Значения
 }
 
 func NewOnMotionOn(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.sensor.on_motion_on", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnMotionOn")
 	}
 
 	o := &OnMotionOn{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.sensor.on_motion_on",
-			EventName:        "on_motion_on",
-			EventDescription: "Движение есть",
+			Message:     msg,
+			Title:       "on_motion_on",
+			Description: "Движение есть",
 		},
 	}
 
@@ -81,17 +80,16 @@ type OnMotionOn struct {
 }
 
 func NewOnMotionOff(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.sensor.on_motion_off", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnMotionOff")
 	}
 
 	o := &OnMotionOff{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.sensor.on_motion_off",
-			EventName:        "on_motion_off",
-			EventDescription: "Движения нет",
+			Message:     msg,
+			Title:       "on_motion_off",
+			Description: "Движения нет",
 		},
 	}
 
@@ -104,17 +102,16 @@ type OnMotionOff struct {
 }
 
 func NewOnPresenceOn(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.sensor.on_presence_on", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnPresenceOn")
 	}
 
 	o := &OnPresenceOn{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.sensor.on_presence_on",
-			EventName:        "on_presence_on",
-			EventDescription: "Присутствие есть",
+			Message:     msg,
+			Title:       "on_presence_on",
+			Description: "Присутствие есть",
 		},
 	}
 
@@ -127,17 +124,16 @@ type OnPresenceOn struct {
 }
 
 func NewOnPresenceOff(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.sensor.on_presence_off", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnPresenceOff")
 	}
 
 	o := &OnPresenceOff{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.sensor.on_presence_off",
-			EventName:        "on_presence_off",
-			EventDescription: "Присутствия нет",
+			Message:     msg,
+			Title:       "on_presence_off",
+			Description: "Присутствия нет",
 		},
 	}
 

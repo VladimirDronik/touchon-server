@@ -32,7 +32,7 @@ func (o *Events) DeleteAll() {
 
 func (o *Events) Add(items ...interfaces.Event) error {
 	for _, item := range items {
-		if err := o.m.Add(item.GetEventCode(), item); err != nil {
+		if err := o.m.Add(item.GetName(), item); err != nil {
 			return errors.Wrap(err, "Events.Add")
 		}
 	}

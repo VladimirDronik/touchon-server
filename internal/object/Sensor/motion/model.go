@@ -200,7 +200,7 @@ func (o *MotionSensorModel) Start() error {
 	return nil
 }
 
-func (o *MotionSensorModel) onMotionOnHandler(interfaces.Message) {
+func (o *MotionSensorModel) onMotionOnHandler(svc interfaces.MessageSender, _ interfaces.Message) {
 	context.Logger.Debugf("MotionSensorModel(%d): onMotionOnHandler()", o.GetID())
 
 	// Запоминаем текущее состояние движения
@@ -229,12 +229,12 @@ func (o *MotionSensorModel) onMotionOnHandler(interfaces.Message) {
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := svc.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
 	}
 }
 
-func (o *MotionSensorModel) onMotionOffHandler(interfaces.Message) {
+func (o *MotionSensorModel) onMotionOffHandler(interfaces.MessageSender, interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
 		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
 		return

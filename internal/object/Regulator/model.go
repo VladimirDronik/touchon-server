@@ -208,7 +208,7 @@ type RegulatorModel struct {
 	timer *helpers.Timer
 }
 
-func (o *RegulatorModel) sensorOnCheckHandler(interfaces.Message) {
+func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ interfaces.Message) {
 	if !o.GetEnabled() {
 		return
 	}
@@ -326,7 +326,7 @@ func (o *RegulatorModel) sensorOnCheckHandler(interfaces.Message) {
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := svc.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 	}
 }

@@ -12,7 +12,6 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 )
 
 func init() {
@@ -143,7 +142,7 @@ func (o *PresenceSensorModel) Start() error {
 	return nil
 }
 
-func (o *PresenceSensorModel) onPresenceOnHandler(interfaces.Message) {
+func (o *PresenceSensorModel) onPresenceOnHandler(svc interfaces.MessageSender, _ interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
 		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
 		return
@@ -174,12 +173,12 @@ func (o *PresenceSensorModel) onPresenceOnHandler(interfaces.Message) {
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := svc.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
 	}
 }
 
-func (o *PresenceSensorModel) onPresenceOffHandler(interfaces.Message) {
+func (o *PresenceSensorModel) onPresenceOffHandler(svc interfaces.MessageSender, _ interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
 		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
 		return
@@ -210,7 +209,7 @@ func (o *PresenceSensorModel) onPresenceOffHandler(interfaces.Message) {
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := svc.Send(msg); err != nil {
 		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
 	}
 }

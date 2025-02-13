@@ -8,17 +8,16 @@ import (
 )
 
 func NewOnClick(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.generic_input.on_click", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnClick")
 	}
 
 	o := &OnClick{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.generic_input.on_click",
-			EventName:        "on_click",
-			EventDescription: "Одиночное замыкание",
+			Message:     msg,
+			Title:       "on_click",
+			Description: "Одиночное замыкание",
 		},
 	}
 
@@ -31,17 +30,16 @@ type OnClick struct {
 }
 
 func NewOnDoubleClick(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.generic_input.on_double_click", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnDoubleClick")
 	}
 
 	o := &OnDoubleClick{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.generic_input.on_double_click",
-			EventName:        "on_double_click",
-			EventDescription: "Двойное замыкание",
+			Message:     msg,
+			Title:       "on_double_click",
+			Description: "Двойное замыкание",
 		},
 	}
 
@@ -54,17 +52,16 @@ type OnDoubleClick struct {
 }
 
 func NewOnLongPress(targetID int) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.generic_input.on_long_press", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnLongPress")
 	}
 
 	o := &OnLongPress{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.generic_input.on_long_press",
-			EventName:        "on_long_press",
-			EventDescription: "Длительное замыкание",
+			Message:     msg,
+			Title:       "on_long_press",
+			Description: "Длительное замыкание",
 		},
 	}
 

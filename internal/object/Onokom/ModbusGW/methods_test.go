@@ -152,7 +152,7 @@ func TestDeviceModel_Check(t *testing.T) {
 			payload[item.Code] = item.DefaultValue
 		}
 
-		msg, err := gw.NewOnCheckMessage("object_manager/object/event", objectID, payload)
+		msg, err := gw.NewOnCheck(objectID, payload)
 		require.NoError(t, err)
 
 		t.Run(gwModelCode+"/success", func(t *testing.T) {

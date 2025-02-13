@@ -5,27 +5,31 @@ import (
 	"touchon-server/lib/interfaces"
 )
 
-func NewCommand(name string, targetType interfaces.TargetType, targetID int, args map[string]interface{}) (interfaces.Message, error) {
+func NewCommand(name string, targetType interfaces.TargetType, targetID int, args map[string]interface{}) (interfaces.Command, error) {
 	msg, err := NewMessage(interfaces.MessageTypeCommand, name, targetType, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewCommand")
 	}
 
-	o := &Command{
-		MessageImpl: msg,
-		Args:        args,
+	o := &CommandImpl{
+		Message: msg,
 	}
+
+	o.SetPayload(args)
 
 	return o, nil
 }
 
-type Command struct {
-	*MessageImpl
-	Args map[string]interface{} `json:"args"` // Аргументы вызова
+type CommandImpl struct {
+	interfaces.Message
 }
 
-func NewEvent(targetType interfaces.TargetType, targetID int) (*MessageImpl, error) {
-	msg, err := NewMessage(interfaces.MessageTypeEvent, "", targetType, targetID)
+func (o *CommandImpl) GetArgs() map[string]interface{} {
+	return o.GetPayload()
+}
+
+func NewEvent(name string, targetType interfaces.TargetType, targetID int) (*MessageImpl, error) {
+	msg, err := NewMessage(interfaces.MessageTypeEvent, name, targetType, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewEvent")
 	}
@@ -46,48 +50,139 @@ func NewMessage(msgType interfaces.MessageType, name string, targetType interfac
 	}
 
 	return &MessageImpl{
-		Type:       msgType,
-		Name:       name,
-		TargetType: targetType,
-		TargetID:   targetID,
+		msgType:    msgType,
+		name:       name,
+		targetType: targetType,
+		targetID:   targetID,
 	}, nil
 }
 
 type MessageImpl struct {
-	Type       interfaces.MessageType `json:"type"`        // event,command
-	Name       string                 `json:"name"`        // onChange,check
-	TargetType interfaces.TargetType  `json:"target_type"` //
-	TargetID   int                    `json:"target_id"`   // 82
+	msgType    interfaces.MessageType // event,command
+	name       string                 // onChange,check
+	targetType interfaces.TargetType  //
+	targetID   int                    // 82
+	payload    map[string]interface{} //
 }
 
 func (o *MessageImpl) GetType() interfaces.MessageType {
-	return o.Type
+	return o.msgType
 }
 
 func (o *MessageImpl) GetName() string {
-	return o.Name
+	return o.name
 }
 
 func (o *MessageImpl) GetTargetType() interfaces.TargetType {
-	return o.TargetType
+	return o.targetType
 }
 
 func (o *MessageImpl) GetTargetID() int {
-	return o.TargetID
+	return o.targetID
 }
 
 func (o *MessageImpl) SetType(v interfaces.MessageType) {
-	o.Type = v
+	o.msgType = v
 }
 
 func (o *MessageImpl) SetName(v string) {
-	o.Name = v
+	o.name = v
 }
 
 func (o *MessageImpl) SetTargetType(v interfaces.TargetType) {
-	o.TargetType = v
+	o.targetType = v
 }
 
 func (o *MessageImpl) SetTargetID(v int) {
-	o.TargetID = v
+	o.targetID = v
+}
+
+func (o *MessageImpl) GetValue(k string) interface{} {
+	return o.payload[k]
+}
+
+func (o *MessageImpl) SetValue(k string, v interface{}) {
+	if o.payload == nil {
+		o.payload = make(map[string]interface{})
+	}
+
+	o.payload[k] = v
+}
+
+func (o *MessageImpl) GetPayload() map[string]interface{} {
+	return o.payload
+}
+
+func (o *MessageImpl) SetPayload(v map[string]interface{}) {
+	if o.payload == nil {
+		o.payload = make(map[string]interface{}, len(v))
+	}
+
+	for k, v := range v {
+		o.payload[k] = v
+	}
+}
+
+func (o *MessageImpl) GetFloatValue(name string) (float32, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return 0, errors.Wrap(errors.Errorf("%s not found", name), "GetFloatValue")
+	}
+
+	switch v := v.(type) {
+	case float32:
+		return v, nil
+	case float64:
+		return float32(v), nil
+	case int:
+		return float32(v), nil
+	default:
+		return 0, errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetFloatValue")
+	}
+}
+
+func (o *MessageImpl) GetStringValue(name string) (string, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return "", errors.Wrap(errors.Errorf("%s not found", name), "GetStringValue")
+	}
+
+	switch v := v.(type) {
+	case string:
+		return v, nil
+	default:
+		return "", errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetStringValue")
+	}
+}
+
+func (o *MessageImpl) GetIntValue(name string) (int, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return 0, errors.Wrap(errors.Errorf("%s not found", name), "GetIntValue")
+	}
+
+	switch v := v.(type) {
+	case float32:
+		return int(v), nil
+	case float64:
+		return int(v), nil
+	case int:
+		return v, nil
+	default:
+		return 0, errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetIntValue")
+	}
+}
+
+func (o *MessageImpl) GetBoolValue(name string) (bool, error) {
+	v, ok := o.GetPayload()[name]
+	if !ok {
+		return false, errors.Wrap(errors.Errorf("%s not found", name), "GetBoolValue")
+	}
+
+	switch v := v.(type) {
+	case bool:
+		return v, nil
+	default:
+		return false, errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetBoolValue")
+	}
 }

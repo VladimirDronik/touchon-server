@@ -8,26 +8,23 @@ import (
 )
 
 func NewOnCheck(targetID int, values map[string]bool) (interfaces.Event, error) {
-	msg, err := messages.NewEvent(interfaces.TargetTypeObject, targetID)
+	msg, err := messages.NewEvent("object.wiren_board.wb_mrm2_mini.on_check", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
 	o := &OnCheck{
 		Event: &event.EventImpl{
-			Message:          msg,
-			EventCode:        "object.wiren_board.wb_mrm2_mini.on_check",
-			EventName:        "on_check",
-			EventDescription: "Получено состояние выходов",
+			Message:     msg,
+			Title:       "on_check",
+			Description: "Получено состояние выходов",
 		},
 	}
 
-	if v, ok := values["k1"]; ok {
-		o.K1 = v
-	}
-
-	if v, ok := values["k2"]; ok {
-		o.K2 = v
+	for _, k := range []string{"k1", "k2"} {
+		if v, ok := values[k]; ok {
+			o.SetValue(k, v)
+		}
 	}
 
 	return o, nil
@@ -36,6 +33,4 @@ func NewOnCheck(targetID int, values map[string]bool) (interfaces.Event, error) 
 // OnCheck Получено состояние выходов
 type OnCheck struct {
 	interfaces.Event
-	K1 bool `json:"k1,omitempty"` // Выход 1
-	K2 bool `json:"k2,omitempty"` // Выход 2
 }

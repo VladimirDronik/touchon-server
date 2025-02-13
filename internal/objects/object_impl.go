@@ -328,7 +328,8 @@ func (o *ObjectModelImpl) Start() error {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
 
-	err := o.Subscribe(interfaces.MessageTypeCommand, "", interfaces.TargetTypeObject, &o.id, o.mqttMsgHandler)
+	// Подписываем объект на обработку команд (вызов методов)
+	err := o.Subscribe(interfaces.MessageTypeCommand, "", interfaces.TargetTypeObject, &o.id, o.commandHandler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
@@ -336,23 +337,27 @@ func (o *ObjectModelImpl) Start() error {
 	return nil
 }
 
-// MqttMsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *ObjectModelImpl) mqttMsgHandler(msg interfaces.Message) {
-	method, err := o.GetMethods().Get(msg.GetName())
-	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
+func (o *ObjectModelImpl) commandHandler(svc interfaces.MessageSender, msg interfaces.Message) {
+	cmd, ok := msg.(interfaces.Command)
+	if !ok {
+		context.Logger.Error(errors.Wrap(errors.Errorf("msg is not command: %T", msg), "ObjectModelImpl.commandHandler"))
 		return
 	}
 
-	// TODO
-	msgsList, err := method.Func(nil) // msg.GetPayload()
+	method, err := o.GetMethods().Get(cmd.GetName())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
+		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
 		return
 	}
 
-	if err := msgs.I.Send(msgsList...); err != nil {
-		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler"))
+	msgsList, err := method.Func(cmd.GetArgs())
+	if err != nil {
+		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
+		return
+	}
+
+	if err := svc.Send(msgsList...); err != nil {
+		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
 	}
 }
 

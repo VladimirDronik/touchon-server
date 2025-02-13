@@ -271,27 +271,32 @@ func (o *Scripts) execScript(script *Script, args map[string]interface{}) (inter
 }
 
 // MsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *Scripts) msgHandler(msg interfaces.Message) {
-	s, err := o.GetScript(msg.GetTargetID())
+func (o *Scripts) msgHandler(svc interfaces.MessageSender, msg interfaces.Message) {
+	cmd, ok := msg.(interfaces.Command)
+	if !ok {
+		svcContext.Logger.Error(errors.Wrap(errors.Errorf("msg is not command: %T", msg), "Scripts.MsgHandler"))
+		return
+	}
+
+	s, err := o.GetScript(cmd.GetTargetID())
 	if err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
-	// TODO
-	r, err := o.ExecScript(s, nil) // msg.GetPayload()
+	r, err := o.ExecScript(s, cmd.GetArgs())
 	if err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
-	msg, err = script.NewOnComplete(msg.GetTargetID(), r)
+	msg, err = script.NewOnComplete(cmd.GetTargetID(), r)
 	if err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := svc.Send(msg); err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 	}
 }

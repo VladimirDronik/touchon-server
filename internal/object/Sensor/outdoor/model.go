@@ -28,10 +28,10 @@ func MakeModel() (objects.Object, error) {
 	obj.SetName("Outdoor Уличный датчик (BH1750+BME280)")
 	obj.SetTags(
 		"outdoor", "bh1750", "bme280",
-		string(SensorValue.TypeTemperature),
-		string(SensorValue.TypePressure),
-		string(SensorValue.TypeHumidity),
-		string(SensorValue.TypeIllumination),
+		SensorValue.TypeTemperature,
+		SensorValue.TypePressure,
+		SensorValue.TypeHumidity,
+		SensorValue.TypeIllumination,
 	)
 
 	if err := obj.GetProps().Set("interface", "I2C"); err != nil {

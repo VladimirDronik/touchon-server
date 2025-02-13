@@ -48,7 +48,7 @@ func (o *Service) Start() error {
 	}
 	o.handlerIDs = append(o.handlerIDs, handlerID)
 
-	handlerID, err = msgs.I.Subscribe(interfaces.MessageTypeNotification, "", "", nil, o.processNotification)
+	handlerID, err = msgs.I.Subscribe(interfaces.MessageTypeEvent, "on_notify", "", nil, o.processNotification)
 	if err != nil {
 		return errors.Wrap(err, "action_router.Service.Start")
 	}
@@ -63,14 +63,14 @@ func (o *Service) Shutdown() error {
 	return nil
 }
 
-func (o *Service) actionRouter(msg interfaces.Message) {
+func (o *Service) actionRouter(svc interfaces.MessageSender, msg interfaces.Message) {
 	ev, ok := msg.(interfaces.Event)
 	if !ok {
-		context.Logger.Error(errors.Wrap(errors.Errorf("msg [%s, %s, %s, %d] is not event", msg.GetType(), msg.GetName(), msg.GetTargetType(), msg.GetTargetID()), "action_router.Service.msgHandler"))
+		context.Logger.Error(errors.Wrap(errors.Errorf("msg is not event: %T", msg), "action_router.Service.msgHandler"))
 		return
 	}
 
-	storeEvent, err := store.I.EventsRepo().GetEvent(ev.GetTargetType(), ev.GetTargetID(), ev.GetEventCode())
+	storeEvent, err := store.I.EventsRepo().GetEvent(ev.GetTargetType(), ev.GetTargetID(), ev.GetName())
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return
@@ -156,7 +156,7 @@ func (o *Service) actionRouter(msg interfaces.Message) {
 				return
 			}
 
-			if err := msgs.I.Send(msg); err != nil {
+			if err := svc.Send(msg); err != nil {
 				context.Logger.Error(err, "action_router.Service.msgHandler")
 				return
 			}
@@ -168,7 +168,7 @@ func (o *Service) actionRouter(msg interfaces.Message) {
 	}
 }
 
-func (o *Service) processItemEvents(msg interfaces.Message) {
+func (o *Service) processItemEvents(svc interfaces.MessageSender, msg interfaces.Message) {
 	var state string
 
 	switch msg.(type) {
@@ -177,7 +177,7 @@ func (o *Service) processItemEvents(msg interfaces.Message) {
 	case item.OnChangeStateOff:
 		state = "off"
 	default:
-		context.Logger.Warnf("unhandled item event [%s, %s, %s, %d]", msg.GetType(), msg.GetName(), msg.GetTargetType(), msg.GetTargetID())
+		context.Logger.Warnf("unhandled item event %T [%s, %s, %s, %d]", msg, msg.GetType(), msg.GetName(), msg.GetTargetType(), msg.GetTargetID())
 		return
 	}
 
@@ -189,7 +189,7 @@ func (o *Service) processItemEvents(msg interfaces.Message) {
 	ws.I.Send(&model.ViewItem{ID: msg.GetTargetID(), Status: state})
 }
 
-func (o *Service) processObjectEvent(msg interfaces.Message) {
+func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interfaces.Message) {
 	// Ищем в таблице событие, которое пришло в топике
 	items, err := store.I.Items().GetItemsForChange(msg.GetTargetType(), msg.GetTargetID(), msg.GetName())
 	if err != nil {
@@ -239,16 +239,28 @@ func (o *Service) processObjectEvent(msg interfaces.Message) {
 	}
 }
 
-func (o *Service) processNotification(msg interfaces.Message) {
+func (o *Service) processNotification(svc interfaces.MessageSender, msg interfaces.Message) {
 	n, ok := msg.(*events.Notification)
 	if !ok {
 		context.Logger.Error(errors.Wrap(errors.Errorf("msg is not notification: %T", msg), "processNotification"))
 		return
 	}
 
+	nType, err := n.GetStringValue("type")
+	if err != nil {
+		context.Logger.Error(errors.Wrap(err, "processNotification"))
+		return
+	}
+
+	nText, err := n.GetStringValue("text")
+	if err != nil {
+		context.Logger.Error(errors.Wrap(err, "processNotification"))
+		return
+	}
+
 	notification := &model.Notification{
-		Type: n.Type,
-		Text: n.Text,
+		Type: nType,
+		Text: nText,
 		Date: time.Now().Format("2006-01-02T15:04:05"),
 	}
 
