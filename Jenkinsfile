@@ -17,10 +17,10 @@ pipeline {
         WORKDIR = '/opt/cicd_v2/'
         TOKEN = credentials('telegram_bot_token')
         CHAT = credentials('telegram_chat_id')
-        MESSAGE_BASE = "\\[ DEV4 ] *${env.SERVICE}*: "
+        MESSAGE_BASE = "\\[ DEV4 ] *${GIT_URL.tokenize('/.')[-2]}*: "
         REGISTRY = credentials('docker_registry_host')
         DEV_SRV = credentials('dev_server_ssh_cmd')
-        REPO = GIT_URL.tokenize('/.')[-2]
+        
     }
     stages {
         stage('Notification') {
@@ -32,7 +32,7 @@ pipeline {
                 echo 'Pulling...' + env.GIT_BRANCH
                 
                 println scm.branches
-                echo ${env.REPO}
+                echo "${env.MESSAGE_BASE}"
                 // sh 'printenv'
             }
         }
