@@ -75,8 +75,8 @@ pipeline {
                 gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
                 gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
                 // gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
-		        gitCommitComment = "_ * [ ] ( ) ~ ` > # + - = | { } . !"
-                gitCommitComment = gitCommitComment.replaceAll(~/_/*/[/]/(/)/~/`/>/#/+/-/=/|/{/}/./!/, /\\$0/)
+		        gitCommitComment = "_ * [ ]"
+                gitCommitComment = gitCommitComment.replaceAll(~/(|_|*|[|])/, /\\$0/)
                 // gitCommitComment = gitCommitComment.replaceAll(~/_/, "\\_")
                 successMessage = "${env.MESSAGE_BASE}SUCSESS%0ACommit $gitCommit by $gitCommiter$gitCommitComment"
                 func_telegram_sendMessage("$successMessage", "${env.TOKEN}", "${env.CHAT}")
