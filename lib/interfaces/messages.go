@@ -26,7 +26,7 @@ var TargetTypes = map[TargetType]bool{
 	TargetTypeService:    true,
 }
 
-type NotificationType string
+type NotificationType = string
 
 const (
 	NotificationTypeNormal   = ""

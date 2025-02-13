@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -12,20 +11,9 @@ import (
 	"touchon-server/lib/interfaces"
 )
 
-type EventAction struct {
-	TargetType interfaces.TargetType  `json:"target_type"` // Enums(not_matters,object,item,script,service)
-	TargetID   int                    `json:"target_id"`   // 8
-	Type       model.ActionType       `json:"type"`        // Enums(method,delay,notification)
-	Name       string                 `json:"name"`        // script_1, check
-	Args       map[string]interface{} `json:"args"`        // method or script args
-	Enabled    bool                   `json:"enabled"`     // Enums(true,false)
-	Sort       int                    `json:"sort"`        //
-	Comment    string                 `json:"comment"`     // отключено потому что...
-}
-
 type Event struct {
-	Name    string         `json:"name"`
-	Actions []*EventAction `json:"actions"`
+	Name    string               `json:"name"`
+	Actions []*model.EventAction `json:"actions"`
 }
 
 // Определение типа для сваггера
@@ -91,19 +79,11 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 		return item, status, nil
 	}
 
-	arBaseUrl := "http://" + o.GetConfig()["action_router_addr"]
-
 	// Если транзакцию не закончили, удаляем события со всеми действиями
 	defer func() {
 		if e != nil {
 			for _, ev := range req.Events {
-				params := map[string]string{
-					"target_type": interfaces.TargetTypeItem,
-					"target_id":   strconv.Itoa(item.ID),
-					"event_name":  ev.Name,
-				}
-
-				if _, err := o.httpClient.DoRequest("DELETE", arBaseUrl+"/events", params, nil, nil); err != nil {
+				if err := store.I.EventsRepo().DeleteEvent(interfaces.TargetTypeItem, item.ID, ev.Name); err != nil {
 					e = err
 					o.GetLogger().Error(err)
 				}
@@ -112,14 +92,8 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 	}()
 
 	for _, ev := range req.Events {
-		params := map[string]string{
-			"target_type": interfaces.TargetTypeItem,
-			"target_id":   strconv.Itoa(item.ID),
-			"event_name":  ev.Name,
-		}
-
 		for _, act := range ev.Actions {
-			if _, err := o.httpClient.DoRequest("POST", arBaseUrl+"/events/actions", params, nil, act); err != nil {
+			if err := o.createEventAction(interfaces.TargetTypeItem, item.ID, ev.Name, act); err != nil {
 				return nil, http.StatusInternalServerError, err
 			}
 		}

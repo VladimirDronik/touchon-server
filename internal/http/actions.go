@@ -149,10 +149,27 @@ func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 		return nil, http.StatusInternalServerError, err
 	}
 
+	if err := o.createEventAction(targetType, targetID, eventName, act); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return nil, http.StatusOK, nil
+}
+
+func (o *Server) createEventAction(targetType string, targetID int, eventName string, act *model.EventAction) error {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
+		return errors.Wrap(errors.Errorf("unknown target type %q", targetType), "createEventAction")
+	}
+
+	// TODO
+	//if _, err := event.GetMaker(eventName); err != nil {
+	//	return nil, http.StatusBadRequest, err
+	//}
+
 	event, err := store.I.EventsRepo().GetEvent(targetType, targetID, eventName)
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFound) {
-			return nil, http.StatusInternalServerError, err
+			return errors.Wrap(err, "createEventAction")
 		}
 
 		event = &model.Event{
@@ -163,17 +180,17 @@ func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 		}
 
 		if err := store.I.EventsRepo().SaveEvent(event); err != nil {
-			return nil, http.StatusInternalServerError, err
+			return errors.Wrap(err, "createEventAction")
 		}
 	}
 
 	act.EventID = event.ID
 
 	if err := store.I.EventActionsRepo().SaveAction(act); err != nil {
-		return nil, http.StatusInternalServerError, err
+		return errors.Wrap(err, "createEventAction")
 	}
 
-	return nil, http.StatusOK, nil
+	return nil
 }
 
 // Обновление действия

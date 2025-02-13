@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 	svcContext "touchon-server/internal/context"
 	"touchon-server/internal/model"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/messages"
+	msgs "touchon-server/lib/messages"
 )
 
 func New() (*Scheduler, error) {

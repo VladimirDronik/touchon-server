@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"touchon-server/internal/context"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/controller"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
+	msgs "touchon-server/lib/messages"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"

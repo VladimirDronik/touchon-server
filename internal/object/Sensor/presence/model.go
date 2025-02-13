@@ -7,12 +7,12 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/object/Sensor/motion"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/interfaces"
+	msgs "touchon-server/lib/messages"
 )
 
 func init() {

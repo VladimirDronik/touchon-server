@@ -7,10 +7,10 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
+	msgs "touchon-server/lib/messages"
 )
 
 // Implementation of Object interface

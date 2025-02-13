@@ -7,11 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/simonvetter/modbus"
 	"touchon-server/internal/context"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/object/Modbus"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/onokom/gateway"
 	"touchon-server/lib/interfaces"
+	msgs "touchon-server/lib/messages"
 )
 
 var doActionErr = errors.Errorf("ModbusDeviceImpl.DoAction returned bad value")

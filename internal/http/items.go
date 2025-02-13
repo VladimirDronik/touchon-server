@@ -6,12 +6,12 @@ import (
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/model"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/item"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/messages"
+	msgs "touchon-server/lib/messages"
 )
 
 // Создание элемента

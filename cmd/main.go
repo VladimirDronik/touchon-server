@@ -23,10 +23,10 @@ import (
 
 	"github.com/mattn/go-sqlite3"
 	_ "touchon-server/docs"
+	"touchon-server/internal/action_router"
 	"touchon-server/internal/context"
 	"touchon-server/internal/cron"
 	httpServer "touchon-server/internal/http"
-	"touchon-server/internal/msgs"
 	_ "touchon-server/internal/object/PortMegaD"
 	_ "touchon-server/internal/object/Regulator"
 	_ "touchon-server/internal/object/Relay"
@@ -49,6 +49,7 @@ import (
 	"touchon-server/internal/ws"
 	httpClient "touchon-server/lib/http/client"
 	"touchon-server/lib/messages"
+	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/service"
 
 	_ "touchon-server/internal/object/GenericInput"
@@ -65,13 +66,11 @@ func init() {
 }
 
 var defaults = map[string]string{
-	"http_addr":           "0.0.0.0:8081",
-	"action_router_addr":  "0.0.0.0:8081", // TODO delete
-	"object_manager_addr": "0.0.0.0:8081", // TODO delete
-	"database_url":        "db.sqlite?_foreign_keys=true",
-	"server_key":          "c041d36e381a835afce48c91686370c8",
-	"log_level":           "debug",
-	"version":             "0.1",
+	"http_addr":    "0.0.0.0:8081",
+	"database_url": "db.sqlite?_foreign_keys=true",
+	"server_key":   "c041d36e381a835afce48c91686370c8",
+	"log_level":    "debug",
+	"version":      "0.1",
 
 	"access_token_ttl":          "30m",
 	"refresh_token_ttl":         "43200m",
@@ -129,9 +128,15 @@ func main() {
 	memStore.I, err = memStore.New()
 	check(err)
 
+	action_router.I = action_router.New()
+
 	check(memStore.I.Start())
 
 	check(msgs.I.Start())
+
+	check(scripts.I.Start())
+
+	check(action_router.I.Start())
 
 	httpClient.I = httpClient.New()
 
@@ -156,6 +161,14 @@ func main() {
 	}
 
 	if err := httpServer.I.Shutdown(); err != nil {
+		logger.Error(err)
+	}
+
+	if err := action_router.I.Shutdown(); err != nil {
+		logger.Error(err)
+	}
+
+	if err := scripts.I.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 

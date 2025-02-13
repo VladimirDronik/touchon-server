@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/object/Modbus"
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
@@ -13,6 +12,7 @@ import (
 	"touchon-server/lib/events/object/wiren_board/wb_mrm2_mini"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
+	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 

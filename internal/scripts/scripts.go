@@ -16,11 +16,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/traefik/yaegi/interp"
 	svcContext "touchon-server/internal/context"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/script"
 	"touchon-server/lib/helpers/orderedmap"
 	"touchon-server/lib/interfaces"
+	msgs "touchon-server/lib/messages"
 )
 
 // Global instance
@@ -40,6 +40,24 @@ type Scripts struct {
 
 	// Обработчик методов
 	objectMethodExecutor ObjectMethodExecutor
+	handlerID            int
+}
+
+func (o *Scripts) Start() error {
+	var err error
+
+	o.handlerID, err = msgs.I.Subscribe(interfaces.MessageTypeCommand, "exec", interfaces.TargetTypeScript, nil, o.msgHandler)
+	if err != nil {
+		return errors.Wrap(err, "scripts.Start")
+	}
+
+	return nil
+}
+
+func (o *Scripts) Shutdown() error {
+	msgs.I.Unsubscribe(o.handlerID)
+
+	return nil
 }
 
 func (o *Scripts) GetScript(id int) (*Script, error) {
@@ -253,7 +271,7 @@ func (o *Scripts) execScript(script *Script, args map[string]interface{}) (inter
 }
 
 // MsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *Scripts) MsgHandler(msg interfaces.Message) {
+func (o *Scripts) msgHandler(msg interfaces.Message) {
 	s, err := o.GetScript(msg.GetTargetID())
 	if err != nil {
 		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))

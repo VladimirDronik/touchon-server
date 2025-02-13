@@ -54,7 +54,7 @@ func (o *Event) TableName() string {
 }
 
 type EventAction struct {
-	ID         int                    `json:"id"`                      // 2
+	ID         int                    `json:"id,omitempty"`            // 2
 	EventID    int                    `json:"event_id,omitempty"`      // 4
 	TargetType interfaces.TargetType  `json:"target_type,omitempty"`   // object, item
 	TargetID   int                    `json:"target_id,omitempty"`     // 8

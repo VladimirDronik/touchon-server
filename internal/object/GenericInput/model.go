@@ -4,10 +4,10 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/context"
 	"touchon-server/internal/model"
-	"touchon-server/internal/msgs"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/generic_input"
 	"touchon-server/lib/interfaces"
+	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 
