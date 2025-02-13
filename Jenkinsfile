@@ -26,15 +26,15 @@ pipeline {
     stages {
         stage('Notification') {
             steps {
-                if (${env.BRANCH_NAME} == 'develop') {
+                script {
+                    if (${env.BRANCH_NAME} == 'develop') {
                     echo 'develop'
-                }
-                else {
-                    echo 'stage'
-                }
-                // script {
+                    }
+                    else {
+                        echo 'stage'
+                    }
                 //     initMessage = "${env.MESSAGE_BASE}STARTED"
-                // }
+                }
                 // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
             }
         }
