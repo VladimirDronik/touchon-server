@@ -2,7 +2,7 @@ def func_telegram_sendMessage(message, token, chatid) {
     try {
         sh """
             curl -s -X POST https://api.telegram.org/bot${token}/sendMessage \
-            -d chat_id=${chatid} -d parse_mode=markdownv2 \
+            -d chat_id=${chatid} -d parse_mode=markdown \
             -d text='${message}'
         """
     } catch(Exception e) {
@@ -18,7 +18,7 @@ pipeline {
         WORKDIR = '/opt/cicd/'
         TOKEN = credentials('telegram_bot_token')
         CHAT = credentials('telegram_chat_id')
-        MESSAGE_BASE = "${env.BRANCH_NAME == "develop" ? "\\[ DEV4 \\] *${env.SERVICE}*: " : "\\[ STAGE1 \\] *${env.SERVICE}*: "}"
+        MESSAGE_BASE = "${env.BRANCH_NAME == "develop" ? "\\[ DEV4 ] *${env.SERVICE}*: " : "\\[ STAGE1 ] *${env.SERVICE}*: "}"
         REGISTRY = credentials('docker_registry_host')
         // DEV_SRV = credentials('dev_server_ssh_cmd')
         // TARGET_SRV = credentials('stage1_ssh_cmd')
@@ -75,9 +75,11 @@ pipeline {
                 gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
                 gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
                 // gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
-		        gitCommitComment = "_ * [ ]"
-                gitCommitComment = gitCommitComment.replaceAll("(_*[]", "\\$0")
-                // gitCommitComment = gitCommitComment.replaceAll(~/_/, "\\_")
+                gitCommitComment = " _ * [ ` # "
+                gitCommitComment = gitCommitComment.replaceAll("_", "\\_")
+                gitCommitComment = gitCommitComment.replaceAll("*", "\\*")
+                gitCommitComment = gitCommitComment.replaceAll("[", "\\[")
+                gitCommitComment = gitCommitComment.replaceAll("`", "\\`")
                 successMessage = "${env.MESSAGE_BASE}SUCSESS%0ACommit $gitCommit by $gitCommiter$gitCommitComment"
                 func_telegram_sendMessage("$successMessage", "${env.TOKEN}", "${env.CHAT}")
             }
