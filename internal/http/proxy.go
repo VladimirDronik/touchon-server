@@ -27,18 +27,10 @@ import (
 // @Router /proxy/{service}/{filepath} [delete]
 func (o *Server) proxy(ctx *fasthttp.RequestCtx) {
 	service := helpers.GetPathParam(ctx, "service")
-	//path := helpers.GetPathParam(ctx, "filepath")
-
-	addr := o.GetConfig()[strings.ReplaceAll(service, "-", "_")+"_addr"]
-	if addr == "" {
-		ctx.Error("service addr not found", http.StatusBadRequest)
-		return
-	}
 
 	ctx.Request.Header.Set("Original-User-Agent", string(ctx.Request.Header.UserAgent()))
 	u := ctx.Request.URI()
 	u.SetScheme("http")
-	u.SetHost(addr)
 	u.SetPath(strings.TrimPrefix(string(u.Path()), "/proxy/"+service))
 
 	if err := o.fasthttpClient.DoTimeout(&ctx.Request, &ctx.Response, 10*time.Second); err != nil {
