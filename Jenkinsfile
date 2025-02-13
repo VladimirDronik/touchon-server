@@ -22,6 +22,7 @@ pipeline {
         REGISTRY = credentials('docker_registry_host')
         TARGET_SRV = "${env.BRANCH_NAME == "develop" ? credentials('dev_server_ssh_cmd') : credentials('stage1_ssh_cmd')}"
         TARGET_PATH = "${env.BRANCH_NAME == "develop" ? "/opt/touchon/gobin" : "/opt/touchon"}"
+        IMG_TAG = "${env.BRANCH_NAME == "develop" ? "develop" : "${env.BRANCH_NAME.replaceFirst('release/', '')}"}"
     }
     stages {
         stage('Notification') {
@@ -45,7 +46,7 @@ pipeline {
             steps {
                 sh """
                     docker buildx build \
-                    -t ${env.REGISTRY}/${env.SERVICE}:${env.BRANCH_NAME} \
+                    -t ${env.REGISTRY}/${env.SERVICE}:${env.IMG_TAG} \
                     --platform linux/arm64 \
                     --push \
                     ${env.WORKDIR}${env.SERVICE}
