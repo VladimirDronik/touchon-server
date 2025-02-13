@@ -14,8 +14,8 @@ pipeline {
     agent any
     environment {
         SERVICE = "${GIT_URL.tokenize('/.')[-2]}"
+        GIT_BRANCH='origin/release/2.1'
         BRANCH_NAME = "${GIT_BRANCH.replaceFirst('origin/', '')}"
-        GIT_BRANCH=origin/release/2.1
         WORKDIR = '/opt/cicd_v2/'
         TOKEN = credentials('telegram_bot_token')
         CHAT = credentials('telegram_chat_id')
