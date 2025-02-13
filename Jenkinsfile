@@ -15,32 +15,34 @@ pipeline {
     environment {
         SERVICE = "${GIT_URL.tokenize('/.')[-2]}"
         BRANCH_NAME = "${GIT_BRANCH.replaceFirst('origin/', '')}"
-        WORKDIR = '/opt/cicd_v2/'
+        WORKDIR = '/opt/cicd/'
         TOKEN = credentials('telegram_bot_token')
         CHAT = credentials('telegram_chat_id')
-        NV_NAME = "${env.BRANCH_NAME == 'develop' ? "\\[ DEV4 ] *${env.SERVICE}*: " : "\\[ STAGE1 ] *${env.SERVICE}*: "}"
-        MESSAGE_BASE = "\\[ DEV4 ] *${env.SERVICE}*: "
+        MESSAGE_BASE = "${env.BRANCH_NAME == "develop" ? "\\[ DEV4 ] *${env.SERVICE}*: " : "\\[ STAGE1 ] *${env.SERVICE}*: "}"
         REGISTRY = credentials('docker_registry_host')
-        DEV_SRV = credentials('dev_server_ssh_cmd')
+        // DEV_SRV = credentials('dev_server_ssh_cmd')
+        // TARGET_SRV = credentials('stage1_ssh_cmd')
+        TARGET_SRV = "${env.BRANCH_NAME == "develop" ? credentials('dev_server_ssh_cmd') : credentials('stage1_ssh_cmd')}"
     }
     stages {
-        stage('Notification') {
-            steps {
-                echo "${env.NV_NAME}"
-                // script {
-                //     initMessage = "${env.MESSAGE_BASE}STARTED"
-                // }
-                // func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
-            }
-        }
-        // stage('Pull') {
+        // stage('Notification') {
         //     steps {
-        //         sh """
-        //           git -C ${env.WORKDIR}${env.SERVICE} checkout develop
-        //           git -C ${env.WORKDIR}${env.SERVICE} pull
-        //         """
+        //         echo "${env.NV_NAME}"
+        //         script {
+        //             initMessage = "${env.MESSAGE_BASE}STARTED"
+        //         }
+        //         func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
         //     }
         // }
+        stage('Pull') {
+            steps {
+                echo "${env.TARGET_SRV}"
+                sh """
+                  git -C ${env.WORKDIR}${env.SERVICE} checkout ${env.BRANCH_NAME}
+                  git -C ${env.WORKDIR}${env.SERVICE} pull
+                """
+            }
+        }
         // stage('Build') {
         //     steps {
         //         sh """
