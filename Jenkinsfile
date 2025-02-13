@@ -2,7 +2,7 @@ def func_telegram_sendMessage(message, token, chatid) {
     try {
         sh """
             curl -s -X POST https://api.telegram.org/bot${token}/sendMessage \
-            -d chat_id=${chatid} -d parse_mode=markdown \
+            -d chat_id=${chatid} -d parse_mode=markdownv2 \
             -d text='${message}'
         """
     } catch(Exception e) {
@@ -23,76 +23,76 @@ pipeline {
         // DEV_SRV = credentials('dev_server_ssh_cmd')
         // TARGET_SRV = credentials('stage1_ssh_cmd')
         TARGET_SRV = "${env.BRANCH_NAME == "develop" ? credentials('dev_server_ssh_cmd') : credentials('stage1_ssh_cmd')}"
+        TARGET_PATH = "${env.BRANCH_NAME == "develop" ? "/opt/touchon/gobin" : "/opt/touchon"}"
     }
     stages {
-        // stage('Notification') {
-        //     steps {
-        //         echo "${env.NV_NAME}"
-        //         script {
-        //             initMessage = "${env.MESSAGE_BASE}STARTED"
-        //         }
-        //         func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
-        //     }
-        // }
-        stage('Pull') {
+        stage('Notification') {
             steps {
-                echo "${env.TARGET_SRV}"
-                sh """
-                  git -C ${env.WORKDIR}${env.SERVICE} checkout ${env.BRANCH_NAME}
-                  git -C ${env.WORKDIR}${env.SERVICE} pull
-                """
+                echo "${env.NV_NAME}"
+                script {
+                    initMessage = "${env.MESSAGE_BASE}STARTED"
+                }
+                func_telegram_sendMessage("$initMessage", "${env.TOKEN}", "${env.CHAT}")
             }
         }
-        // stage('Build') {
-        //     steps {
-        //         sh """
-        //             docker buildx build \
-        //             -t ${env.REGISTRY}/${env.SERVICE}:develop \
-        //             --platform linux/arm64 \
-        //             --push \
-        //             ${env.WORKDIR}${env.SERVICE}
-        //         """
-        //     }
-        // }
-        // stage('Publish') {
-        //     steps {
-        //         sh """
-        //             ssh ${env.DEV_SRV} << EOF
-        //             set -e
-        //             cd /opt/touchon/gobin
-        //             docker-compose pull ${env.SERVICE}
-        //             docker create --name temp_${env.SERVICE}_container ${env.REGISTRY}/${env.SERVICE}:develop
-        //             docker cp temp_${env.SERVICE}_container:/opt/service/db.sqlite ./${env.SERVICE}/db.sqlite
-        //             docker rm -f temp_${env.SERVICE}_container
-        //             docker-compose up --force-recreate --build -d ${env.SERVICE}
-        //             docker system prune -af
-        //             << EOF
-        //         """
-        //     }
-        // }
-    }
-    
-    // post {
-    //     success {
-    //         script {
-    //             gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
-    //             gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
-    //             gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
-    //             successMessage = "${env.MESSAGE_BASE}SUCSESS%0ACommit $gitCommit by $gitCommiter$gitCommitComment"
-    //             // func_telegram_sendMessage("$successMessage", "${env.TOKEN}", "${env.CHAT}")
+    //     stage('Pull') {
+    //         steps {
+    //             sh """
+    //               git -C ${env.WORKDIR}${env.SERVICE} checkout ${env.BRANCH_NAME}
+    //               git -C ${env.WORKDIR}${env.SERVICE} pull
+    //             """
     //         }
     //     }
-    //     aborted {
-    //         script {
-    //             abortMessage = "${env.MESSAGE_BASE}ABORTED"
-    //             // func_telegram_sendMessage("$abortMessage", "${env.TOKEN}", "${env.CHAT}")
+    //     stage('Build') {
+    //         steps {
+    //             sh """
+    //                 docker buildx build \
+    //                 -t ${env.REGISTRY}/${env.SERVICE}:${env.BRANCH_NAME} \
+    //                 --platform linux/arm64 \
+    //                 --push \
+    //                 ${env.WORKDIR}${env.SERVICE}
+    //             """
     //         }
     //     }
-    //     failure {
-    //         script {
-    //             failMessage = "${env.MESSAGE_BASE}FAILURE"
-    //             // func_telegram_sendMessage("$failMessage", "${env.TOKEN}", "${env.CHAT}")
+    //     stage('Publish') {
+    //         steps {
+    //             sh """
+    //                 ssh ${env.DEV_SRV} << EOF
+    //                 set -e
+    //                 cd ${env.TARGET_PATH}
+    //                 docker-compose pull ${env.SERVICE}
+    //                 docker-compose up --force-recreate --build -d ${env.SERVICE}
+    //                 docker system prune -af
+    //                 << EOF
+    //             """
     //         }
     //     }
     // }
+    
+    post {
+        success {
+            script {
+                gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
+                gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
+                // gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
+		        gitCommitComment = "_ * [ ] ( ) ~ ` > # + - = | { } . !"
+                gitCommitComment = gitCommitComment.replaceAll(~/_/*/[/]/(/)/~/`/>/#/+/-/=/|/{/}/./!/, /\\$0/)
+                // gitCommitComment = gitCommitComment.replaceAll(~/_/, "\\_")
+                successMessage = "${env.MESSAGE_BASE}SUCSESS%0ACommit $gitCommit by $gitCommiter$gitCommitComment"
+                func_telegram_sendMessage("$successMessage", "${env.TOKEN}", "${env.CHAT}")
+            }
+        }
+        aborted {
+            script {
+                abortMessage = "${env.MESSAGE_BASE}ABORTED"
+                func_telegram_sendMessage("$abortMessage", "${env.TOKEN}", "${env.CHAT}")
+            }
+        }
+        failure {
+            script {
+                failMessage = "${env.MESSAGE_BASE}FAILURE"
+                func_telegram_sendMessage("$failMessage", "${env.TOKEN}", "${env.CHAT}")
+            }
+        }
+    }
 }
