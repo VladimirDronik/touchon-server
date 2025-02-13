@@ -44,30 +44,30 @@ pipeline {
                 """
             }
         }
-        // stage('Build') {
-        //     steps {
-        //         sh """
-        //             docker buildx build \
-        //             -t ${env.REGISTRY}/${env.SERVICE}:${env.IMG_TAG} \
-        //             --platform linux/arm64 \
-        //             --push \
-        //             ${env.WORKDIR}${env.SERVICE}
-        //         """
-        //     }
-        // }
-        // stage('Publish') {
-        //     steps {
-        //         sh """
-        //             ssh ${env.TARGET_SRV} << EOF
-        //             set -e
-        //             cd ${env.TARGET_PATH}
-        //             docker compose pull ${env.SERVICE}
-        //             docker compose up --force-recreate --build -d ${env.SERVICE}
-        //             docker system prune -af
-        //             << EOF
-        //         """
-        //     }
-        // }
+        stage('Build') {
+            steps {
+                sh """
+                    docker buildx build \
+                    -t ${env.REGISTRY}/${env.SERVICE}:${env.IMG_TAG} \
+                    --platform linux/arm64 \
+                    --push \
+                    ${env.WORKDIR}${env.SERVICE}
+                """
+            }
+        }
+        stage('Publish') {
+            steps {
+                sh """
+                    ssh ${env.TARGET_SRV} << EOF
+                    set -e
+                    cd ${env.TARGET_PATH}
+                    docker compose pull ${env.SERVICE}
+                    docker compose up --force-recreate --build -d ${env.SERVICE}
+                    docker system prune -af
+                    << EOF
+                """
+            }
+        }
     }
     
     post {
@@ -76,10 +76,10 @@ pipeline {
                 gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
                 gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
                 gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
-                gitCommitComment = gitCommitComment.replace(/_/, "\\_")
+                gitCommitComment = gitCommitComment.replace("_", "\\_")
                 gitCommitComment = gitCommitComment.replace("*", "\\*")
-                gitCommitComment = gitCommitComment.replace(/[/, "\\[")
-                gitCommitComment = gitCommitComment.replace(/`/, "\\`")
+                gitCommitComment = gitCommitComment.replace("[", "\\[")
+                gitCommitComment = gitCommitComment.replace("`", "\\`")
                 successMessage = "${env.MESSAGE_BASE}SUCSESS%0ACommit $gitCommit by $gitCommiter$gitCommitComment"
                 func_telegram_sendMessage("$successMessage", "${env.TOKEN}", "${env.CHAT}")
             }
