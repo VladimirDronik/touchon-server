@@ -56,7 +56,7 @@ pipeline {
         stage('Publish') {
             steps {
                 sh """
-                    ssh ${env.DEV_SRV} << EOF
+                    ssh ${env.TARGET_SRV} << EOF
                     set -e
                     cd ${env.TARGET_PATH}
                     docker-compose pull ${env.SERVICE}
