@@ -74,8 +74,8 @@ pipeline {
             script {
                 gitCommit = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} log -n 1 --pretty=format:'%h'", returnStdout: true)
                 gitCommiter = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show -s --pretty=%an", returnStdout: true)
-                // gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
-                gitCommitComment = " _ [ ` # "
+                gitCommitComment = sh (script: "git -C ${env.WORKDIR}${env.SERVICE} show --pretty=format:'%B' --no-patch -n 1 $gitCommit", returnStdout: true)
+                // gitCommitComment = " _ [ ` # "
                 gitCommitComment = gitCommitComment.replaceAll(/_/, "\\_")
                 gitCommitComment = gitCommitComment.replaceAll(/\[/, "\\[")
                 gitCommitComment = gitCommitComment.replaceAll(/`/, "\\`")
