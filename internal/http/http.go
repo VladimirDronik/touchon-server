@@ -142,9 +142,6 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("GET", "/history", o.getObjectHistory)
 	private("GET", "/generate-history", o.generateHistory)
 
-	// Получение данных сенсора
-	private("GET", "/sensor", o.getSensor)
-
 	// Свет
 	private("GET", "/light", o.getLight)
 	private("PATCH", "/light/hsv", o.setLightHSVColor)
@@ -193,7 +190,8 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("POST", "/item-change", o.itemChange)
 	private("PATCH", "/items/order", o.setItemsOrder) // Изменение порядка элементов
 
-	// Датчики в помещении
+	// Датчики
+	private("GET", "/item/sensor", o.getSensor)           //получение данных датчика
 	private("POST", "/item/sensor", o.handleCreateSensor) // Создание датчика
 	//private("PATCH", "/item/sensor", o.handleUpdateSensor)
 	private("DELETE", "/item/sensor", o.handleDeleteSensor)

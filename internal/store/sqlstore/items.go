@@ -441,19 +441,40 @@ func collectZoneIDs(ids []int, zones []*model.Zone) []int {
 }
 
 func (o *Items) getSensors(zoneIDs ...int) ([]*model.Sensor, error) {
-	var r []*model.Sensor
+	var sensorsStorage, sensors []*model.Sensor
 
-	err := o.store.db.Select("view_item_id, name, icon, current, type, auth").
-		Where("zone_id in ?", zoneIDs).
-		Where("enabled").
-		Order("sort").
-		Find(&r).Error
+	err := o.store.db.Table("view_items").
+		Select("view_items.id AS view_item_id, view_items.title AS name,"+
+			" view_items.zone_id, sensors.adjustment AS adjustment,"+
+			"view_items.icon AS icon, sensors.type AS type, view_items.auth AS auth, sensors.object_id AS object_id").
+		Joins("INNER JOIN sensors ON view_items.id = sensors.view_item_id").
+		Where("view_items.zone_id in ?", zoneIDs).
+		Where("view_items.enabled").
+		Order("view_items.sort").
+		Find(&sensorsStorage).Error
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getSensors")
 	}
 
-	return r, nil
+	for _, sensor := range sensorsStorage {
+		sensorValue, err := o.store.ObjectRepository().GetObjectByParent(sensor.ObjectID, sensor.Type)
+		if err != nil {
+			return nil, errors.Wrap(err, "getSensors")
+		}
+
+		err = o.store.db.Table("om_props").Select("value AS current").
+			Where("object_id = ?", sensorValue.ID).
+			Where("code = 'value'").
+			Find(&sensor.Current).Error
+		if err != nil {
+			return nil, errors.Wrap(err, "getSensors")
+		}
+
+		sensors = append(sensors, sensor)
+	}
+
+	return sensors, nil
 }
 
 // GetItems Получение устройств

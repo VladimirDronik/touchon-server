@@ -1089,31 +1089,12 @@ INSERT INTO scenarios VALUES(6,231,'switch','','book','Чтение',6,'light_gr
 CREATE TABLE sensors (
     id            INTEGER not null primary key autoincrement,
     view_item_id  INTEGER not null unique references view_items on update cascade on delete cascade,
-    zone_id       INTEGER not null references zones on update cascade on delete set default,
+    object_id     INTEGER not null unique references om_objects on update cascade on delete cascade,
     type          TEXT    not null default '',
-    name          TEXT    not null default '',
-    current       REAL    not null default 0,
-    optimal       REAL    not null default 0,
     min_threshold REAL    not null default 0,
     max_threshold REAL    not null default 0,
-    icon          TEXT    not null default '',
-    position_left INTEGER not null default 0,
-    position_top  INTEGER not null default 0,
-    sort          INTEGER not null default 0,
-    auth          TEXT    not null default '',
-    enabled       BOOLEAN not null default false
+    adjustment    BOOL    not_null default false
 );
-INSERT INTO sensors VALUES(1,306,4,'temperature','воздух',21.79999923706054687,26.0,10.0,40.0,'wind',0,0,1,'',1);
-INSERT INTO sensors VALUES(2,307,4,'temperature','пол',28.0,33.0,10.0,40.0,'floor',0,0,2,'',1);
-INSERT INTO sensors VALUES(3,308,4,'humidity','влага',20.10000038146972657,43.0,0.0,100.0,'drop',0,0,3,'',1);
-INSERT INTO sensors VALUES(4,309,4,'co2','CO2',400.0,400.0,350.0,4000.0,'co2',0,0,4,'',1);
-INSERT INTO sensors VALUES(5,330,14,'temperature','воздух',15.0,15.0,10.0,40.0,'wind',0,0,1,'',1);
-INSERT INTO sensors VALUES(6,331,14,'humidity','влажность',70.0,70.0,0.0,100.0,'drop',0,0,2,'',1);
-INSERT INTO sensors VALUES(7,332,13,'temperature','воздух',24.0,25.0,10.0,40.0,'wind',0,0,1,'',1);
-INSERT INTO sensors VALUES(8,333,15,'temperature','воздух',27.0,25.0,10.0,40.0,'wind',0,0,1,'',1);
-INSERT INTO sensors VALUES(9,345,3,'','test_sensor1',0.0,0.0,0.0,0.0,'',0,0,0,'',1);
-INSERT INTO sensors VALUES(10,346,3,'','test_sensor1',0.0,0.0,0.0,0.0,'',0,0,0,'',1);
-INSERT INTO sensors VALUES(11,347,3,'','test_sensor1',0.0,0.0,0.0,0.0,'',0,0,0,'',1);
 CREATE TABLE temp_presets (
     id      INTEGER not null primary key autoincrement,
     zone_id INTEGER not null unique references zones on update cascade on delete cascade,
