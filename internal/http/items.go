@@ -364,7 +364,7 @@ func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	}
 
 	//Берем у объекта текущее значение
-	sensorVal, err := objects.LoadObject(sensor.ObjectID, "", "", model.ChildTypeNobody)
+	sensorVal, err := objects.LoadObject(sensor.ObjectID, "", "", model.ChildTypeAll)
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.Wrap(err, "Error of LoadObject: "+strconv.Itoa(sensor.ObjectID))
 	}
