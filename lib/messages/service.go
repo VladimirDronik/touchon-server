@@ -64,6 +64,7 @@ func (o *ServiceImpl) Shutdown() error {
 func (o *ServiceImpl) worker() {
 	defer o.wg.Done()
 
+	wg := sync.WaitGroup{}
 	var msg interfaces.Message
 	var ok bool
 
@@ -80,15 +81,25 @@ func (o *ServiceImpl) worker() {
 		}
 
 		handlers := o.subscribers.GetHandlers(msg)
+		g.Logger.Debugf("messages.ServiceImpl: %T [%s, %s, %s, %d, %v] - %d handlers", msg, msg.GetType(), msg.GetName(), msg.GetTargetType(), msg.GetTargetID(), msg.GetPayload(), len(handlers))
+
 		if len(handlers) == 0 {
 			g.Logger.Warnf("Unhandled msg: [%s, %s, %s, %d]", msg.GetType(), msg.GetName(), msg.GetTargetType(), msg.GetTargetID())
 			continue
 		}
 
+		wg.Add(len(handlers))
+
+		// Одновременно запускаем все обработчики
 		for _, handler := range handlers {
-			// TODO потенциально может быть утечка горутин
-			go handler(o, msg)
+			go func(handler interfaces.MsgHandler) {
+				defer wg.Done()
+				handler(o, msg)
+			}(handler)
 		}
+
+		// Ждем завершения всех обработчиков
+		wg.Wait()
 	}
 }
 
