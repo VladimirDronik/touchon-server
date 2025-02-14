@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/token"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/http/server"
@@ -19,7 +19,7 @@ import (
 var I *Server
 
 func New() (*Server, error) {
-	baseServer, err := server.New("WS", context.Config, nil, context.Logger)
+	baseServer, err := server.New("WS", g.Config, nil, g.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "http.New")
 	}

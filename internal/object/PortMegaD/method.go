@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/interfaces"
@@ -202,7 +202,7 @@ func (o *PortModel) Check(args map[string]interface{}) ([]interfaces.Message, er
 	// заносим статус порта в БД
 	go func() {
 		if err := store.I.ObjectRepository().SetObjectStatus(o.GetID(), newState); err != nil {
-			context.Logger.Error(errors.Wrap(err, "PortModel.Check"))
+			g.Logger.Error(errors.Wrap(err, "PortModel.Check"))
 		}
 	}()
 

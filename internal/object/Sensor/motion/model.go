@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
@@ -14,7 +14,6 @@ import (
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 
@@ -170,7 +169,7 @@ func (o *MotionSensorModel) Start() error {
 		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
-	context.Logger.Debugf("MotionSensorModel(%d) started", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d) started", o.GetID())
 
 	period, err := o.GetProps().GetIntValue("period")
 	if err != nil {
@@ -192,7 +191,7 @@ func (o *MotionSensorModel) Start() error {
 			return errors.Wrap(err, "MotionSensorModel.Start")
 		}
 
-		if err := msgs.I.Send(msg); err != nil {
+		if err := g.Msgs.Send(msg); err != nil {
 			return errors.Wrap(err, "MotionSensorModel.Start")
 		}
 	}
@@ -201,16 +200,16 @@ func (o *MotionSensorModel) Start() error {
 }
 
 func (o *MotionSensorModel) onMotionOnHandler(svc interfaces.MessageSender, _ interfaces.Message) {
-	context.Logger.Debugf("MotionSensorModel(%d): onMotionOnHandler()", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d): onMotionOnHandler()", o.GetID())
 
 	// Запоминаем текущее состояние движения
 	currState, err := o.getMotionState()
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
 		return
 	}
 
-	context.Logger.Debug("MotionSensorModel.onMotionOnHandler: reset periodTimer")
+	g.Logger.Debug("MotionSensorModel.onMotionOnHandler: reset periodTimer")
 	o.periodTimer.Reset()
 
 	// Обрабатываем только переход OFF -> ON
@@ -219,31 +218,31 @@ func (o *MotionSensorModel) onMotionOnHandler(svc interfaces.MessageSender, _ in
 	}
 
 	if err := o.setMotionState(true, true); err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
 		return
 	}
 
 	msg, err := sensor.NewOnMotionOn(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
 		return
 	}
 
 	if err := svc.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
 	}
 }
 
 func (o *MotionSensorModel) onMotionOffHandler(interfaces.MessageSender, interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
 		return
 	}
 
-	context.Logger.Debugf("MotionSensorModel(%d): onMotionOffHandler()", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d): onMotionOffHandler()", o.GetID())
 
 	if err := o.setMotionState(false, false); err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
 		return
 	}
 }
@@ -253,12 +252,12 @@ func (o *MotionSensorModel) periodTimerHandler() {
 		return
 	}
 
-	context.Logger.Debugf("MotionSensorModel(%d): periodTimerHandler()", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d): periodTimerHandler()", o.GetID())
 
 	// получаем текущее значение движения
 	currState, err := o.getMotionState()
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 		return
 	}
 
@@ -270,23 +269,23 @@ func (o *MotionSensorModel) periodTimerHandler() {
 
 	// если при срабатывании таймера движения не было - выставляем статус о завершении движения
 	if err := o.setMotionState(false, true); err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 		return
 	}
 
 	msg, err := sensor.NewOnMotionOff(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 
 		msg, err = events.NewOnError(msg.GetTargetType(), msg.GetTargetID(), err.Error())
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
+			g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 			return
 		}
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
+	if err := g.Msgs.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 		return
 	}
 }
@@ -346,7 +345,7 @@ func (o *MotionSensorModel) Shutdown() error {
 		return errors.Wrap(err, "MotionSensorModel.Shutdown")
 	}
 
-	context.Logger.Debugf("MotionSensorModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d) stopped", o.GetID())
 
 	return nil
 }

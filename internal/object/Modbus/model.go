@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/simonvetter/modbus"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/models"
@@ -256,7 +256,7 @@ func (o *ModbusImpl) Start() error {
 	o.wg.Add(1)
 	go o.actionsHandler()
 
-	context.Logger.Debugf("Modbus(%d) started", o.GetID())
+	g.Logger.Debugf("Modbus(%d) started", o.GetID())
 
 	return nil
 }
@@ -322,7 +322,7 @@ func (o *ModbusImpl) Shutdown() error {
 	// Ждем завершения дополнительных потоков
 	o.wg.Wait()
 
-	context.Logger.Debugf("Modbus(%d) stopped", o.GetID())
+	g.Logger.Debugf("Modbus(%d) stopped", o.GetID())
 
 	return nil
 }

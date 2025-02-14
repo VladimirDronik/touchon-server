@@ -2,7 +2,6 @@ package sqlstore
 
 import (
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/interfaces"
 )
@@ -12,8 +11,8 @@ type EventsRepo struct {
 }
 
 // GetEvents возвращает события сущности.
-func (o *EventsRepo) GetEvents(targetType interfaces.TargetType, targetID int) ([]*model.Event, error) {
-	rows := make([]*model.Event, 0, 10)
+func (o *EventsRepo) GetEvents(targetType interfaces.TargetType, targetID int) ([]*interfaces.AREvent, error) {
+	rows := make([]*interfaces.AREvent, 0, 10)
 
 	err := o.store.db.
 		Where("target_type = ?", targetType).
@@ -28,8 +27,8 @@ func (o *EventsRepo) GetEvents(targetType interfaces.TargetType, targetID int) (
 }
 
 // GetEvent возвращает событие.
-func (o *EventsRepo) GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*model.Event, error) {
-	row := &model.Event{}
+func (o *EventsRepo) GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*interfaces.AREvent, error) {
+	row := &interfaces.AREvent{}
 
 	err := o.store.db.
 		Where("target_type = ?", targetType).
@@ -49,7 +48,7 @@ func (o *EventsRepo) GetEvent(targetType interfaces.TargetType, targetID int, ev
 }
 
 // SaveEvent добавляет или обновляет событие.
-func (o *EventsRepo) SaveEvent(event *model.Event) error {
+func (o *EventsRepo) SaveEvent(event *interfaces.AREvent) error {
 	if event == nil {
 		return errors.Wrap(errors.New("event is nil"), "SaveEvent")
 	}

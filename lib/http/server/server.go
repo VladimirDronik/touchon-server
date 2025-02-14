@@ -14,6 +14,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 )
 
 func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) (*Server, error) {
@@ -86,7 +87,7 @@ func (o *Server) SetGzipResponseIfPossible(v bool) {
 	o.gzipResponse = v
 }
 
-func (o *Server) AddHandler(method, path string, handler RequestHandler) {
+func (o *Server) AddHandler(method, path string, handler interfaces.RequestHandler) {
 	o.router.Handle(method, path, JsonHandlerWrapper(handler))
 }
 

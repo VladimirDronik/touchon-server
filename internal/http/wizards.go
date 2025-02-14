@@ -12,8 +12,8 @@ import (
 )
 
 type Event struct {
-	Name    string               `json:"name"`
-	Actions []*model.EventAction `json:"actions"`
+	Name    string                    `json:"name"`
+	Actions []*interfaces.EventAction `json:"actions"`
 }
 
 // Определение типа для сваггера
@@ -93,7 +93,7 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 
 	for _, ev := range req.Events {
 		for _, act := range ev.Actions {
-			if err := o.createEventAction(interfaces.TargetTypeItem, item.ID, ev.Name, act); err != nil {
+			if err := o.CreateEventAction(interfaces.TargetTypeItem, item.ID, ev.Name, act); err != nil {
 				return nil, http.StatusInternalServerError, err
 			}
 		}

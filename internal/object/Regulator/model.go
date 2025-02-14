@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/regulator"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 
@@ -222,14 +221,14 @@ func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ in
 
 	regTypeS, err := o.GetProps().GetStringValue("type")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 	regType := Type(regTypeS)
 
 	fallbackSensorValueID, err := o.GetProps().GetIntValue("fallback_sensor_value_id")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
@@ -247,31 +246,31 @@ func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ in
 
 	targetSP, err := o.GetProps().GetFloatValue("target_sp")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
 	aboveTolerance, err := o.GetProps().GetFloatValue("above_tolerance")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
 	belowTolerance, err := o.GetProps().GetFloatValue("below_tolerance")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
 	complexTolerance, err := o.GetProps().GetFloatValue("complex_tolerance")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
 	parentID := o.GetParentID()
 	if parentID == nil {
-		context.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
@@ -279,13 +278,13 @@ func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ in
 	sensorValue, err := o.requestSensorValue(*parentID)
 	if err != nil {
 		if fallbackSensorValueID < 1 {
-			context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 			return
 		}
 
 		sensorValue, err = o.requestSensorValue(fallbackSensorValueID)
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 			return
 		}
 	}
@@ -317,17 +316,17 @@ func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ in
 		err = errors.New("regulator(TypePID) logic not implemented")
 
 	default:
-		context.Logger.Error(errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 		return
 	}
 
 	if err := svc.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
 	}
 }
 
@@ -379,7 +378,7 @@ func (o *RegulatorModel) Start() error {
 	o.timer = helpers.NewTimer(time.Duration(sensorValueTTL)*time.Second, o.timerHandler)
 	o.timer.Start()
 
-	context.Logger.Debugf("Regulator(%d) started", o.GetID())
+	g.Logger.Debugf("Regulator(%d) started", o.GetID())
 
 	return nil
 }
@@ -389,23 +388,23 @@ func (o *RegulatorModel) timerHandler() {
 		return
 	}
 
-	context.Logger.Debugf("Regulator(%d): timerHandler(%s)", o.GetID(), o.timer.GetDuration())
+	g.Logger.Debugf("Regulator(%d): timerHandler(%s)", o.GetID(), o.timer.GetDuration())
 
 	parentID := o.GetParentID()
 	if parentID == nil {
-		context.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.timerHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.timerHandler"))
 		return
 
 	}
 
 	msg, err := regulator.NewOnStale(*parentID)
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
 		return
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
+	if err := g.Msgs.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
 		return
 	}
 
@@ -419,7 +418,7 @@ func (o *RegulatorModel) Shutdown() error {
 
 	o.timer.Stop()
 
-	context.Logger.Debugf("Regulator(%d) stopped", o.GetID())
+	g.Logger.Debugf("Regulator(%d) stopped", o.GetID())
 
 	return nil
 }

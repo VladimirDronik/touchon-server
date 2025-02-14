@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
@@ -132,13 +132,13 @@ func (o *RelayModel) Start() error {
 		return errors.Wrap(err, "Relay.Start")
 	}
 
-	context.Logger.Debugf("Relay(%d) started", o.GetID())
+	g.Logger.Debugf("Relay(%d) started", o.GetID())
 
 	return nil
 }
 
 func (o *RelayModel) handler(svc interfaces.MessageSender, msg interfaces.Message) {
-	context.Logger.Debugf("Relay(%d): handler()", o.GetID())
+	g.Logger.Debugf("Relay(%d): handler()", o.GetID())
 
 	var err error
 
@@ -152,17 +152,17 @@ func (o *RelayModel) handler(svc interfaces.MessageSender, msg interfaces.Messag
 	}
 
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
+		g.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
 		return
 	}
 
 	if err := svc.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
+		g.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
 	}
 }
 
 func (o *RelayModel) Shutdown() error {
-	context.Logger.Debugf("RelayModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("RelayModel(%d) stopped", o.GetID())
 
 	return nil
 }

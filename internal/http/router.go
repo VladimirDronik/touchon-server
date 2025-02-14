@@ -4,19 +4,17 @@ import (
 	"net/http"
 	"strings"
 
-	"touchon-server/internal/context"
-	"touchon-server/internal/store"
-	"touchon-server/lib/events/object/controller"
-	"touchon-server/lib/helpers"
-	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
-
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/PortMegaD"
 	"touchon-server/internal/objects"
+	"touchon-server/internal/store"
 	"touchon-server/lib/events"
+	"touchon-server/lib/events/object/controller"
+	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 )
 
 type SensorValues struct {
@@ -178,7 +176,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 		msgs, err := port.ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value)
 		if err != nil {
 			err = errors.Wrap(err, "ResCommand")
-			context.Logger.Warn(err)
+			g.Logger.Warn(err)
 
 			msg, err := events.NewOnError(interfaces.TargetTypeObject, objectID, err.Error())
 			if err != nil {
@@ -199,7 +197,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 				continue
 			}
 
-			if err := msgs.I.Send(msg); err != nil {
+			if err := g.Msgs.Send(msg); err != nil {
 				o.GetLogger().Errorf("handleGetMegaD: %v", err)
 			}
 		}

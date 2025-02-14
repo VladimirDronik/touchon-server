@@ -5,13 +5,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/subscribers"
 )
-
-// Global instance
-var I interfaces.MessagesService
 
 func NewService(threads, queueCap int) (interfaces.MessagesService, error) {
 	switch {
@@ -84,7 +81,7 @@ func (o *ServiceImpl) worker() {
 
 		handlers := o.subscribers.GetHandlers(msg)
 		if len(handlers) == 0 {
-			context.Logger.Warnf("Unhandled msg: [%s, %s, %s, %d]", msg.GetType(), msg.GetName(), msg.GetTargetType(), msg.GetTargetID())
+			g.Logger.Warnf("Unhandled msg: [%s, %s, %s, %d]", msg.GetType(), msg.GetName(), msg.GetTargetType(), msg.GetTargetID())
 			continue
 		}
 

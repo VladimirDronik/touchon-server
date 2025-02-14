@@ -8,13 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
-	httpClient "touchon-server/lib/http/client"
 	_ "touchon-server/lib/http/server"
 	"touchon-server/lib/interfaces"
 )
@@ -32,7 +31,7 @@ import (
 // @Failure      500 {object} server.Response[any]
 // @Router /objects [post]
 func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
-	accessLevel, err := context.GetAccessLevel(ctx)
+	accessLevel, err := g.GetAccessLevel(ctx)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -66,7 +65,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		if e != nil {
 			if err := deleteObject(objectID); err != nil {
 				e = err
-				context.Logger.Error(err)
+				g.Logger.Error(err)
 			}
 		}
 	}()
@@ -104,8 +103,8 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	}
 
 	//Если объект является сенсором, то создаем в экшен-роутере действия для его проверки
-	if req.Object.Category == "sensor" {
-		_, e = createSensorCronTask(objectID, req)
+	if req.Object.Category == model.CategorySensor {
+		e = createSensorCronTask(objectID, req)
 	}
 
 	// Если событий нет, то уходим
@@ -113,35 +112,21 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return resp, http.StatusOK, nil
 	}
 
-	arBaseUrl := "http://" + context.Config["action_router_addr"]
-
 	// Если транзакцию не закончили, удаляем события со всеми действиями
 	defer func() {
 		if e != nil {
 			for _, ev := range req.Events {
-				params := map[string]string{
-					"target_type": string(interfaces.TargetTypeObject),
-					"target_id":   strconv.Itoa(objectID),
-					"event_name":  ev.Name,
-				}
-
-				if _, err := httpClient.I.DoRequest("DELETE", arBaseUrl+"/events", params, nil, nil); err != nil {
+				if err := store.I.EventsRepo().DeleteEvent(interfaces.TargetTypeObject, objectID, ev.Name); err != nil {
 					e = err
-					context.Logger.Error(err)
+					g.Logger.Error(err)
 				}
 			}
 		}
 	}()
 
 	for _, ev := range req.Events {
-		params := map[string]string{
-			"target_type": string(interfaces.TargetTypeObject),
-			"target_id":   strconv.Itoa(objectID),
-			"event_name":  ev.Name,
-		}
-
 		for _, act := range ev.Actions {
-			if _, err := httpClient.I.DoRequest("POST", arBaseUrl+"/events/actions", params, nil, act); err != nil {
+			if err := g.HttpServer.CreateEventAction(interfaces.TargetTypeObject, objectID, ev.Name, act); err != nil {
 				return nil, http.StatusInternalServerError, err
 			}
 		}
@@ -281,6 +266,36 @@ func deleteObject(objectID int) error {
 
 	if err := store.I.ObjectRepository().DelObject(objectID); err != nil {
 		return errors.Wrap(err, "deleteObject")
+	}
+
+	return nil
+}
+
+// createSensorCronTask отправляет в action-router запрос на добавление задачи и действия для крона
+func createSensorCronTask(objectID int, req *Request) error {
+	_, ok := req.Object.Props["update_interval"].(string)
+	if !ok {
+		return nil
+	}
+
+	task := &interfaces.CronTask{
+		Enabled:     true,
+		Name:        "Check sensor",
+		Description: "Проверка датчика: [" + strconv.Itoa(objectID) + "]" + req.Object.Name,
+		Period:      req.Object.Props["update_interval"].(string),
+		Actions: []*interfaces.CronAction{
+			{
+				Enabled:    true,
+				TargetType: interfaces.TargetTypeObject,
+				Type:       interfaces.ActionTypeMethod,
+				TargetID:   objectID,
+				Name:       "check",
+			},
+		},
+	}
+
+	if err := g.HttpServer.CreateCronTask(task); err != nil {
+		return errors.Wrap(err, "createSensorCronTask")
 	}
 
 	return nil

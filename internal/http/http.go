@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	_ "touchon-server/docs"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/http/create_object"
 	"touchon-server/internal/http/update_object"
 	"touchon-server/internal/model"
@@ -22,6 +22,7 @@ import (
 	"touchon-server/internal/token"
 	httpClient "touchon-server/lib/http/client"
 	"touchon-server/lib/http/server"
+	"touchon-server/lib/interfaces"
 )
 
 var (
@@ -31,24 +32,21 @@ var (
 	errNoResult           = errors.New("no result")
 )
 
-// Global instance
-var I *Server
-
 func New(ringBuffer fmt.Stringer) (*Server, error) {
 	switch {
-	case context.Config == nil:
+	case g.Config == nil:
 		return nil, errors.Wrap(errors.New("cfg is nil"), "http.New")
 	case scripts.I == nil:
 		return nil, errors.Wrap(errors.New("scripts is nil"), "http.New")
 	case memStore.I == nil:
 		return nil, errors.Wrap(errors.New("memStore is nil"), "http.New")
-	case context.Logger == nil:
+	case g.Logger == nil:
 		return nil, errors.Wrap(errors.New("Logger is nil"), "http.New")
 	case store.I == nil:
 		return nil, errors.Wrap(errors.New("Store is nil"), "http.New")
 	}
 
-	baseServer, err := server.New("API", context.Config, ringBuffer, context.Logger)
+	baseServer, err := server.New("API", g.Config, ringBuffer, g.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "http.New")
 	}
@@ -299,7 +297,7 @@ type Response[T any] struct {
 }
 
 // JsonHandlerWrapper ответ в формате JSON оборачивает в единый формат и добавляет метаданные.
-func JsonHandlerWrapper(f server.RequestHandler) fasthttp.RequestHandler {
+func JsonHandlerWrapper(f interfaces.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		var r Response[any]
 		const magic = "CoNtEnTLeNgTh"
@@ -337,6 +335,6 @@ func JsonHandlerWrapper(f server.RequestHandler) fasthttp.RequestHandler {
 }
 
 // Override AddHandler
-func (o *Server) AddHandler(method, path string, handler server.RequestHandler) {
+func (o *Server) AddHandler(method, path string, handler interfaces.RequestHandler) {
 	o.GetRouter().Handle(method, path, JsonHandlerWrapper(handler))
 }

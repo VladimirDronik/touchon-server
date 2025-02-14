@@ -14,6 +14,7 @@ import (
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 )
 
 type getObjectsTypesResponseItem struct {
@@ -512,7 +513,19 @@ func (o *Server) DeleteObject(objectID int) (interface{}, int, error) {
 	}
 
 	// Удаление действий в action-router
-	if err := deleteEvent(objectID); err != nil {
+
+	// Удаляем все возможные события объекта
+	if err := store.I.EventsRepo().DeleteEvent(interfaces.TargetTypeObject, objectID, "all"); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	// Удаляем все действия для сторонних событий, где может фигурировать объект
+	if err := store.I.EventActionsRepo().DeleteActionByObject(interfaces.TargetTypeObject, objectID); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	// Удаляем все действия крона для объекта
+	if err := store.I.CronRepo().DeleteTask(objectID, interfaces.TargetTypeObject); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

@@ -24,9 +24,13 @@ import (
 	"github.com/mattn/go-sqlite3"
 	_ "touchon-server/docs"
 	"touchon-server/internal/action_router"
-	"touchon-server/internal/context"
 	"touchon-server/internal/cron"
+	"touchon-server/internal/g"
 	httpServer "touchon-server/internal/http"
+	_ "touchon-server/internal/object/GenericInput"
+	_ "touchon-server/internal/object/MegaD"
+	_ "touchon-server/internal/object/Modbus"
+	_ "touchon-server/internal/object/Onokom/Conditioner"
 	_ "touchon-server/internal/object/PortMegaD"
 	_ "touchon-server/internal/object/Regulator"
 	_ "touchon-server/internal/object/Relay"
@@ -49,13 +53,7 @@ import (
 	"touchon-server/internal/ws"
 	httpClient "touchon-server/lib/http/client"
 	"touchon-server/lib/messages"
-	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/service"
-
-	_ "touchon-server/internal/object/GenericInput"
-	_ "touchon-server/internal/object/MegaD"
-	_ "touchon-server/internal/object/Modbus"
-	_ "touchon-server/internal/object/Onokom/Conditioner"
 	_ "touchon-server/migrations"
 )
 
@@ -108,8 +106,8 @@ var BuildAt string
 func main() {
 	cfg, logger, rb, db, err := service.Prolog(banner, defaults, Version, BuildAt)
 	check(err)
-	context.Logger = logger
-	context.Config = cfg
+	g.Logger = logger
+	g.Config = cfg
 
 	store.I = sqlstore.New(db)
 
@@ -118,7 +116,7 @@ func main() {
 
 	check(ws.I.Start(cfg["ws_addr"]))
 
-	msgs.I, err = messages.NewService(runtime.NumCPU(), 2000)
+	g.Msgs, err = messages.NewService(runtime.NumCPU(), 2000)
 	check(err)
 
 	// Создаем скриптовый движок
@@ -132,7 +130,7 @@ func main() {
 
 	check(memStore.I.Start())
 
-	check(msgs.I.Start())
+	check(g.Msgs.Start())
 
 	check(scripts.I.Start())
 
@@ -140,11 +138,11 @@ func main() {
 
 	httpClient.I = httpClient.New()
 
-	httpServer.I, err = httpServer.New(rb)
+	g.HttpServer, err = httpServer.New(rb)
 	check(err)
 
 	// Старт HTTP API сервера
-	check(httpServer.I.Start(cfg["http_addr"]))
+	check(g.HttpServer.Start(cfg["http_addr"]))
 
 	sch, err := cron.New()
 	check(err)
@@ -160,7 +158,7 @@ func main() {
 		logger.Error(err)
 	}
 
-	if err := httpServer.I.Shutdown(); err != nil {
+	if err := g.HttpServer.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 
@@ -172,7 +170,7 @@ func main() {
 		logger.Error(err)
 	}
 
-	if err := msgs.I.Shutdown(); err != nil {
+	if err := g.Msgs.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 

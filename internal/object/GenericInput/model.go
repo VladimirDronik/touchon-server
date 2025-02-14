@@ -2,7 +2,7 @@ package GenericInput
 
 import (
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/generic_input"
@@ -114,7 +114,7 @@ func (o *GenericInputModel) Start() error {
 		return errors.Wrap(err, "GenericInputModel.Start")
 	}
 
-	context.Logger.Debugf("GenericInputModel(%d) started", o.GetID())
+	g.Logger.Debugf("GenericInputModel(%d) started", o.GetID())
 
 	return nil
 }
@@ -134,18 +134,18 @@ func (o *GenericInputModel) handler(svc interfaces.MessageSender, msg interfaces
 	}
 
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
+		g.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
 		return
 	}
 
 	if err := svc.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
+		g.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
 		return
 	}
 }
 
 func (o *GenericInputModel) Shutdown() error {
-	context.Logger.Debugf("GenericInputModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("GenericInputModel(%d) stopped", o.GetID())
 
 	return nil
 }

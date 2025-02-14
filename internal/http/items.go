@@ -5,13 +5,13 @@ import (
 	"net/http"
 
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/item"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/messages"
-	msgs "touchon-server/lib/messages"
 )
 
 // Создание элемента
@@ -429,7 +429,7 @@ func (o *Server) itemChange(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 
 	msg.SetPayload(req.Params)
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := g.Msgs.Send(msg); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

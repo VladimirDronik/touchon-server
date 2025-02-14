@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
@@ -98,7 +97,7 @@ func (o *Server) handleGetEventsActions(ctx *fasthttp.RequestCtx) (interface{}, 
 		return nil, http.StatusInternalServerError, err
 	}
 
-	r := make(map[string][]*model.EventAction, len(actionsMap))
+	r := make(map[string][]*interfaces.EventAction, len(actionsMap))
 	for _, ev := range events {
 		// Затираем EventID, чтобы не использовать ID вместо event_name
 		for _, act := range actionsMap[ev.ID] {
@@ -144,21 +143,21 @@ func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 	//	return nil, http.StatusBadRequest, err
 	//}
 
-	act := &model.EventAction{}
+	act := &interfaces.EventAction{}
 	if err := json.Unmarshal(ctx.Request.Body(), act); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	if err := o.createEventAction(targetType, targetID, eventName, act); err != nil {
+	if err := o.CreateEventAction(targetType, targetID, eventName, act); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
 	return nil, http.StatusOK, nil
 }
 
-func (o *Server) createEventAction(targetType string, targetID int, eventName string, act *model.EventAction) error {
+func (o *Server) CreateEventAction(targetType string, targetID int, eventName string, act *interfaces.EventAction) error {
 	if _, ok := interfaces.TargetTypes[targetType]; !ok {
-		return errors.Wrap(errors.Errorf("unknown target type %q", targetType), "createEventAction")
+		return errors.Wrap(errors.Errorf("unknown target type %q", targetType), "CreateEventAction")
 	}
 
 	// TODO
@@ -172,7 +171,7 @@ func (o *Server) createEventAction(targetType string, targetID int, eventName st
 			return errors.Wrap(err, "createEventAction")
 		}
 
-		event = &model.Event{
+		event = &interfaces.AREvent{
 			TargetType: targetType,
 			TargetID:   targetID,
 			EventName:  eventName,
@@ -206,7 +205,7 @@ func (o *Server) createEventAction(targetType string, targetID int, eventName st
 // @Failure      500 {object} http.Response[any]
 // @Router /events/actions [put]
 func (o *Server) handleUpdateEventAction(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	act := &model.EventAction{}
+	act := &interfaces.EventAction{}
 	if err := json.Unmarshal(ctx.Request.Body(), act); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}

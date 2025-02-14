@@ -10,7 +10,7 @@ import (
 	"touchon-server/internal/store"
 	"touchon-server/internal/token"
 	"touchon-server/lib/helpers"
-	"touchon-server/lib/http/server"
+	"touchon-server/lib/interfaces"
 )
 
 // Генерация нового токена
@@ -115,9 +115,9 @@ func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error
 	return tokens, http.StatusOK, nil
 }
 
-type Middleware func(ctx *fasthttp.RequestCtx, next server.RequestHandler) (interface{}, int, error)
+type Middleware func(ctx *fasthttp.RequestCtx, next interfaces.RequestHandler) (interface{}, int, error)
 
-func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next server.RequestHandler) (interface{}, int, error) {
+func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.RequestHandler) (interface{}, int, error) {
 	tokenSecret := o.GetConfig()["token_secret"]
 	if tokenSecret == "disable_auth" {
 		// Disable auth
@@ -144,8 +144,8 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next server.RequestHan
 	return next(ctx)
 }
 
-func (o *Server) addMiddleware(pathPrefix string, middleware Middleware) func(method, path string, handler server.RequestHandler) {
-	return func(method, path string, handler server.RequestHandler) {
+func (o *Server) addMiddleware(pathPrefix string, middleware Middleware) func(method, path string, handler interfaces.RequestHandler) {
+	return func(method, path string, handler interfaces.RequestHandler) {
 		//o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), http.JsonHandlerWrapper(func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		//	return middleware(ctx, handler)
 		//}))

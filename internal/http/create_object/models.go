@@ -20,8 +20,8 @@ type Request struct {
 	} `json:"object"`
 
 	Events []struct {
-		Name    string    `json:"name"`
-		Actions []*Action `json:"actions"`
+		Name    string                    `json:"name"`
+		Actions []*interfaces.EventAction `json:"actions"`
 	} `json:"events,omitempty"`
 }
 
@@ -29,19 +29,6 @@ type Child struct {
 	Props    map[string]interface{} `json:"props"`
 	Children []*Child               `json:"children,omitempty"`
 }
-
-type Action struct {
-	TargetType interfaces.TargetType  `json:"target_type"` // Enums(not_matters,object,item,script,service)
-	TargetID   int                    `json:"target_id"`   // 8
-	Type       ActionType             `json:"type"`        // Enums(method,delay,notification)
-	Name       string                 `json:"name"`        // script_1, check
-	Args       map[string]interface{} `json:"args"`        // method or script args
-	Enabled    bool                   `json:"enabled"`     // Enums(true,false)
-	Sort       int                    `json:"sort"`        //
-	Comment    string                 `json:"comment"`     // отключено потому что...
-}
-
-type ActionType = string // Enums(method,delay,notification)
 
 // Response
 

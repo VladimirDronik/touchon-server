@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/object/Modbus"
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
@@ -12,7 +12,6 @@ import (
 	"touchon-server/lib/events/object/wiren_board/wb_mrm2_mini"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 
@@ -121,7 +120,7 @@ func (o *DeviceModel) Start() error {
 	}
 	o.unitID = address
 
-	context.Logger.Debugf("WB-MRM2-mini(%d) started", o.GetID())
+	g.Logger.Debugf("WB-MRM2-mini(%d) started", o.GetID())
 
 	return nil
 }
@@ -131,7 +130,7 @@ func (o *DeviceModel) Shutdown() error {
 		return errors.Wrap(err, "wb_mrm2_mini.DeviceModel.Shutdown")
 	}
 
-	context.Logger.Debugf("WB-MRM2-mini(%d) stopped", o.GetID())
+	g.Logger.Debugf("WB-MRM2-mini(%d) stopped", o.GetID())
 
 	return nil
 }
@@ -143,13 +142,13 @@ func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]interfaces.Mess
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 			return
 		}
 
 		states, ok := r.([]bool)
 		if !ok {
-			context.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+			g.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 			return
 		}
 
@@ -160,12 +159,12 @@ func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]interfaces.Mess
 
 		msg, err := wb_mrm2_mini.NewOnCheck(o.GetID(), args)
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 			return
 		}
 
-		if err := msgs.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 		}
 	}
 
@@ -193,13 +192,13 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]interfaces.
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 			return
 		}
 
 		state, ok := r.(bool)
 		if !ok {
-			context.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputState"))
+			g.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputState"))
 			return
 		}
 
@@ -209,12 +208,12 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]interfaces.
 
 		msg, err := wb_mrm2_mini.NewOnCheck(o.GetID(), payload)
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 			return
 		}
 
-		if err := msgs.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 		}
 	}
 
@@ -247,7 +246,7 @@ func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]interfaces.
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.SetOutputState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.SetOutputState"))
 			return
 		}
 	}

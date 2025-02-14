@@ -5,12 +5,11 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 )
 
 // Implementation of Object interface
@@ -305,7 +304,7 @@ func (o *ObjectModelImpl) Save() error {
 }
 
 func (o *ObjectModelImpl) Subscribe(msgType interfaces.MessageType, name string, targetType interfaces.TargetType, targetID *int, handler interfaces.MsgHandler) error {
-	handlerID, err := msgs.I.Subscribe(msgType, name, targetType, targetID, handler)
+	handlerID, err := g.Msgs.Subscribe(msgType, name, targetType, targetID, handler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Subscribe")
 	}
@@ -340,24 +339,24 @@ func (o *ObjectModelImpl) Start() error {
 func (o *ObjectModelImpl) commandHandler(svc interfaces.MessageSender, msg interfaces.Message) {
 	cmd, ok := msg.(interfaces.Command)
 	if !ok {
-		context.Logger.Error(errors.Wrap(errors.Errorf("msg is not command: %T", msg), "ObjectModelImpl.commandHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("msg is not command: %T", msg), "ObjectModelImpl.commandHandler"))
 		return
 	}
 
 	method, err := o.GetMethods().Get(cmd.GetName())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
+		g.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
 		return
 	}
 
 	msgsList, err := method.Func(cmd.GetArgs())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
+		g.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
 		return
 	}
 
 	if err := svc.Send(msgsList...); err != nil {
-		context.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
+		g.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
 	}
 }
 
@@ -366,7 +365,7 @@ func (o *ObjectModelImpl) Shutdown() error {
 		return errors.Wrap(err, "ObjectModelImpl.Shutdown")
 	}
 
-	msgs.I.Unsubscribe(o.msgHandlerIDs...)
+	g.Msgs.Unsubscribe(o.msgHandlerIDs...)
 
 	return nil
 }

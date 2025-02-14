@@ -7,11 +7,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	svcContext "touchon-server/internal/context"
-	"touchon-server/internal/model"
+	"touchon-server/internal/g"
 	"touchon-server/internal/store"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/messages"
-	msgs "touchon-server/lib/messages"
 )
 
 func New() (*Scheduler, error) {
@@ -37,7 +36,7 @@ func (o *Scheduler) Start() error {
 
 		tasks, err := store.I.CronRepo().GetEnabledTasks()
 		if err != nil {
-			svcContext.Logger.Error(err)
+			g.Logger.Error(err)
 		}
 
 		for {
@@ -49,18 +48,18 @@ func (o *Scheduler) Start() error {
 				if _, _, sec := time.Now().Clock(); sec == 0 {
 					tasks, err = store.I.CronRepo().GetEnabledTasks()
 					if err != nil {
-						svcContext.Logger.Error(err)
+						g.Logger.Error(err)
 						continue
 					}
 				}
 
-				m := make(map[string][]*model.CronTask, len(tasks))
+				m := make(map[string][]*interfaces.CronTask, len(tasks))
 				for _, task := range tasks {
 					m[task.Period] = append(m[task.Period], task)
 				}
 
 				if err := o.task(m); err != nil {
-					svcContext.Logger.Error(err)
+					g.Logger.Error(err)
 					continue
 				}
 			}
@@ -95,7 +94,7 @@ var taskConditions = map[string]func(h, m, s int) bool{
 	"12h": func(h, m, s int) bool { return s == 0 && m == 0 && h%12 == 0 },
 }
 
-func (o *Scheduler) task(tasks map[string][]*model.CronTask) error {
+func (o *Scheduler) task(tasks map[string][]*interfaces.CronTask) error {
 	h, m, s := time.Now().Clock()
 
 	for period, cond := range taskConditions {
@@ -110,11 +109,11 @@ func (o *Scheduler) task(tasks map[string][]*model.CronTask) error {
 	return nil
 }
 
-func (o *Scheduler) doAction(tasks []*model.CronTask) error {
+func (o *Scheduler) doAction(tasks []*interfaces.CronTask) error {
 	for _, task := range tasks {
 		for _, act := range task.Actions {
 			switch act.Type {
-			case model.ActionTypeDelay:
+			case interfaces.ActionTypeDelay:
 				v, ok := act.Args["duration"]
 				if !ok {
 					return errors.Wrap(errors.New("duration not found"), "doAction")
@@ -132,13 +131,13 @@ func (o *Scheduler) doAction(tasks []*model.CronTask) error {
 
 				time.Sleep(d)
 
-			case model.ActionTypeMethod:
+			case interfaces.ActionTypeMethod:
 				msg, err := messages.NewCommand(act.Name, act.TargetType, act.TargetID, act.Args)
 				if err != nil {
 					return errors.Wrap(err, "doAction")
 				}
 
-				if err := msgs.I.Send(msg); err != nil {
+				if err := g.Msgs.Send(msg); err != nil {
 					return errors.Wrap(err, "doAction")
 				}
 

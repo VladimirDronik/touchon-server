@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
@@ -309,7 +309,7 @@ func (o *GatewayModel) Start() error {
 	o.checkTimer = helpers.NewTimer(time.Duration(updateInterval)*time.Second, o.check)
 	o.checkTimer.Start()
 
-	context.Logger.Debugf("ModbusGW.GatewayModel(%d) started", o.GetID())
+	g.Logger.Debugf("ModbusGW.GatewayModel(%d) started", o.GetID())
 
 	return nil
 }
@@ -319,7 +319,7 @@ func (o *GatewayModel) Shutdown() error {
 		return errors.Wrap(err, "ModbusGW.GatewayModel.Shutdown")
 	}
 
-	context.Logger.Debugf("ModbusGW.GatewayModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("ModbusGW.GatewayModel(%d) stopped", o.GetID())
 
 	return nil
 }

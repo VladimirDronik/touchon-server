@@ -15,12 +15,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/traefik/yaegi/interp"
-	svcContext "touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/script"
 	"touchon-server/lib/helpers/orderedmap"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 )
 
 // Global instance
@@ -46,7 +45,7 @@ type Scripts struct {
 func (o *Scripts) Start() error {
 	var err error
 
-	o.handlerID, err = msgs.I.Subscribe(interfaces.MessageTypeCommand, "exec", interfaces.TargetTypeScript, nil, o.msgHandler)
+	o.handlerID, err = g.Msgs.Subscribe(interfaces.MessageTypeCommand, "exec", interfaces.TargetTypeScript, nil, o.msgHandler)
 	if err != nil {
 		return errors.Wrap(err, "scripts.Start")
 	}
@@ -55,7 +54,7 @@ func (o *Scripts) Start() error {
 }
 
 func (o *Scripts) Shutdown() error {
-	msgs.I.Unsubscribe(o.handlerID)
+	g.Msgs.Unsubscribe(o.handlerID)
 
 	return nil
 }
@@ -274,30 +273,30 @@ func (o *Scripts) execScript(script *Script, args map[string]interface{}) (inter
 func (o *Scripts) msgHandler(svc interfaces.MessageSender, msg interfaces.Message) {
 	cmd, ok := msg.(interfaces.Command)
 	if !ok {
-		svcContext.Logger.Error(errors.Wrap(errors.Errorf("msg is not command: %T", msg), "Scripts.MsgHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("msg is not command: %T", msg), "Scripts.MsgHandler"))
 		return
 	}
 
 	s, err := o.GetScript(cmd.GetTargetID())
 	if err != nil {
-		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
+		g.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
 	r, err := o.ExecScript(s, cmd.GetArgs())
 	if err != nil {
-		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
+		g.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
 	msg, err = script.NewOnComplete(cmd.GetTargetID(), r)
 	if err != nil {
-		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
+		g.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 		return
 	}
 
 	if err := svc.Send(msg); err != nil {
-		svcContext.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
+		g.Logger.Error(errors.Wrap(err, "Scripts.MsgHandler"))
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/object/Modbus"
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
@@ -25,7 +25,7 @@ var testError = errors.New("test error")
 type f = func(*GatewayModel, map[string]interface{}) ([]interfaces.Message, error)
 
 func init() {
-	context.Logger = logrus.New()
+	g.Logger = logrus.New()
 }
 
 // Три типа в сумме поддерживают все возможные св-ва шлюзов

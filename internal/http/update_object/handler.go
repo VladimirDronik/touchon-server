@@ -7,12 +7,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
+	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	_ "touchon-server/lib/http/server"
+	"touchon-server/lib/interfaces"
 )
 
 // Обновление объекта
@@ -28,7 +30,7 @@ import (
 // @Failure      500 {object} server.Response[any]
 // @Router /objects [put]
 func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
-	accessLevel, err := context.GetAccessLevel(ctx)
+	accessLevel, err := g.GetAccessLevel(ctx)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -64,7 +66,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 
 		//Если меняется период опроса у датчика
 		if dstProp.Code == "update_interval" {
-			if _, err := updateSensorCronTask(req); err != nil {
+			if err := updateSensorCronTask(req); err != nil {
 				return nil, http.StatusBadRequest, err
 			}
 		}
@@ -192,6 +194,33 @@ func setChildrenProps(objModelChildren *objects.Children, children []Child, acce
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+// updateSensorCronTask отправляет в action-router запрос на добавление задачи и действия для крона
+func updateSensorCronTask(req *Request) error {
+	_, ok := req.Props["update_interval"].(string)
+	if !ok {
+		return nil
+	}
+
+	task := &interfaces.CronTask{
+		Period: req.Props["update_interval"].(string),
+		Actions: []*interfaces.CronAction{
+			{
+				Enabled:    true,
+				TargetType: interfaces.TargetTypeObject,
+				Type:       interfaces.ActionTypeMethod,
+				TargetID:   req.ID,
+				Name:       "check",
+			},
+		},
+	}
+
+	if err := store.I.CronRepo().UpdateTask(task); err != nil {
+		return errors.Wrap(err, "createSensorCronTask")
 	}
 
 	return nil

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor/motion"
 	"touchon-server/internal/object/SensorValue"
@@ -137,23 +137,23 @@ func (o *PresenceSensorModel) Start() error {
 		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
-	context.Logger.Debugf("PresenceSensorModel(%d) started", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d) started", o.GetID())
 
 	return nil
 }
 
 func (o *PresenceSensorModel) onPresenceOnHandler(svc interfaces.MessageSender, _ interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
 		return
 	}
 
-	context.Logger.Debugf("PresenceSensorModel(%d): onPresenceOnHandler()", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d): onPresenceOnHandler()", o.GetID())
 
 	// получаем текущее значение движения
 	currState, err := o.getPresenceState()
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
 		return
 	}
 
@@ -163,33 +163,33 @@ func (o *PresenceSensorModel) onPresenceOnHandler(svc interfaces.MessageSender, 
 	}
 
 	if err := o.setPresenceState(true); err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
 		return
 	}
 
 	msg, err := sensor.NewOnPresenceOn(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
 		return
 	}
 
 	if err := svc.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
 	}
 }
 
 func (o *PresenceSensorModel) onPresenceOffHandler(svc interfaces.MessageSender, _ interfaces.Message) {
 	if err := o.CheckEnabled(); err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
 		return
 	}
 
-	context.Logger.Debugf("PresenceSensorModel(%d): onPresenceOffHandler()", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d): onPresenceOffHandler()", o.GetID())
 
 	// получаем текущее значение движения
 	currState, err := o.getPresenceState()
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
 		return
 	}
 
@@ -199,18 +199,18 @@ func (o *PresenceSensorModel) onPresenceOffHandler(svc interfaces.MessageSender,
 	}
 
 	if err := o.setPresenceState(false); err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
 		return
 	}
 
 	msg, err := sensor.NewOnPresenceOff(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
 		return
 	}
 
 	if err := svc.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
 	}
 }
 
@@ -264,7 +264,7 @@ func (o *PresenceSensorModel) Shutdown() error {
 		return errors.Wrap(err, "PresenceSensorModel.Shutdown")
 	}
 
-	context.Logger.Debugf("PresenceSensorModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d) stopped", o.GetID())
 
 	return nil
 }

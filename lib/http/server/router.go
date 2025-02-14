@@ -10,9 +10,8 @@ import (
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/lib/info"
+	"touchon-server/lib/interfaces"
 )
-
-type RequestHandler func(ctx *fasthttp.RequestCtx) (body interface{}, status int, err error)
 
 // Получить информацию о сервисе
 // @Summary Получить информацию о сервисе
@@ -62,7 +61,7 @@ type Response[T any] struct {
 }
 
 // JsonHandlerWrapper ответ в формате JSON оборачивает в единый формат и добавляет метаданные.
-func JsonHandlerWrapper(f RequestHandler) fasthttp.RequestHandler {
+func JsonHandlerWrapper(f interfaces.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		var r Response[any]
 		const magic = "CoNtEnTLeNgTh"

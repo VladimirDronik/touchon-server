@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
+	"touchon-server/lib/interfaces"
 )
 
 type EventActionsRepo struct {
@@ -12,14 +12,14 @@ type EventActionsRepo struct {
 }
 
 // GetActions возвращает список действий для события.
-func (o *EventActionsRepo) GetActions(eventIDs ...int) (map[int][]*model.EventAction, error) {
+func (o *EventActionsRepo) GetActions(eventIDs ...int) (map[int][]*interfaces.EventAction, error) {
 	type Row struct {
-		model.EventAction
+		interfaces.EventAction
 		Args string
 	}
 	rows := make([]*Row, 0, 10)
 
-	err := o.store.db.Model(&model.EventAction{}).
+	err := o.store.db.Model(&interfaces.EventAction{}).
 		Where("event_id in ?", eventIDs).
 		Order("event_id, sort, id").
 		Scan(&rows).Error
@@ -28,7 +28,7 @@ func (o *EventActionsRepo) GetActions(eventIDs ...int) (map[int][]*model.EventAc
 		return nil, errors.Wrap(err, "GetActions")
 	}
 
-	r := make(map[int][]*model.EventAction, len(rows))
+	r := make(map[int][]*interfaces.EventAction, len(rows))
 	for _, row := range rows {
 		if err := json.Unmarshal([]byte(row.Args), &row.EventAction.Args); err != nil {
 			return nil, errors.Wrap(err, "GetActions")
@@ -68,7 +68,7 @@ func (o *EventActionsRepo) GetActionsCount(eventIDs ...int) (map[int]int, error)
 }
 
 // SaveAction добавляет или обновляет действие.
-func (o *EventActionsRepo) SaveAction(act *model.EventAction) error {
+func (o *EventActionsRepo) SaveAction(act *interfaces.EventAction) error {
 	if act == nil {
 		return errors.Wrap(errors.New("act is nil"), "SaveAction")
 	}
@@ -80,7 +80,7 @@ func (o *EventActionsRepo) SaveAction(act *model.EventAction) error {
 	actIsExists := count == 1
 
 	type Row struct {
-		*model.EventAction
+		*interfaces.EventAction
 		Args string
 	}
 
@@ -132,7 +132,7 @@ func (o *EventActionsRepo) DeleteActionByObject(targetType string, objectID int)
 // OrderActions меняет порядок действий.
 func (o *EventActionsRepo) OrderActions(actIDs []int) error {
 	for i, actID := range actIDs {
-		err := o.store.db.Model(&model.EventAction{}).
+		err := o.store.db.Model(&interfaces.EventAction{}).
 			Where("id = ?", actID).
 			Update("sort", i).Error
 

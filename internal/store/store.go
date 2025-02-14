@@ -89,13 +89,13 @@ type ScriptRepository interface {
 
 type EventsRepo interface {
 	// GetEvents возвращает события сущности.
-	GetEvents(targetType interfaces.TargetType, targetID int) ([]*model.Event, error)
+	GetEvents(targetType interfaces.TargetType, targetID int) ([]*interfaces.AREvent, error)
 
 	// GetEvent возвращает событие.
-	GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*model.Event, error)
+	GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*interfaces.AREvent, error)
 
 	// SaveEvent добавляет или обновляет событие.
-	SaveEvent(ev *model.Event) error
+	SaveEvent(ev *interfaces.AREvent) error
 
 	// DeleteEvent удаляет событие.
 	DeleteEvent(targetType interfaces.TargetType, targetID int, eventName string) error
@@ -103,13 +103,13 @@ type EventsRepo interface {
 
 type EventActionsRepo interface {
 	// GetActions возвращает список действий для события.
-	GetActions(eventIDs ...int) (map[int][]*model.EventAction, error)
+	GetActions(eventIDs ...int) (map[int][]*interfaces.EventAction, error)
 
 	// GetActionsCount возвращает количество действий для событий.
 	GetActionsCount(eventIDs ...int) (map[int]int, error)
 
 	// SaveAction добавляет или обновляет действие.
-	SaveAction(act *model.EventAction) error
+	SaveAction(act *interfaces.EventAction) error
 
 	// DeleteAction удаляет действие.
 	DeleteAction(actID int) error
@@ -121,12 +121,12 @@ type EventActionsRepo interface {
 
 type CronRepo interface {
 	// GetEnabledTasks возвращает активные задачи.
-	GetEnabledTasks() ([]*model.CronTask, error)
-	CreateTask(task *model.CronTask) (int, error)
-	CreateTaskAction(action *model.CronAction) error
+	GetEnabledTasks() ([]*interfaces.CronTask, error)
+	CreateTask(task *interfaces.CronTask) error
+	CreateTaskAction(action *interfaces.CronAction) error
 	DeleteTask(objectID int, target string) error
-	UpdateTask(task *model.CronTask) error
-	GetCronAction(objectID int, targetType string) (*model.CronAction, error)
+	UpdateTask(task *interfaces.CronTask) error
+	GetCronAction(objectID int, targetType string) (*interfaces.CronAction, error)
 }
 
 // TR

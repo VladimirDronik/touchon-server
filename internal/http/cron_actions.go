@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
@@ -25,27 +24,34 @@ import (
 // @Failure      500 {object} http.Response[any]
 // @Router /cron/task [post]
 func (o *Server) handleCreateTask(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	var req *model.CronTask
+	var req *interfaces.CronTask
 
 	err := json.Unmarshal(ctx.PostBody(), &req)
 	if err != nil {
 		return nil, fasthttp.StatusBadRequest, err
 	}
 
-	taskID, err := store.I.CronRepo().CreateTask(req)
-	if err != nil {
+	if err := o.CreateCronTask(req); err != nil {
 		return nil, fasthttp.StatusInternalServerError, err
 	}
 
-	for _, action := range req.Actions {
-		action.TaskID = taskID
+	return req.ID, http.StatusOK, nil
+}
+
+func (o *Server) CreateCronTask(task *interfaces.CronTask) error {
+	if err := store.I.CronRepo().CreateTask(task); err != nil {
+		return errors.Wrap(err, "CreateCronTask")
+	}
+
+	for _, action := range task.Actions {
+		action.TaskID = task.ID
 
 		if err := store.I.CronRepo().CreateTaskAction(action); err != nil {
-			return nil, fasthttp.StatusInternalServerError, err
+			return errors.Wrap(err, "CreateCronTask")
 		}
 	}
 
-	return taskID, http.StatusOK, nil
+	return nil
 }
 
 // Изменение задачи CRON
@@ -61,15 +67,14 @@ func (o *Server) handleCreateTask(ctx *fasthttp.RequestCtx) (interface{}, int, e
 // @Failure      500 {object} http.Response[any]
 // @Router /cron/task [put]
 func (o *Server) handleUpdateTask(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	var req *model.CronTask
+	var req *interfaces.CronTask
 
 	err := json.Unmarshal(ctx.PostBody(), &req)
 	if err != nil {
 		return nil, fasthttp.StatusBadRequest, err
 	}
 
-	err = store.I.CronRepo().UpdateTask(req)
-	if err != nil {
+	if err := store.I.CronRepo().UpdateTask(req); err != nil {
 		return nil, fasthttp.StatusInternalServerError, err
 	}
 

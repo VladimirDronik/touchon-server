@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/port"
 	"touchon-server/lib/interfaces"
@@ -14,7 +14,7 @@ import (
 func (o *PortModel) OnPress() interfaces.Message {
 	msg, err := port.NewOnPress(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnPress"))
+		g.Logger.Error(errors.Wrap(err, "OnPress"))
 		return nil
 	}
 
@@ -25,7 +25,7 @@ func (o *PortModel) OnPress() interfaces.Message {
 func (o *PortModel) OnRelease() interfaces.Message {
 	msg, err := port.NewOnRelease(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnRelease"))
+		g.Logger.Error(errors.Wrap(err, "OnRelease"))
 		return nil
 	}
 
@@ -36,7 +36,7 @@ func (o *PortModel) OnRelease() interfaces.Message {
 func (o *PortModel) OnLongPress() interfaces.Message {
 	msg, err := port.NewOnLongPress(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnLongPress"))
+		g.Logger.Error(errors.Wrap(err, "OnLongPress"))
 		return nil
 	}
 
@@ -46,7 +46,7 @@ func (o *PortModel) OnLongPress() interfaces.Message {
 func (o *PortModel) OnDoubleClick() interfaces.Message {
 	msg, err := port.NewOnDoubleClick(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnDoubleClick"))
+		g.Logger.Error(errors.Wrap(err, "OnDoubleClick"))
 		return nil
 	}
 
@@ -59,7 +59,7 @@ func (o *PortModel) OnChangeState(state string) interfaces.Message {
 
 	mode, err := o.GetProps().GetStringValue("mode")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnChangeState"))
+		g.Logger.Error(errors.Wrap(err, "OnChangeState"))
 		return nil
 	}
 
@@ -70,7 +70,7 @@ func (o *PortModel) OnChangeState(state string) interfaces.Message {
 
 	msg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), value)
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnChangeState"))
+		g.Logger.Error(errors.Wrap(err, "OnChangeState"))
 		return nil
 	}
 
@@ -84,7 +84,7 @@ func (o *PortModel) OnCheck(state string) interfaces.Message {
 
 	mode, err := o.GetProps().GetStringValue("mode")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnCheck"))
+		g.Logger.Error(errors.Wrap(err, "OnCheck"))
 		return nil
 	}
 
@@ -95,7 +95,7 @@ func (o *PortModel) OnCheck(state string) interfaces.Message {
 
 	msg, err := port.NewOnCheck(o.GetID(), state, value)
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnCheck"))
+		g.Logger.Error(errors.Wrap(err, "OnCheck"))
 	}
 
 	return msg

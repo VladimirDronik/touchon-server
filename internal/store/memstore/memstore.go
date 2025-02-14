@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
@@ -34,7 +34,7 @@ func New() (*MemStore, error) {
 	for _, obj := range tree {
 		walk(obj, list)
 	}
-	context.Logger.Infof("Объекты: корневые %d, всего %d", len(tree), len(list))
+	g.Logger.Infof("Объекты: корневые %d, всего %d", len(tree), len(list))
 
 	return &MemStore{
 		mu:      sync.RWMutex{},
@@ -138,7 +138,7 @@ func (o *MemStore) Shutdown() error {
 
 	// Выводим в лог все ошибки
 	for _, err := range errs {
-		context.Logger.Error(errors.Wrap(err, "Shutdown"))
+		g.Logger.Error(errors.Wrap(err, "Shutdown"))
 	}
 
 	// Возвращаем первую
@@ -363,7 +363,7 @@ func (o *MemStore) SaveObject(obj objects.Object) error {
 
 		// Выводим в лог все ошибки
 		for _, err := range errs {
-			context.Logger.Error(errors.Wrap(err, "SaveObject"))
+			g.Logger.Error(errors.Wrap(err, "SaveObject"))
 		}
 
 		// Возвращаем первую
@@ -410,7 +410,7 @@ func (o *MemStore) DeleteObject(objectID int) error {
 
 		// Выводим в лог все ошибки
 		for _, err := range errs {
-			context.Logger.Error(errors.Wrap(err, "DeleteObject"))
+			g.Logger.Error(errors.Wrap(err, "DeleteObject"))
 		}
 
 		// Возвращаем первую
@@ -467,7 +467,7 @@ func (o *MemStore) DisableObject(objectID int) error {
 
 		// Выводим в лог все ошибки
 		for _, err := range errs {
-			context.Logger.Error(errors.Wrap(err, "DisableObject"))
+			g.Logger.Error(errors.Wrap(err, "DisableObject"))
 		}
 
 		// Возвращаем первую

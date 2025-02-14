@@ -6,12 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/simonvetter/modbus"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/object/Modbus"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/onokom/gateway"
 	"touchon-server/lib/interfaces"
-	msgs "touchon-server/lib/messages"
 )
 
 var doActionErr = errors.Errorf("ModbusDeviceImpl.DoAction returned bad value")
@@ -33,7 +32,7 @@ func (o *GatewayModel) Check(map[string]interface{}) ([]interfaces.Message, erro
 		return nil, errors.Wrap(err, "Check")
 	}
 
-	if err := msgs.I.Send(msg); err != nil {
+	if err := g.Msgs.Send(msg); err != nil {
 		return nil, errors.Wrap(err, "Check")
 	}
 
@@ -51,7 +50,7 @@ func (o *GatewayModel) check() {
 		return
 	}
 
-	context.Logger.Debugf("ModbusGW.GatewayModel(%d): check()", o.GetID())
+	g.Logger.Debugf("ModbusGW.GatewayModel(%d): check()", o.GetID())
 
 	maxCoilAddr := o.settings.getMaxCoilAddress()
 	maxHoldAddr := o.settings.getMaxHoldAddress()
@@ -80,19 +79,19 @@ func (o *GatewayModel) check() {
 		defer o.checkTimer.Reset()
 
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+			g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 			return
 		}
 
 		res, ok := r.(*checkDoActionResult)
 		if !ok {
-			context.Logger.Error(errors.Wrap(doActionErr, "ModbusGW.GatewayModel.check"))
+			g.Logger.Error(errors.Wrap(doActionErr, "ModbusGW.GatewayModel.check"))
 			return
 		}
 
 		switch {
 		case len(res.Coils) != int(maxCoilAddr) || len(res.Holdings) != int(maxHoldAddr):
-			context.Logger.Error(errors.Wrap(doActionErr, "ModbusGW.GatewayModel.check"))
+			g.Logger.Error(errors.Wrap(doActionErr, "ModbusGW.GatewayModel.check"))
 			return
 		}
 
@@ -108,13 +107,13 @@ func (o *GatewayModel) check() {
 
 			prop, err := o.GetProps().Get(propCode)
 			if err != nil {
-				context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+				g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 				return
 			}
 
 			actualValue, err := prop.GetBoolValue()
 			if err != nil {
-				context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+				g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 				return
 			}
 
@@ -125,13 +124,13 @@ func (o *GatewayModel) check() {
 
 			// Обновляем значение св-ва в объекте
 			if err := prop.SetValue(status); err != nil {
-				context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+				g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 				return
 			}
 
 			// Обновляем значение св-ва в базе
 			if err := store.I.ObjectRepository().SetProp(o.GetID(), propCode, strconv.FormatBool(status)); err != nil {
-				context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+				g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 				return
 			}
 
@@ -153,7 +152,7 @@ func (o *GatewayModel) check() {
 
 			prop, err := o.GetProps().Get(propCode)
 			if err != nil {
-				context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+				g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 				return
 			}
 
@@ -164,7 +163,7 @@ func (o *GatewayModel) check() {
 
 			// Обновляем значение св-ва в объекте
 			if err := prop.SetValue(value); err != nil {
-				context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+				g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 
 				// Если значение не валидное, пропускаем его и переходим к следующему св-ву.
 				// Значение может быть не валидным (например, равным 0), если кондер не подключен.
@@ -177,7 +176,7 @@ func (o *GatewayModel) check() {
 
 			// Обновляем значение св-ва в базе
 			if err := store.I.ObjectRepository().SetProp(o.GetID(), propCode, fmt.Sprintf("%v", value)); err != nil {
-				context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+				g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 				return
 			}
 
@@ -188,19 +187,19 @@ func (o *GatewayModel) check() {
 		// Отправляем сообщение с измененными полями
 		msg, err := gateway.NewOnChange(o.GetID(), payload)
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+			g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 			return
 		}
 
 		// Отправляем сообщение об изменении св-ва объекта
-		if err := msgs.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 			return
 		}
 	}
 
 	if err := o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
-		context.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
+		g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 		return
 	}
 }
@@ -382,31 +381,31 @@ func (o *GatewayModel) SetTargetTemperature(args map[string]interface{}) ([]inte
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
+			g.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
 			return
 		}
 
 		msg, err := gateway.NewOnChange(o.GetID(), map[string]interface{}{propCode: t})
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
+			g.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
 			return
 		}
 
 		// Отправляем сообщение об изменении св-ва объекта
-		if err := msgs.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
 			return
 		}
 
 		// Обновляем значение св-ва в объекте
 		if err := o.GetProps().Set(propCode, t); err != nil {
-			context.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
+			g.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
 			return
 		}
 
 		// Обновляем значение св-ва в базе
 		if err := store.I.ObjectRepository().SetProp(o.GetID(), propCode, strconv.Itoa(t)); err != nil {
-			context.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
+			g.Logger.Error(errors.Wrap(err, "SetTargetTemperature"))
 			return
 		}
 	}
@@ -449,31 +448,31 @@ func (o *GatewayModel) setCoilWrapper(propCode string, status bool, errFuncName 
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
 			return
 		}
 
 		msg, err := gateway.NewOnChange(o.GetID(), map[string]interface{}{propCode: status})
 		if err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
 			return
 		}
 
 		// Отправляем сообщение об изменении св-ва объекта
-		if err := msgs.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
 			return
 		}
 
 		// Обновляем значение св-ва в объекте
 		if err := o.GetProps().Set(propCode, status); err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
 			return
 		}
 
 		// Обновляем значение св-ва в базе
 		if err := store.I.ObjectRepository().SetProp(o.GetID(), propCode, strconv.FormatBool(status)); err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName))
 			return
 		}
 	}
@@ -511,31 +510,31 @@ func (o *GatewayModel) setHoldingEnumValue(propCode string, value interface{}, e
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
 			return
 		}
 
 		msg, err := gateway.NewOnChange(o.GetID(), map[string]interface{}{propCode: v})
 		if err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
 			return
 		}
 
 		// Отправляем сообщение об изменении св-ва объекта
-		if err := msgs.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
 			return
 		}
 
 		// Обновляем значение св-ва в объекте
 		if err := o.GetProps().Set(propCode, v); err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
 			return
 		}
 
 		// Обновляем значение св-ва в базе
 		if err := store.I.ObjectRepository().SetProp(o.GetID(), propCode, v); err != nil {
-			context.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
+			g.Logger.Error(errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName))
 			return
 		}
 	}
