@@ -462,13 +462,8 @@ func (o *Items) getSensors(zoneIDs ...int) ([]*model.SensorItem, error) {
 	}
 
 	for _, sensor := range sensorsStorage {
-		sensorValue, err := o.store.ObjectRepository().GetObjectByParent(sensor.ObjectID, sensor.Type)
-		if err != nil {
-			return nil, errors.Wrap(err, "getSensors")
-		}
-
 		err = o.store.db.Table("om_props").Select("value AS current").
-			Where("object_id = ?", sensorValue.ID).
+			Where("object_id = ?", sensor.ObjectID).
 			Where("code = 'value'").
 			Find(&sensor.Current).Error
 		if err != nil {
