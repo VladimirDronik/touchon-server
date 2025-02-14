@@ -152,7 +152,7 @@ type Items interface {
 	DeleteItem(itemID int) error
 	GetScenarios() ([]*model.Scenario, error) // Отдает элементы для кнопок без комнат
 	GetZoneItems() ([]*model.GroupRoom, error)
-	GetZoneSensors(zoneID int) ([]*model.Sensor, error)
+	GetZoneSensors(zoneID int) ([]*model.SensorItem, error)
 	GetGroupElements(groupID int) ([]*model.ViewItem, error)
 	ChangeItem(itemID int, status string) error                                                                     // Изменение элементов
 	GetItemsForChange(targetType interfaces.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) // Найти действия для элементов, которые соответствуют событию

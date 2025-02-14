@@ -412,7 +412,7 @@ func (o *Items) getMenus(m map[int]*model.Menu, parentIDs ...int) error {
 	return nil
 }
 
-func (o *Items) GetZoneSensors(zoneID int) ([]*model.Sensor, error) {
+func (o *Items) GetZoneSensors(zoneID int) ([]*model.SensorItem, error) {
 	zones, err := o.store.Zones().GetZoneTrees(zoneID)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZoneSensors")
@@ -440,11 +440,11 @@ func collectZoneIDs(ids []int, zones []*model.Zone) []int {
 	return ids
 }
 
-func (o *Items) getSensors(zoneIDs ...int) ([]*model.Sensor, error) {
-	var sensorsStorage, sensors []*model.Sensor
+func (o *Items) getSensors(zoneIDs ...int) ([]*model.SensorItem, error) {
+	var sensorsStorage, sensors []*model.SensorItem
 
 	err := o.store.db.Table("view_items").
-		Select("view_items.id AS view_item_id, view_items.title AS title,"+
+		Select("view_items.id AS item_id, view_items.title AS title,"+
 			" view_items.zone_id, sensors.adjustment AS adjustment,"+
 			"view_items.icon AS icon, sensors.type AS type, view_items.auth AS auth, sensors.object_id AS object_id").
 		Joins("INNER JOIN sensors ON view_items.id = sensors.view_item_id").
@@ -455,6 +455,10 @@ func (o *Items) getSensors(zoneIDs ...int) ([]*model.Sensor, error) {
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getSensors")
+	}
+
+	if len(sensorsStorage) == 0 {
+		return sensors, nil
 	}
 
 	for _, sensor := range sensorsStorage {
