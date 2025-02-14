@@ -183,6 +183,8 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 		{"children", "int", "children"},
 		{"type_struct", "string", "type_struct"},
 		{"with_methods", "string", "with_methods"},
+		{"type_children", "string", "type_children"},
+		{"without_tags", "string", "without_tags"},
 	}
 
 	for _, p := range params {
@@ -223,16 +225,18 @@ type GetObjectsResponse struct {
 // @Param filter_by_id query string false "ID объекта"
 // @Param filter_by_parent_id query string false "ID родительского объекта"
 // @Param filter_by_zone_id query string false "ID зоны"
-// @Param filter_by_category query string false "Категория" Enums(controller,sensor,regulator,generic_input)
+// @Param filter_by_category query string false "Категория" Enums(controller,sensor,regulator,generic_input, sensor_value)
 // @Param filter_by_type query string false "Тип" example(mega_d, htu21d, regulator, generic_input)
 // @Param filter_by_name query string false "Название"
 // @Param filter_by_status query string false "Статус" Enums(ON,OFF,Enable,N/A)
-// @Param tags query string false "Тэги" default(controller,mega_d)
+// @Param tags query string false "Тэги"
 // @Param offset query string false "Смещение" default(0)
 // @Param limit query string false "Лимит" default(20)
 // @Param children query string false "Возвращать дочерние объекты (0-без детей, 1-дети, 2-дети+внуки и т.д.)" default(1)
+// @Param type_children query string false "Тип выводимых дочерних элементов (all - все, internal - только внутр., external - только внешние)" Enums(all, internal, external)
 // @Param type_struct query string false "Тип структуры в ответе" Enums(easy, full)
 // @Param with_methods query string false "Добавить методы в структуру" Enums(true, false)
+// @Param without_tags query string false "Не добавлять тэги в структуру" Enums(true, false)
 // @Success      200 {object} http.Response[GetObjectsResponse]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
@@ -259,14 +263,30 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	childrenAge, _ := params["children"].(int)
 	typeStruct := params["type_struct"]
 	withMethods := params["with_methods"]
+	typeChildren := params["type_children"]
+	withoutTags := params["without_tags"]
 	delete(params, "offset")
 	delete(params, "limit")
 	delete(params, "children")
 	delete(params, "type_struct")
 	delete(params, "with_methods")
+	delete(params, "type_children")
+	delete(params, "without_tags")
 
 	if limit == 0 {
 		limit = 20
+	}
+
+	var childType model.ChildType
+	switch typeChildren {
+	case "all":
+		childType = model.ChildTypeAll
+	case "external":
+		childType = model.ChildTypeExternal
+	case "internal":
+		childType = model.ChildTypeInternal
+	default:
+		childType = model.ChildTypeExternal
 	}
 
 	rows, err := store.I.ObjectRepository().GetObjects(params, tags, offset, limit, model.ChildTypeExternal)
@@ -299,6 +319,10 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 			}
 		}
 
+		if withoutTags == "true" {
+			row.Tags = nil
+		}
+
 		m[row.ID] = row
 
 		if typeStruct == "easy" { //если упрощенный вывод включен, то убираем всё лишнее
@@ -319,7 +343,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	}
 
 	//Рекурсивно загружаем детей
-	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, model.ChildTypeExternal); err != nil {
+	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, childType); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
