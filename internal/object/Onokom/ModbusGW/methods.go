@@ -76,7 +76,7 @@ func (o *GatewayModel) check() {
 
 	resultHandler := func(r interface{}, err error) {
 		// Перезапускаем таймер только после полного завершения обновления св-в
-		defer o.checkTimer.Reset()
+		defer o.GetTimer().Reset()
 
 		if err != nil {
 			g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))

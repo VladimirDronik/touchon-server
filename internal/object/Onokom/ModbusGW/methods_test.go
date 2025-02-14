@@ -16,6 +16,7 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	gw "touchon-server/lib/events/object/onokom/gateway"
+	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
 )
@@ -214,6 +215,8 @@ func TestDeviceModel_check(t *testing.T) {
 			require.NoError(t, err)
 
 			modbusDevice.EXPECT().Start().Return(nil)
+			modbusDevice.EXPECT().SetTimer(mock.Anything, mock.Anything)
+			modbusDevice.EXPECT().GetTimer().Return(helpers.NewTimer(time.Millisecond, gateway.check))
 			modbusDevice.EXPECT().GetID().Return(objectID)
 			// Отправляем сообщение об изменении св-ва
 			msgs.EXPECT().Send(expectedMsg).Return(nil)
@@ -253,6 +256,8 @@ func TestDeviceModel_check(t *testing.T) {
 				return enabled > 0
 			})
 			modbusDevice.EXPECT().Start().Return(nil)
+			modbusDevice.EXPECT().SetTimer(mock.Anything, mock.Anything)
+			modbusDevice.EXPECT().GetTimer().Return(helpers.NewTimer(time.Millisecond, gateway.check))
 			modbusDevice.EXPECT().GetProps().Return(pList)
 			modbusDevice.EXPECT().GetID().Return(objectID)
 			modbusDevice.EXPECT().GetDefaultTries().Return(3)

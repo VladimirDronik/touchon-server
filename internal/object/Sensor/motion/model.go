@@ -12,7 +12,6 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/sensor"
-	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
 )
@@ -123,7 +122,6 @@ func MakeModel() (objects.Object, error) {
 
 type MotionSensorModel struct {
 	*Sensor.SensorModel
-	periodTimer *helpers.Timer
 }
 
 func (o *MotionSensorModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
@@ -176,7 +174,7 @@ func (o *MotionSensorModel) Start() error {
 		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
-	o.periodTimer = helpers.NewTimer(time.Duration(period)*time.Second, o.periodTimerHandler)
+	o.SetTimer(time.Duration(period)*time.Second, o.periodTimerHandler)
 
 	// Получаем текущее состояние движения
 	state, err := o.getMotionState()
@@ -210,7 +208,7 @@ func (o *MotionSensorModel) onMotionOnHandler(svc interfaces.MessageSender, _ in
 	}
 
 	g.Logger.Debug("MotionSensorModel.onMotionOnHandler: reset periodTimer")
-	o.periodTimer.Reset()
+	o.GetTimer().Reset()
 
 	// Обрабатываем только переход OFF -> ON
 	if currState {
@@ -263,7 +261,7 @@ func (o *MotionSensorModel) periodTimerHandler() {
 
 	// если движение есть - перезапускаем таймер и уходим
 	if currState {
-		o.periodTimer.Reset()
+		o.GetTimer().Reset()
 		return
 	}
 

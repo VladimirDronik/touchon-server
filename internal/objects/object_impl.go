@@ -3,6 +3,7 @@ package objects
 import (
 	"encoding/json"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/g"
@@ -64,6 +65,9 @@ type ObjectModelImpl struct {
 	enabled  bool
 
 	msgHandlerIDs []int
+
+	// Используется для выполнения периодических действий
+	intervalTimer *helpers.Timer
 }
 
 func (o *ObjectModelImpl) GetID() int {
@@ -367,6 +371,10 @@ func (o *ObjectModelImpl) Shutdown() error {
 
 	g.Msgs.Unsubscribe(o.msgHandlerIDs...)
 
+	if o.intervalTimer != nil {
+		o.intervalTimer.Stop()
+	}
+
 	return nil
 }
 
@@ -447,4 +455,16 @@ func (o *ObjectModelImpl) DeleteChildren() error {
 	}
 
 	return nil
+}
+
+func (o *ObjectModelImpl) SetTimer(interval time.Duration, handler func()) {
+	if o.intervalTimer != nil {
+		o.intervalTimer.Stop()
+	}
+
+	o.intervalTimer = helpers.NewTimer(interval, handler)
+}
+
+func (o *ObjectModelImpl) GetTimer() *helpers.Timer {
+	return o.intervalTimer
 }

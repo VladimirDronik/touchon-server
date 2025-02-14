@@ -204,7 +204,6 @@ func MakeModel() (objects.Object, error) {
 
 type RegulatorModel struct {
 	*objects.ObjectModelImpl
-	timer *helpers.Timer
 }
 
 func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ interfaces.Message) {
@@ -215,8 +214,8 @@ func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ in
 	// Раз попали сюда, значит значение датчика обновилось
 	// o.timer будет nil, если не выполняли вызов метода Start
 	// Start вызывается в memstore, не вызывается в http эндпоинтах
-	if o.timer != nil {
-		o.timer.Reset()
+	if o.GetTimer() != nil {
+		o.GetTimer().Reset()
 	}
 
 	regTypeS, err := o.GetProps().GetStringValue("type")
@@ -375,8 +374,8 @@ func (o *RegulatorModel) Start() error {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	o.timer = helpers.NewTimer(time.Duration(sensorValueTTL)*time.Second, o.timerHandler)
-	o.timer.Start()
+	o.SetTimer(time.Duration(sensorValueTTL)*time.Second, o.timerHandler)
+	o.GetTimer().Start()
 
 	g.Logger.Debugf("Regulator(%d) started", o.GetID())
 
@@ -388,7 +387,7 @@ func (o *RegulatorModel) timerHandler() {
 		return
 	}
 
-	g.Logger.Debugf("Regulator(%d): timerHandler(%s)", o.GetID(), o.timer.GetDuration())
+	g.Logger.Debugf("Regulator(%d): timerHandler(%s)", o.GetID(), o.GetTimer().GetDuration())
 
 	parentID := o.GetParentID()
 	if parentID == nil {
@@ -408,7 +407,7 @@ func (o *RegulatorModel) timerHandler() {
 		return
 	}
 
-	o.timer.Reset()
+	o.GetTimer().Reset()
 }
 
 func (o *RegulatorModel) Shutdown() error {
@@ -416,7 +415,7 @@ func (o *RegulatorModel) Shutdown() error {
 		return errors.Wrap(err, "RegulatorModel.Shutdown")
 	}
 
-	o.timer.Stop()
+	o.GetTimer().Stop()
 
 	g.Logger.Debugf("Regulator(%d) stopped", o.GetID())
 

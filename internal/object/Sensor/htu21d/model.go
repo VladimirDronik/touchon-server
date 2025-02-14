@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
@@ -118,4 +119,40 @@ func (o *SensorModel) Check(args map[string]interface{}) ([]interfaces.Message, 
 	}
 
 	return msgs, nil
+}
+
+func (o *SensorModel) Start() error {
+	if err := o.SensorModel.Start(); err != nil {
+		return errors.Wrap(err, "htu21d.SensorModel.Start")
+	}
+
+	updateInterval, err := o.GetProps().GetIntValue("update_interval")
+	if err != nil {
+		return errors.Wrap(err, "htu21d.SensorModel.Start")
+	}
+
+	o.SetTimer(time.Duration(updateInterval)*time.Second, o.check)
+	o.GetTimer().Start()
+
+	g.Logger.Debugf("htu21d(%d) started", o.GetID())
+
+	return nil
+}
+
+func (o *SensorModel) Shutdown() error {
+	if err := o.SensorModel.Shutdown(); err != nil {
+		return errors.Wrap(err, "htu21d.SensorModel.Shutdown")
+	}
+
+	g.Logger.Debugf("htu21d(%d) stopped", o.GetID())
+
+	return nil
+}
+
+func (o *SensorModel) check() {
+	g.Logger.Debugf("htu21d(%d) check", o.GetID())
+
+	// TODO....
+
+	o.GetTimer().Reset()
 }

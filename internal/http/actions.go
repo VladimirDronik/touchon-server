@@ -66,7 +66,7 @@ func (o *Server) handleGetEventsActionsCount(ctx *fasthttp.RequestCtx) (interfac
 // @Produce json
 // @Param target_type query interfaces.TargetType true "Тип сущности" Enums(object,item,script) default(item)
 // @Param target_id query int true "ID сущности" default(1)
-// @Success      200 {object} http.Response[map[string][]model.EventAction]
+// @Success      200 {object} http.Response[map[string][]interfaces.EventAction]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /events/actions [get]
@@ -120,7 +120,7 @@ func (o *Server) handleGetEventsActions(ctx *fasthttp.RequestCtx) (interface{}, 
 // @Param target_type query interfaces.TargetType true "Тип сущности" default(item)
 // @Param target_id query int true "ID сущности" default(1)
 // @Param event_name query string true "Название события" default(on_test)
-// @Param object body model.EventAction true "Действие"
+// @Param object body interfaces.EventAction true "Действие"
 // @Success      200 {object} http.Response[any]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
@@ -199,7 +199,7 @@ func (o *Server) CreateEventAction(targetType string, targetID int, eventName st
 // @ID UpdateEventAction
 // @Accept json
 // @Produce json
-// @Param object body model.EventAction true "Действие"
+// @Param object body interfaces.EventAction true "Действие"
 // @Success      200 {object} http.Response[any]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]

@@ -3,8 +3,10 @@ package objects
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	"touchon-server/internal/model"
+	"touchon-server/lib/helpers"
 )
 
 var ErrObjectDisabled = errors.New("object disabled")
@@ -80,6 +82,9 @@ type Object interface {
 
 	// Unmarshaler Объект должен создаваться из json
 	json.Unmarshaler
+
+	SetTimer(time.Duration, func())
+	GetTimer() *helpers.Timer
 }
 
 type ObjectModel struct {

@@ -11,7 +11,6 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
 	"touchon-server/lib/events/object/onokom/gateway"
-	"touchon-server/lib/helpers"
 	"touchon-server/lib/models"
 )
 
@@ -284,10 +283,9 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 
 type GatewayModel struct {
 	ModbusDevice.ModbusDevice
-	unitID     int
-	checkTimer *helpers.Timer
-	modelCode  string
-	settings   *Gateway
+	unitID    int
+	modelCode string
+	settings  *Gateway
 }
 
 func (o *GatewayModel) Start() error {
@@ -306,8 +304,8 @@ func (o *GatewayModel) Start() error {
 		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
 	}
 
-	o.checkTimer = helpers.NewTimer(time.Duration(updateInterval)*time.Second, o.check)
-	o.checkTimer.Start()
+	o.SetTimer(time.Duration(updateInterval)*time.Second, o.check)
+	o.GetTimer().Start()
 
 	g.Logger.Debugf("ModbusGW.GatewayModel(%d) started", o.GetID())
 

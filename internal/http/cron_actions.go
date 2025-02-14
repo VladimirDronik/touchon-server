@@ -18,8 +18,8 @@ import (
 // @ID CreateCronAction
 // @Accept json
 // @Produce json
-// @Param object body model.CronTask  true "Действия по расписанию"
-// @Success      200 {object} http.Response[model.CronTask]
+// @Param object body interfaces.CronTask  true "Действия по расписанию"
+// @Success      200 {object} http.Response[interfaces.CronTask]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /cron/task [post]
@@ -61,8 +61,8 @@ func (o *Server) CreateCronTask(task *interfaces.CronTask) error {
 // @ID UpdateCronTask
 // @Accept json
 // @Produce json
-// @Param object body model.CronTask  true "Действия по расписанию"
-// @Success      200 {object} http.Response[model.CronTask]
+// @Param object body interfaces.CronTask  true "Действия по расписанию"
+// @Success      200 {object} http.Response[interfaces.CronTask]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /cron/task [put]

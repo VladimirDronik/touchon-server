@@ -69,8 +69,8 @@ func MakeModel() (objects.Object, error) {
 			Name:        "Интервал (с)",
 			Description: "Интервал получения значения датчика",
 			Item: &models.Item{
-				Type:         models.DataTypeString,
-				DefaultValue: "1m",
+				Type:         models.DataTypeInt,
+				DefaultValue: 60,
 			},
 			Required:   objects.NewRequired(true),
 			Editable:   objects.NewCondition(),
