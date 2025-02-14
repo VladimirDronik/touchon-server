@@ -116,6 +116,7 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 		Enabled: true,
 		ZoneID:  &sensor.ZoneID,
 		Title:   sensor.Title,
+		Icon:    sensor.Icon,
 		Auth:    "",
 		Sort:    0,
 	}

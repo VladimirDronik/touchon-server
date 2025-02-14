@@ -173,8 +173,8 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 
 	// Items
 	// Получение элементов, которые требуют дополнительных данных
-	private("GET", "/item/dimer", o.getDimmer)          // Получение димера
-	private("GET", "/item/thermostat", o.getThermostat) // Получение термостата
+	//private("GET", "/item/dimer", o.getDimmer)          // Получение димера, убрать
+	//private("GET", "/item/thermostat", o.getThermostat) // Получение термостата, убарть
 
 	private("POST", "/items", o.handleCreateItem)  // Создание элемента
 	private("PUT", "/items", o.handleUpdateItem)   // Обновление элемента

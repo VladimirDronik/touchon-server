@@ -444,7 +444,7 @@ func (o *Items) getSensors(zoneIDs ...int) ([]*model.Sensor, error) {
 	var sensorsStorage, sensors []*model.Sensor
 
 	err := o.store.db.Table("view_items").
-		Select("view_items.id AS view_item_id, view_items.title AS name,"+
+		Select("view_items.id AS view_item_id, view_items.title AS title,"+
 			" view_items.zone_id, sensors.adjustment AS adjustment,"+
 			"view_items.icon AS icon, sensors.type AS type, view_items.auth AS auth, sensors.object_id AS object_id").
 		Joins("INNER JOIN sensors ON view_items.id = sensors.view_item_id").

@@ -19,12 +19,12 @@ type Sensor struct {
 	History *HistoryPoints `json:"history,omitempty" gorm:"-"`
 
 	//Параметры, которые нужны для создания view
-	ZoneID  int    `json:"zone_id,omitempty" gorm:"-"`
-	Icon    string `json:"icon,omitempty" gorm:"-"`
-	Enabled bool   `json:"enabled,omitempty" gorm:"-"`
-	Title   string `json:"title,omitempty" gorm:"-"`
-	Auth    string `json:"auth,omitempty" gorm:"-"`
-	Sort    int    `json:"sort,omitempty" gorm:"-"`
+	ZoneID  int    `json:"zone_id,omitempty"`
+	Icon    string `json:"icon,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Auth    string `json:"auth,omitempty"`
+	Sort    int    `json:"sort,omitempty"`
 
 	// Backward compatibility
 	Status string `json:"status,omitempty" gorm:"-"` // on|off
