@@ -69,7 +69,7 @@ func getProps(gwModelCode string) ([]*Prop, error) {
 	return r, nil
 }
 
-func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockModbusDevice, *store.MockStore, *mqtt.MockClient, *objects.Props) {
+func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockModbusDevice, *store.MockStore, *interfaces.MockMessagesService, *objects.Props) {
 	obj, err := MakeModel(gwModelCode)
 	require.NotNil(t, obj)
 	require.NoError(t, err)
@@ -86,8 +86,8 @@ func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockM
 	st := new(store.MockStore)
 	store.I = st
 
-	mqttClient := new(mqtt.MockClient)
-	mqtt.I = mqttClient
+	msgsService := new(interfaces.MockMessagesService)
+	g.Msgs = msgsService
 
 	pList := objects.NewProps()
 
@@ -134,12 +134,12 @@ func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockM
 
 	require.NoError(t, pList.Add(a, p))
 
-	return gateway, mockModbusDevice, st, mqttClient, pList
+	return gateway, mockModbusDevice, st, msgsService, pList
 }
 
 func TestDeviceModel_Check(t *testing.T) {
 	for _, gwModelCode := range gwModelCodes {
-		gateway, modbusDevice, st, mqttClient, pList := setUp(t, gwModelCode)
+		gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
 
 		payload := make(map[string]interface{}, pList.Len())
 		objectID := 123
@@ -158,7 +158,7 @@ func TestDeviceModel_Check(t *testing.T) {
 		t.Run(gwModelCode+"/success", func(t *testing.T) {
 			modbusDevice.EXPECT().GetID().Return(objectID)
 			modbusDevice.EXPECT().GetProps().Return(pList)
-			mqttClient.EXPECT().Send(msg).Return(nil).Once()
+			msgs.EXPECT().Send(msg).Return(nil).Once()
 
 			_, err = gateway.Check(nil)
 			require.NoError(t, err)
@@ -166,13 +166,13 @@ func TestDeviceModel_Check(t *testing.T) {
 
 			st.AssertExpectations(t)
 			modbusDevice.AssertExpectations(t)
-			mqttClient.AssertExpectations(t)
+			msgs.AssertExpectations(t)
 		})
 
 		t.Run(gwModelCode+"/fail", func(t *testing.T) {
 			modbusDevice.EXPECT().GetID().Return(objectID)
 			modbusDevice.EXPECT().GetProps().Return(pList)
-			mqttClient.EXPECT().Send(msg).Return(testError).Once()
+			msgs.EXPECT().Send(msg).Return(testError).Once()
 
 			_, err = gateway.Check(nil)
 			require.ErrorIs(t, err, testError)
@@ -180,7 +180,7 @@ func TestDeviceModel_Check(t *testing.T) {
 
 			st.AssertExpectations(t)
 			modbusDevice.AssertExpectations(t)
-			mqttClient.AssertExpectations(t)
+			msgs.AssertExpectations(t)
 		})
 	}
 }
@@ -190,7 +190,7 @@ func TestDeviceModel_check(t *testing.T) {
 
 	for _, gwModelCode := range gwModelCodes {
 		t.Run(gwModelCode+"/success", func(t *testing.T) {
-			gateway, modbusDevice, st, mqttClient, pList := setUp(t, gwModelCode)
+			gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
 			objRepo := new(store.MockObjectRepository)
 
 			enabled := 2
@@ -210,13 +210,13 @@ func TestDeviceModel_check(t *testing.T) {
 					return nil
 				})
 
-			expectedMsg, err := gw.NewOnChangeMessage("object_manager/object/event", objectID, expectedPayload)
+			expectedMsg, err := gw.NewOnChange(objectID, expectedPayload)
 			require.NoError(t, err)
 
 			modbusDevice.EXPECT().Start().Return(nil)
 			modbusDevice.EXPECT().GetID().Return(objectID)
 			// Отправляем сообщение об изменении св-ва
-			mqttClient.EXPECT().Send(expectedMsg).Return(nil)
+			msgs.EXPECT().Send(expectedMsg).Return(nil)
 			modbusDevice.EXPECT().GetProps().Return(pList)
 			st.EXPECT().ObjectRepository().Return(objRepo)
 			// Правим значение св-ва в БД
@@ -230,7 +230,7 @@ func TestDeviceModel_check(t *testing.T) {
 			time.Sleep(1500 * time.Millisecond)
 
 			modbusDevice.AssertExpectations(t)
-			mqttClient.AssertExpectations(t)
+			msgs.AssertExpectations(t)
 			st.AssertExpectations(t)
 			objRepo.AssertExpectations(t)
 
@@ -243,7 +243,7 @@ func TestDeviceModel_check(t *testing.T) {
 		})
 
 		t.Run(gwModelCode+"/fail", func(t *testing.T) {
-			gateway, modbusDevice, _, mqttClient, pList := setUp(t, gwModelCode)
+			gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
 			objRepo := new(store.MockObjectRepository)
 
 			enabled := 2
@@ -269,7 +269,7 @@ func TestDeviceModel_check(t *testing.T) {
 			time.Sleep(1500 * time.Millisecond)
 
 			modbusDevice.AssertExpectations(t)
-			mqttClient.AssertNotCalled(t, "Send")
+			msgs.AssertNotCalled(t, "Send")
 			objRepo.AssertNotCalled(t, "SetProp")
 
 			for _, prop := range pList.GetAll().GetValueList() {
@@ -365,11 +365,11 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 
 			t.Run(gwModelCode+"/"+propCode+"/on/success", func(t *testing.T) {
 				// Невозможно выполнить тест в параллельном режиме,
-				// в setUp() строка "mqtt.I = mqttClient" в каждом тесте перезатирает mock объект.
+				// в setUp() строка "g.Msgs = msgs" в каждом тесте перезатирает mock объект.
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, st, mqttClient, pList := setUp(t, gwModelCode)
+				gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, false))
 
@@ -383,7 +383,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 
 				modbusDevice.EXPECT().GetID().Return(objectID)
 				// Отправляем сообщение об изменении св-ва
-				mqttClient.EXPECT().Send(mock.Anything).Return(nil)
+				msgs.EXPECT().Send(mock.Anything).Return(nil)
 				modbusDevice.EXPECT().GetProps().Return(pList)
 				st.EXPECT().ObjectRepository().Return(objRepo)
 				// Правим значение св-ва в БД
@@ -394,7 +394,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				time.Sleep(500 * time.Millisecond)
 
 				modbusDevice.AssertExpectations(t)
-				mqttClient.AssertExpectations(t)
+				msgs.AssertExpectations(t)
 				st.AssertExpectations(t)
 				objRepo.AssertExpectations(t)
 
@@ -406,11 +406,11 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 
 			t.Run(gwModelCode+"/"+propCode+"/on/fail", func(t *testing.T) {
 				// Невозможно выполнить тест в параллельном режиме,
-				// в setUp() строка "mqtt.I = mqttClient" в каждом тесте перезатирает mock объект.
+				// в setUp() строка "g.Msgs = msgs" в каждом тесте перезатирает mock объект.
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, _, mqttClient, pList := setUp(t, gwModelCode)
+				gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, false))
 
@@ -427,7 +427,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				time.Sleep(500 * time.Millisecond)
 
 				modbusDevice.AssertExpectations(t)
-				mqttClient.AssertNotCalled(t, "Send")
+				msgs.AssertNotCalled(t, "Send")
 				objRepo.AssertNotCalled(t, "SetProp")
 
 				powerStatus, err := pList.GetBoolValue(propCode)
@@ -437,11 +437,11 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 
 			t.Run(gwModelCode+"/"+propCode+"/off/success", func(t *testing.T) {
 				// Невозможно выполнить тест в параллельном режиме,
-				// в setUp() строка "mqtt.I = mqttClient" в каждом тесте перезатирает mock объект.
+				// в setUp() строка "g.Msgs = msgs" в каждом тесте перезатирает mock объект.
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, st, mqttClient, pList := setUp(t, gwModelCode)
+				gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, true))
 
@@ -455,7 +455,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 
 				modbusDevice.EXPECT().GetID().Return(objectID)
 				// Отправляем сообщение об изменении св-ва
-				mqttClient.EXPECT().Send(mock.Anything).Return(nil)
+				msgs.EXPECT().Send(mock.Anything).Return(nil)
 				modbusDevice.EXPECT().GetProps().Return(pList)
 				st.EXPECT().ObjectRepository().Return(objRepo)
 				// Правим значение св-ва в БД
@@ -466,7 +466,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				time.Sleep(500 * time.Millisecond)
 
 				modbusDevice.AssertExpectations(t)
-				mqttClient.AssertExpectations(t)
+				msgs.AssertExpectations(t)
 				st.AssertExpectations(t)
 				objRepo.AssertExpectations(t)
 
@@ -478,11 +478,11 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 
 			t.Run(gwModelCode+"/"+propCode+"/off/fail", func(t *testing.T) {
 				// Невозможно выполнить тест в параллельном режиме,
-				// в setUp() строка "mqtt.I = mqttClient" в каждом тесте перезатирает mock объект.
+				// в setUp() строка "g.Msgs = msgs" в каждом тесте перезатирает mock объект.
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, _, mqttClient, pList := setUp(t, gwModelCode)
+				gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, true))
 
@@ -499,7 +499,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				time.Sleep(500 * time.Millisecond)
 
 				modbusDevice.AssertExpectations(t)
-				mqttClient.AssertNotCalled(t, "Send")
+				msgs.AssertNotCalled(t, "Send")
 				objRepo.AssertNotCalled(t, "SetProp")
 
 				powerStatus, err := pList.GetBoolValue(propCode)
@@ -516,7 +516,7 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 	targetTemp := 30
 
 	t.Run("success", func(t *testing.T) {
-		gateway, modbusDevice, st, mqttClient, pList := setUp(t, gwModelCodes[0])
+		gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCodes[0])
 		objRepo := new(store.MockObjectRepository)
 		require.NoError(t, pList.Set(propCode, 0))
 
@@ -530,7 +530,7 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 
 		modbusDevice.EXPECT().GetID().Return(objectID)
 		// Отправляем сообщение об изменении св-ва
-		mqttClient.EXPECT().Send(mock.Anything).Return(nil)
+		msgs.EXPECT().Send(mock.Anything).Return(nil)
 		modbusDevice.EXPECT().GetProps().Return(pList)
 		st.EXPECT().ObjectRepository().Return(objRepo)
 		// Правим значение св-ва в БД
@@ -541,7 +541,7 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 
 		modbusDevice.AssertExpectations(t)
-		mqttClient.AssertExpectations(t)
+		msgs.AssertExpectations(t)
 		st.AssertExpectations(t)
 		objRepo.AssertExpectations(t)
 
@@ -552,7 +552,7 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
-		gateway, modbusDevice, _, mqttClient, pList := setUp(t, gwModelCodes[0])
+		gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCodes[0])
 		objRepo := new(store.MockObjectRepository)
 		require.NoError(t, pList.Set(propCode, 0))
 
@@ -569,7 +569,7 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 
 		modbusDevice.AssertExpectations(t)
-		mqttClient.AssertNotCalled(t, "Send")
+		msgs.AssertNotCalled(t, "Send")
 		objRepo.AssertNotCalled(t, "SetProp")
 
 		value, err := pList.GetIntValue(propCode)
@@ -604,7 +604,7 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 
 			for v, descr := range test.Values {
 				t.Run(fmt.Sprintf("%s/%s/success (%s, %s)", gwModelCode, propCode, v, descr), func(t *testing.T) {
-					gateway, modbusDevice, st, mqttClient, pList := setUp(t, gwModelCode)
+					gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
 					objRepo := new(store.MockObjectRepository)
 
 					modbusDevice.EXPECT().GetDefaultTries().Return(3)
@@ -617,7 +617,7 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 
 					modbusDevice.EXPECT().GetID().Return(objectID)
 					// Отправляем сообщение об изменении св-ва
-					mqttClient.EXPECT().Send(mock.Anything).Return(nil)
+					msgs.EXPECT().Send(mock.Anything).Return(nil)
 					modbusDevice.EXPECT().GetProps().Return(pList)
 					st.EXPECT().ObjectRepository().Return(objRepo)
 					// Правим значение св-ва в БД
@@ -628,7 +628,7 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 					time.Sleep(500 * time.Millisecond)
 
 					modbusDevice.AssertExpectations(t)
-					mqttClient.AssertExpectations(t)
+					msgs.AssertExpectations(t)
 					st.AssertExpectations(t)
 					objRepo.AssertExpectations(t)
 
@@ -640,7 +640,7 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 			}
 
 			t.Run(fmt.Sprintf("%s/%s/fail", gwModelCode, propCode), func(t *testing.T) {
-				gateway, modbusDevice, _, mqttClient, pList := setUp(t, gwModelCode)
+				gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				v := "123"
 
@@ -657,7 +657,7 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 				time.Sleep(500 * time.Millisecond)
 
 				modbusDevice.AssertExpectations(t)
-				mqttClient.AssertNotCalled(t, "Send")
+				msgs.AssertNotCalled(t, "Send")
 				objRepo.AssertNotCalled(t, "SetProp")
 
 				value, err := pList.GetEnumValue(propCode)
