@@ -184,7 +184,7 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 		{"type_struct", "string", "type_struct"},
 		{"with_methods", "string", "with_methods"},
 		{"type_children", "string", "type_children"},
-		{"without_tags", "string", "without_tags"},
+		{"with_tags", "string", "with_tags"},
 	}
 
 	for _, p := range params {
@@ -236,13 +236,14 @@ type GetObjectsResponse struct {
 // @Param type_children query string false "Тип выводимых дочерних элементов (all - все, internal - только внутр., external - только внешние)" Enums(all, internal, external)
 // @Param type_struct query string false "Тип структуры в ответе" Enums(easy, full)
 // @Param with_methods query string false "Добавить методы в структуру" Enums(true, false)
-// @Param without_tags query string false "Не добавлять тэги в структуру" Enums(true, false)
+// @Param with_tags query string false "Добавлять тэги в структуру" Enums(true, false)
 // @Success      200 {object} http.Response[GetObjectsResponse]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /objects [get]
 func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	tags := helpers.PrepareTags(helpers.GetParam(ctx, "tags"))
+	withTagsFlag := true
 
 	params, err := parseGetObjectsParams(ctx)
 	if err != nil {
@@ -264,14 +265,14 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	typeStruct := params["type_struct"]
 	withMethods := params["with_methods"]
 	typeChildren := params["type_children"]
-	withoutTags := params["without_tags"]
+	withTags := params["with_tags"]
 	delete(params, "offset")
 	delete(params, "limit")
 	delete(params, "children")
 	delete(params, "type_struct")
 	delete(params, "with_methods")
 	delete(params, "type_children")
-	delete(params, "without_tags")
+	delete(params, "with_tags")
 
 	if limit == 0 {
 		limit = 20
@@ -319,8 +320,9 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 			}
 		}
 
-		if withoutTags == "true" {
+		if withTags == "false" {
 			row.Tags = nil
+			withTagsFlag = false
 		}
 
 		m[row.ID] = row
@@ -343,7 +345,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	}
 
 	//Рекурсивно загружаем детей
-	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, childType); err != nil {
+	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, childType, withTagsFlag); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -436,7 +438,7 @@ func (o *Server) handleGetObjectsByTags(ctx *fasthttp.RequestCtx) (interface{}, 
 	}
 
 	// Рекурсивно загружаем детей
-	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, model.ChildTypeAll); err != nil {
+	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, model.ChildTypeAll, true); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
