@@ -443,9 +443,9 @@ func (o *Server) handleGetObjectsByTags(ctx *fasthttp.RequestCtx) (interface{}, 
 	}
 
 	// Рекурсивно загружаем родителей
-	//if err := loadParents(m, rows, store.I.ObjectRepository()); err != nil {
-	//	return nil, http.StatusInternalServerError, err
-	//}
+	if err := loadParents(m, rows, store.I.ObjectRepository()); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
 
 	// Детей добавляем к родителям
 	for _, item := range m {
