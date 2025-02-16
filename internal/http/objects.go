@@ -185,6 +185,7 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 		{"with_methods", "string", "with_methods"},
 		{"type_children", "string", "type_children"},
 		{"with_tags", "string", "with_tags"},
+		{"simple_tree", "string", "simple_tree"},
 	}
 
 	for _, p := range params {
@@ -237,6 +238,7 @@ type GetObjectsResponse struct {
 // @Param type_struct query string false "Тип структуры в ответе" Enums(easy, full)
 // @Param with_methods query string false "Добавить методы в структуру" Enums(true, false)
 // @Param with_tags query string false "Добавлять тэги в структуру" Enums(true, false)
+// @Param simple_tree query string false "Дерево объектов будет строиться от отфильтрованного объекта вниз, но не вверх" Enums(true, false)
 // @Success      200 {object} http.Response[GetObjectsResponse]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
@@ -266,6 +268,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	withMethods := params["with_methods"]
 	typeChildren := params["type_children"]
 	withTags := params["with_tags"]
+	simpleTree := params["simple_tree"]
 	delete(params, "offset")
 	delete(params, "limit")
 	delete(params, "children")
@@ -273,6 +276,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	delete(params, "with_methods")
 	delete(params, "type_children")
 	delete(params, "with_tags")
+	delete(params, "simple_tree")
 
 	if limit == 0 {
 		limit = 20
@@ -323,6 +327,10 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		if withTags == "false" {
 			row.Tags = nil
 			withTagsFlag = false
+		}
+
+		if simpleTree == "true" {
+			row.ParentID = nil
 		}
 
 		m[row.ID] = row
