@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
 	"touchon-server/lib/helpers/orderedmap"
 	"touchon-server/lib/models"
 )
@@ -141,12 +140,12 @@ func (o *Props) Add(items ...*Prop) error {
 }
 
 // Check Проверяет значения параметров в отдельности
-func (o *Props) Check(userAccessLevel model.AccessLevel) error {
+func (o *Props) Check() error {
 	for _, p := range o.m.GetValueList() {
 		switch p.Type {
 		case models.DataTypeString:
 			_, err := p.GetStringValue()
-			if p.Required.Check(userAccessLevel, o) && err != nil {
+			if p.Required.Check(o) && err != nil {
 				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {
@@ -157,7 +156,7 @@ func (o *Props) Check(userAccessLevel model.AccessLevel) error {
 
 		case models.DataTypeEnum:
 			v, err := p.GetEnumValue()
-			if p.Required.Check(userAccessLevel, o) && err != nil {
+			if p.Required.Check(o) && err != nil {
 				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
 			}
 			if err == nil {
@@ -174,7 +173,7 @@ func (o *Props) Check(userAccessLevel model.AccessLevel) error {
 
 		case models.DataTypeBool:
 			_, err := p.GetBoolValue()
-			if p.Required.Check(userAccessLevel, o) && err != nil {
+			if p.Required.Check(o) && err != nil {
 				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {
@@ -185,7 +184,7 @@ func (o *Props) Check(userAccessLevel model.AccessLevel) error {
 
 		case models.DataTypeInt:
 			_, err := p.GetIntValue()
-			if p.Required.Check(userAccessLevel, o) && err != nil {
+			if p.Required.Check(o) && err != nil {
 				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {
@@ -196,7 +195,7 @@ func (o *Props) Check(userAccessLevel model.AccessLevel) error {
 
 		case models.DataTypeFloat:
 			_, err := p.GetFloatValue()
-			if p.Required.Check(userAccessLevel, o) && err != nil {
+			if p.Required.Check(o) && err != nil {
 				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {

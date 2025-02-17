@@ -15,9 +15,9 @@ type Prop struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	*models.Item
-	Required   Condition        `json:"required"`
-	Editable   Condition        `json:"editable"` // Можно ли изменять значение или оно неизменяемо (например, показания температуры)
-	Visible    Condition        `json:"visible"`
+	Required   Condition        `json:"-"`
+	Editable   Condition        `json:"-"` // Можно ли изменять значение или оно неизменяемо (например, показания температуры)
+	Visible    Condition        `json:"-"`
 	CheckValue PropValueChecker `json:"-"` // Поле, которое при реализации должно содержать метод проверки значения
 }
 
@@ -27,10 +27,7 @@ func (o *Prop) MarshalJSON() ([]byte, error) {
 		Name        string `json:"name"`
 		Description string `json:"description,omitempty"`
 		*models.Item
-		Required Condition   `json:"required"`
-		Editable Condition   `json:"editable"` // Можно ли изменять значение или оно неизменяемо (например, показания температуры)
-		Visible  Condition   `json:"visible"`
-		Value    interface{} `json:"value,omitempty"`
+		Value interface{} `json:"value,omitempty"`
 	}
 
 	value := o.GetValue()
@@ -43,9 +40,6 @@ func (o *Prop) MarshalJSON() ([]byte, error) {
 		Name:        o.Name,
 		Description: o.Description,
 		Item:        o.Item,
-		Required:    o.Required,
-		Editable:    o.Editable,
-		Visible:     o.Visible,
 		Value:       value,
 	}
 

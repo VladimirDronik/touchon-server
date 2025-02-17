@@ -44,9 +44,9 @@ func MakeModel() (objects.Object, error) {
 			Type:         models.DataTypeInt,
 			DefaultValue: 120,
 		},
-		Required:   objects.NewRequired(true),
-		Editable:   objects.NewCondition(),
-		Visible:    objects.NewCondition(),
+		Required:   objects.True(),
+		Editable:   objects.True(),
+		Visible:    objects.True(),
 		CheckValue: objects.AboveOrEqual1(),
 	}
 
@@ -58,9 +58,9 @@ func MakeModel() (objects.Object, error) {
 			Type:         models.DataTypeString,
 			DefaultValue: "P",
 		},
-		Required:   objects.NewRequired(true),
-		Editable:   objects.NewCondition(),
-		Visible:    objects.NewCondition(),
+		Required:   objects.True(),
+		Editable:   objects.True(),
+		Visible:    objects.True(),
 		CheckValue: objects.AboveOrEqual1(),
 	}
 
@@ -88,9 +88,9 @@ func MakeModel() (objects.Object, error) {
 			return nil, errors.Wrap(err, "motion.MakeModel")
 		}
 
-		prop.Required = objects.NewRequired(false)
-		prop.Editable = objects.NewCondition().AccessLevel(model.AccessLevelDenied)
-		prop.Visible = objects.NewCondition().AccessLevel(model.AccessLevelDenied)
+		prop.Required = objects.False()
+		prop.Editable = objects.False()
+		prop.Visible = objects.False()
 		prop.CheckValue = nil
 	}
 

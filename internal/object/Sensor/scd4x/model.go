@@ -30,9 +30,9 @@ func MakeModel() (objects.Object, error) {
 	obj.SetType("scd4x")
 	obj.SetName("SCD4x Датчик уровня CO2, температуры и влажности")
 	obj.SetTags("scd4x",
-		string(SensorValue.TypeTemperature),
-		string(SensorValue.TypeHumidity),
-		string(SensorValue.TypeCO2),
+		SensorValue.TypeTemperature,
+		SensorValue.TypeHumidity,
+		SensorValue.TypeCO2,
 	)
 
 	if err := obj.GetProps().Set("interface", "I2C"); err != nil {

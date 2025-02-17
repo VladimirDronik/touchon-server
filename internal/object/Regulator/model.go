@@ -15,7 +15,7 @@ import (
 	"touchon-server/lib/models"
 )
 
-type Type string // Тип регулятора
+type Type = string // Тип регулятора
 
 const (
 	TypeSimple  Type = "simple"  // Простой регулятор, управление одним выходом
@@ -36,15 +36,15 @@ func MakeModel() (objects.Object, error) {
 			Item: &models.Item{
 				Type: models.DataTypeEnum,
 				Values: map[string]string{
-					string(TypeSimple):  "Simple",
-					string(TypeComplex): "Complex",
-					string(TypePID):     "PID",
+					TypeSimple:  "Simple",
+					TypeComplex: "Complex",
+					TypePID:     "PID",
 				},
-				DefaultValue: string(TypeSimple),
+				DefaultValue: TypeSimple,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "fallback_sensor_value_id",
@@ -54,9 +54,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(false),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.False(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "sensor_value_ttl",
@@ -66,9 +66,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 30,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.AboveOrEqual1(),
 		},
 		{
@@ -79,9 +79,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.BelowOrEqual("target_sp"),
 		},
 		{
@@ -92,9 +92,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.BelowOrEqual("max_sp"),
 		},
 		{
@@ -105,9 +105,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "below_tolerance",
@@ -117,9 +117,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.BelowOrEqual("above_tolerance"),
 		}, {
 			Code:        "above_tolerance",
@@ -129,9 +129,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "complex_tolerance",
@@ -141,9 +141,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required: objects.NewCondition().PropValueEq("type", string(TypeComplex)),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.NewCondition().PropValueEq("type", TypeComplex),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 	}
 

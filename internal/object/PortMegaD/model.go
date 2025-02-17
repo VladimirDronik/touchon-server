@@ -32,9 +32,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.False(),
+			Visible:  objects.True(),
 			CheckValue: func(p *objects.Prop, allProps map[string]*objects.Prop) error {
 				if v, _ := p.GetIntValue(); v < 0 {
 					return errors.New("Port < 0")
@@ -51,9 +51,9 @@ func MakeModel() (objects.Object, error) {
 				Type: models.DataTypeInterface,
 				// Группа задается при добавлении порта в контроллере
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.False(),
+			Visible:  objects.True(),
 		}, {
 			Code:        "type",
 			Name:        "Тип",
@@ -62,9 +62,9 @@ func MakeModel() (objects.Object, error) {
 				Type: models.DataTypeInterface,
 				// Типы задаются при добавлении порта в контроллере
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "mode",
@@ -73,9 +73,9 @@ func MakeModel() (objects.Object, error) {
 			Item: &models.Item{
 				Type: models.DataTypeInterface,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "parent_port",
@@ -85,9 +85,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(false),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.False(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 			CheckValue: func(p *objects.Prop, allProps map[string]*objects.Prop) error {
 				if v, _ := p.GetIntValue(); v < 0 {
 					return errors.New("ParentPort < 0")

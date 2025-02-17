@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/g"
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
@@ -30,11 +29,6 @@ import (
 // @Failure      500 {object} server.Response[any]
 // @Router /objects [put]
 func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
-	accessLevel, err := g.GetAccessLevel(ctx)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
 	req := &Request{}
 	if err := json.Unmarshal(ctx.Request.Body(), req); err != nil {
 		return nil, http.StatusBadRequest, err
@@ -60,7 +54,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 			return nil, http.StatusBadRequest, err
 		}
 
-		if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+		if !dstProp.Editable.Check(objModel.GetProps()) {
 			continue
 		}
 
@@ -139,12 +133,12 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		}
 	}
 
-	if err := objModel.GetProps().Check(accessLevel); err != nil {
+	if err := objModel.GetProps().Check(); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
 	if len(req.Children) > 0 {
-		if err := setChildrenProps(objModel.GetChildren(), req.Children, accessLevel); err != nil {
+		if err := setChildrenProps(objModel.GetChildren(), req.Children); err != nil {
 			return nil, http.StatusBadRequest, err
 		}
 	}
@@ -160,7 +154,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	return nil, http.StatusOK, nil
 }
 
-func setChildrenProps(objModelChildren *objects.Children, children []Child, accessLevel model.AccessLevel) error {
+func setChildrenProps(objModelChildren *objects.Children, children []Child) error {
 	if objModelChildren.Len() != len(children) {
 		return errors.Wrap(errors.Errorf("objModelChildren.Len() != len(children), %d != %d", objModelChildren.Len(), len(children)), "setChildrenProps")
 	}
@@ -176,7 +170,7 @@ func setChildrenProps(objModelChildren *objects.Children, children []Child, acce
 				return errors.Wrap(err, "setChildrenProps")
 			}
 
-			if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+			if !dstProp.Editable.Check(objModel.GetProps()) {
 				continue
 			}
 
@@ -185,12 +179,12 @@ func setChildrenProps(objModelChildren *objects.Children, children []Child, acce
 			}
 		}
 
-		if err := objModel.GetProps().Check(accessLevel); err != nil {
+		if err := objModel.GetProps().Check(); err != nil {
 			return errors.Wrap(err, "setChildrenProps")
 		}
 
 		if len(child.Children) > 0 {
-			if err := setChildrenProps(objModel.GetChildren(), child.Children, accessLevel); err != nil {
+			if err := setChildrenProps(objModel.GetChildren(), child.Children); err != nil {
 				return err
 			}
 		}

@@ -107,9 +107,9 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 				Values:       prop.Values,
 				DefaultValue: prop.DefaultValue,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied), // запрещаем редактировать
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.False(), // запрещаем редактировать
+			Visible:  objects.True(),
 		}
 
 		// Задаем списки значений для св-в с типов enum

@@ -31,11 +31,6 @@ import (
 // @Failure      500 {object} server.Response[any]
 // @Router /objects [post]
 func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
-	accessLevel, err := g.GetAccessLevel(ctx)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
 	req := &Request{}
 	if err := json.Unmarshal(ctx.Request.Body(), req); err != nil {
 		return nil, http.StatusBadRequest, err
@@ -54,7 +49,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	}
 
 	// Сохраняем объект в базу и memstore
-	objectID, err := createObject(req, accessLevel)
+	objectID, err := createObject(req)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -135,7 +130,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	return resp, http.StatusOK, nil
 }
 
-func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
+func createObject(req *Request) (int, error) {
 	objModel, err := objects.LoadObject(0, req.Object.Category, req.Object.Type, model.ChildTypeAll)
 	if err != nil {
 		return 0, errors.Wrap(err, "createObject")
@@ -161,7 +156,7 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 			return 0, errors.Wrap(err, "createObject")
 		}
 
-		if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+		if !dstProp.Editable.Check(objModel.GetProps()) {
 			continue
 		}
 
@@ -170,16 +165,16 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 		}
 	}
 
-	if err := objModel.GetProps().Check(accessLevel); err != nil {
+	if err := objModel.GetProps().Check(); err != nil {
 		return 0, errors.Wrap(err, "createObject")
 	}
 
-	if err := setChildrenDefaultPropValues(objModel.GetChildren(), accessLevel); err != nil {
+	if err := setChildrenDefaultPropValues(objModel.GetChildren()); err != nil {
 		return 0, errors.Wrap(err, "createObject")
 	}
 
 	if len(req.Object.Children) > 0 {
-		if err := setChildrenProps(objModel.GetChildren(), req.Object.Children, accessLevel); err != nil {
+		if err := setChildrenProps(objModel.GetChildren(), req.Object.Children); err != nil {
 			return 0, errors.Wrap(err, "createObject")
 		}
 	}
@@ -195,7 +190,7 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 	return objModel.GetID(), nil
 }
 
-func setChildrenProps(objModelChildren *objects.Children, children []*Child, accessLevel model.AccessLevel) error {
+func setChildrenProps(objModelChildren *objects.Children, children []*Child) error {
 	if objModelChildren.Len() != len(children) {
 		return errors.Wrap(errors.Errorf("objModelChildren.Len() != len(children), %d != %d", objModelChildren.Len(), len(children)), "setChildrenProps")
 	}
@@ -211,7 +206,7 @@ func setChildrenProps(objModelChildren *objects.Children, children []*Child, acc
 				return errors.Wrap(err, "setChildrenProps")
 			}
 
-			if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+			if !dstProp.Editable.Check(objModel.GetProps()) {
 				continue
 			}
 
@@ -220,12 +215,12 @@ func setChildrenProps(objModelChildren *objects.Children, children []*Child, acc
 			}
 		}
 
-		if err := objModel.GetProps().Check(accessLevel); err != nil {
+		if err := objModel.GetProps().Check(); err != nil {
 			return errors.Wrap(err, "setChildrenProps")
 		}
 
 		if len(child.Children) > 0 {
-			if err := setChildrenProps(objModel.GetChildren(), child.Children, accessLevel); err != nil {
+			if err := setChildrenProps(objModel.GetChildren(), child.Children); err != nil {
 				return err
 			}
 		}
@@ -235,7 +230,7 @@ func setChildrenProps(objModelChildren *objects.Children, children []*Child, acc
 }
 
 // setChildrenDefaultPropValues выставляет значения св-в по умолчанию
-func setChildrenDefaultPropValues(objModelChildren *objects.Children, accessLevel model.AccessLevel) error {
+func setChildrenDefaultPropValues(objModelChildren *objects.Children) error {
 	for _, objModel := range objModelChildren.GetAll() {
 		for _, p := range objModel.GetProps().GetAll().GetValueList() {
 			if p.GetValue() == nil && p.DefaultValue != nil {
@@ -245,12 +240,12 @@ func setChildrenDefaultPropValues(objModelChildren *objects.Children, accessLeve
 			}
 		}
 
-		if err := objModel.GetProps().Check(accessLevel); err != nil {
+		if err := objModel.GetProps().Check(); err != nil {
 			return errors.Wrap(err, "setChildrenDefaultPropValues")
 		}
 
 		if objModel.GetChildren().Len() > 0 {
-			if err := setChildrenDefaultPropValues(objModel.GetChildren(), accessLevel); err != nil {
+			if err := setChildrenDefaultPropValues(objModel.GetChildren()); err != nil {
 				return err
 			}
 		}

@@ -27,9 +27,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "interface",
@@ -39,9 +39,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "MEGA-OUT",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 	}
 
