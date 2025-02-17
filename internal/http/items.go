@@ -2,11 +2,13 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
-
+	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"net/http"
+	"strconv"
 	"touchon-server/internal/g"
 	"touchon-server/internal/model"
+	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/item"
 	"touchon-server/lib/helpers"
@@ -49,12 +51,75 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 	if err := json.Unmarshal(ctx.Request.Body(), sensor); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-	sensor.Enabled = true
+
+	//sensorValue, err := store.I.ObjectRepository().GetObjectByParent(sensor.ObjectID, sensor.Type)
+	//if err != nil {
+	//	return nil, http.StatusInternalServerError, errors.Wrap(err, "Get valueSensor by sensorID")
+	//}
+
+	//Если включена регулировка датчика, то выставляем пороговые значения у параметра сенсора
+	if sensor.Adjustment == true {
+		//objModel, err := objects.LoadObject(sensorValue.ID, "", "", model.ChildTypeNobody)
+		//if err != nil {
+		//	return nil, http.StatusInternalServerError, errors.Wrap(err, "LoadObject By ID")
+		//}
+		//
+		//minThreshold, err := objModel.GetProps().Get("min_threshold")
+		//if err != nil {
+		//	return nil, http.StatusInternalServerError, errors.Wrap(err, "GetProps For Object")
+		//}
+		//minThreshold.SetValue(sensor.MinThreshold)
+		//
+		//maxThreshold, err := objModel.GetProps().Get("max_threshold")
+		//if err != nil {
+		//	return nil, http.StatusInternalServerError, errors.Wrap(err, "GetProps For Object")
+		//}
+		//maxThreshold.SetValue(sensor.MaxThreshold)
+		//
+		//if err := objModel.Save(); err != nil {
+		//	return nil, http.StatusInternalServerError, err
+		//}
+		//if err := memStore.I.SaveObject(objModel); err != nil {
+		//	return nil, http.StatusInternalServerError, errors.Wrap(err, "updateSensorValue")
+		//}
+	}
+
+	//Ищем регулятор для сенсора, если находим, то включаем, если не находим, то создаем
+	//reg, err := store.I.ObjectRepository().GetObjectByParent(sensorValue.ID, "regulator")
+	//if err != nil {
+	//	return nil, http.StatusInternalServerError, errors.Wrap(err, "Get regulator by sensorID")
+	//}
+	//
+	//var objRegulator objects.Object
+	//regID := 0
+	//
+	//if &reg != nil {
+	//	regID = reg.ID
+	//}
+	//
+	//objRegulator, err = objects.LoadObject(regID, "regulator", "regulator", model.ChildTypeNobody)
+	//if err != nil {
+	//	return nil, http.StatusInternalServerError, errors.Wrap(err, "LoadObject By ID")
+	//}
+	//
+	//objRegulator.SetEnabled(sensor.Adjustment)
+	//
+	//if err := objRegulator.Save(); err != nil {
+	//	return nil, http.StatusInternalServerError, errors.Wrap(err, "Save regulator in storage")
+	//}
+	//if err := memStore.I.SaveObject(objRegulator); err != nil {
+	//	return nil, http.StatusInternalServerError, errors.Wrap(err, "Save regulator in memory")
+	//}
 
 	item := &model.ViewItem{
 		Type:    "sensor",
 		Enabled: true,
 		ZoneID:  &sensor.ZoneID,
+		Title:   sensor.Title,
+		Icon:    sensor.Icon,
+		Params:  "{}",
+		Auth:    "",
+		Sort:    0,
 	}
 
 	if err := store.I.Items().SaveItem(item); err != nil {
@@ -280,7 +345,7 @@ func (o *Server) getThermostat(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 // Получение данных датчика
 // @Security TokenAuth
 // @Summary Получение данных датчика
-// @Tags Sensors
+// @Tags Items
 // @Description Получение данных датчика
 // @ID GetSensor
 // @Produce json
@@ -288,7 +353,7 @@ func (o *Server) getThermostat(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 // @Success      200 {object} Response[model.Sensor]
 // @Failure      400 {object} Response[any]
 // @Failure      500 {object} Response[any]
-// @Router /private/sensor [get]
+// @Router /private/item/sensor [get]
 func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	id, err := helpers.GetUintParam(ctx, "itemId")
 	if err != nil {
@@ -298,6 +363,25 @@ func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	sensor, err := store.I.Devices().GetSensor(id)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
+	}
+
+	//Берем у объекта текущее значение
+	sensorVal, err := objects.LoadObject(sensor.ObjectID, "", "", model.ChildTypeAll)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Wrap(err, "Error of LoadObject: "+strconv.Itoa(sensor.ObjectID))
+	}
+	sensor.Current, err = sensorVal.GetProps().GetFloatValue("value")
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Wrap(err, "Error of get value for sensor: "+strconv.Itoa(sensor.ObjectID))
+	}
+
+	//У регулятора датчика получаем целевое показание
+	sensorChildrens := sensorVal.GetChildren().GetAll()
+	for _, children := range sensorChildrens {
+		sensor.Target, err = children.GetProps().GetFloatValue("target_sp")
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Error of get target for sensor: "+strconv.Itoa(sensor.ObjectID))
+		}
 	}
 
 	sensor.History, err = store.I.History().GetHistory(id, model.HistoryItemTypeDeviceObject, "")

@@ -53,6 +53,7 @@ type ObjectRepository interface {
 
 	SetObjectStatus(objectID int, status string) error
 	GetObject(objectID int) (*model.StoreObject, error)
+	GetObjectByParent(parentID int, typeObject string) (*model.StoreObject, error)
 	SetParent(objectID int, parentID *int) error //Установка родителя для объекта
 	SaveObject(object *model.StoreObject) error  // create, update
 	GetObjects(filters map[string]interface{}, tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
@@ -151,7 +152,7 @@ type Items interface {
 	DeleteItem(itemID int) error
 	GetScenarios() ([]*model.Scenario, error) // Отдает элементы для кнопок без комнат
 	GetZoneItems() ([]*model.GroupRoom, error)
-	GetZoneSensors(zoneID int) ([]*model.Sensor, error)
+	GetZoneSensors(zoneID int) ([]*model.SensorItem, error)
 	GetGroupElements(groupID int) ([]*model.ViewItem, error)
 	ChangeItem(itemID int, status string) error                                                                     // Изменение элементов
 	GetItemsForChange(targetType interfaces.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) // Найти действия для элементов, которые соответствуют событию

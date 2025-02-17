@@ -157,6 +157,25 @@ func (o *ObjectRepository) GetObject(objectID int) (*model.StoreObject, error) {
 	return obj, nil
 }
 
+func (o *ObjectRepository) GetObjectByParent(parentID int, typeObject string) (*model.StoreObject, error) {
+	obj := &model.StoreObject{}
+
+	err := o.store.db.
+		Where("parent_id = ?", parentID).
+		Where("type = ?", typeObject).
+		Find(obj).Error
+
+	if err != nil {
+		return nil, errors.Wrap(err, "GetObjectByParent")
+	}
+
+	if obj.ID == 0 {
+		return nil, errors.Wrap(errNotFound, "GetObjectByParent")
+	}
+
+	return obj, nil
+}
+
 // SetObjectStatus Задает статус объекта
 func (o *ObjectRepository) SetObjectStatus(objectID int, status string) error {
 	err := o.store.db.
