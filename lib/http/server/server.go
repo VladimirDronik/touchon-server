@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -17,7 +16,7 @@ import (
 	"touchon-server/lib/interfaces"
 )
 
-func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *logrus.Logger) (*Server, error) {
+func New(name string, cfg map[string]string, logger *logrus.Logger) (*Server, error) {
 	if logger == nil {
 		return nil, errors.Wrap(errors.New("logger is nil"), "http.New")
 	}
@@ -33,7 +32,6 @@ func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *lo
 		},
 		cfg:          cfg,
 		router:       router.New(),
-		ringBuffer:   ringBuffer,
 		logger:       logger,
 		ctx:          ctx,
 		cancel:       cancel,
@@ -57,10 +55,6 @@ func New(name string, cfg map[string]string, ringBuffer fmt.Stringer, logger *lo
 		),
 	))
 
-	// Служебные эндпоинты
-	o.router.GET("/_/info", JsonHandlerWrapper(o.handleGetInfo))
-	o.router.GET("/_/log", o.handleGetLog)
-
 	o.httpServer.Handler = o.RequestWrapper(o.router.Handler)
 
 	return o, nil
@@ -70,7 +64,6 @@ type Server struct {
 	name         string
 	httpServer   *fasthttp.Server
 	router       *router.Router
-	ringBuffer   fmt.Stringer
 	logger       *logrus.Logger
 	cfg          map[string]string
 	ctx          context.Context

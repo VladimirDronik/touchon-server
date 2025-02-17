@@ -3,48 +3,15 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
-	"touchon-server/lib/info"
 	"touchon-server/lib/interfaces"
 )
 
-// Получить информацию о сервисе
-// @Summary Получить информацию о сервисе
-// @Tags Service
-// @Description Получить информацию о сервисе
-// @ID ServiceInfo
-// @Produce json
-// @Success      200 {object} http.Response[info.Info]
-// @Failure      500 {object} http.Response[any]
-// @Router /_/info [get]
-func (o *Server) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	nfo, err := info.GetInfo()
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	return nfo, http.StatusOK, nil
-}
-
-// Получить логи
-// @Summary Получить логи
-// @Tags Service
-// @Description Получить логи
-// @ID ServiceLog
-// @Produce text/plain
-// @Success      200
-// @Router /_/log [get]
-func (o *Server) handleGetLog(ctx *fasthttp.RequestCtx) {
-	ctx.Response.Header.SetContentType("text/plain; charset=UTF-8")
-	if o.ringBuffer != nil {
-		_, _ = ctx.WriteString(o.ringBuffer.String())
-	}
-}
+type TextPlain = string
 
 // Meta Метаинформация о запросе/ответе
 type Meta struct {

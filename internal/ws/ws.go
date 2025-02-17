@@ -19,7 +19,7 @@ import (
 var I *Server
 
 func New() (*Server, error) {
-	baseServer, err := server.New("WS", g.Config, nil, g.Logger)
+	baseServer, err := server.New("WS", g.Config, g.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "http.New")
 	}

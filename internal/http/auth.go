@@ -10,6 +10,7 @@ import (
 	"touchon-server/internal/store"
 	"touchon-server/internal/token"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/http/server"
 	"touchon-server/lib/interfaces"
 )
 
@@ -128,7 +129,7 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.Reques
 	tkn := string(ctx.Request.Header.Peek("Token"))
 
 	if tkn == "" {
-		return nil, http.StatusBadRequest, errors.New("token not found")
+		return nil, http.StatusUnauthorized, errors.New("token not found")
 	}
 
 	o.GetLogger().Debugf("authMiddleware: Token header: %s", tkn)
@@ -146,54 +147,25 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.Reques
 
 func (o *Server) addMiddleware(pathPrefix string, middleware Middleware) func(method, path string, handler interfaces.RequestHandler) {
 	return func(method, path string, handler interfaces.RequestHandler) {
-		//o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), http.JsonHandlerWrapper(func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-		//	return middleware(ctx, handler)
-		//}))
-
-		// Backward compatibility (filepath.ToSlash() - for windows)
-		o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), JsonHandlerWrapper(func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+		// filepath.ToSlash() - for windows
+		o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), server.JsonHandlerWrapper(func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 			return middleware(ctx, handler)
 		}))
 	}
 }
 
-type MiddlewareRaw func(ctx *fasthttp.RequestCtx, next fasthttp.RequestHandler)
-
-func (o *Server) authMiddlewareRaw(ctx *fasthttp.RequestCtx, next fasthttp.RequestHandler) {
-	tokenSecret := o.GetConfig()["token_secret"]
-	if tokenSecret == "disable_auth" {
-		// Disable auth
-		ctx.SetUserValue("device_id", 10)
-		next(ctx)
-		return
-	}
-
-	tkn := string(ctx.Request.Header.Peek("Token"))
-
-	if tkn == "" {
-		ctx.Error("token not found", http.StatusBadRequest)
-		return
-	}
-
-	o.GetLogger().Debugf("authMiddlewareRaw: Token header: %s", tkn)
-
-	// Проверяем, не протух ли токен и извлекаем ID юзера
-	deviceID, err := token.KeysExtract(tkn, tokenSecret)
-	if err != nil {
-		ctx.Error(err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	ctx.SetUserValue("device_id", deviceID)
-
-	next(ctx)
-}
-
-func (o *Server) addMiddlewareRaw(pathPrefix string, middleware MiddlewareRaw) func(method, path string, handler fasthttp.RequestHandler) {
+func (o *Server) addRawMiddleware(pathPrefix string, middleware Middleware) func(method, path string, handler fasthttp.RequestHandler) {
 	return func(method, path string, handler fasthttp.RequestHandler) {
 		// filepath.ToSlash() - for windows
 		o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), func(ctx *fasthttp.RequestCtx) {
-			middleware(ctx, handler)
+			_, status, err := middleware(ctx, func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+				handler(ctx)
+				return nil, 0, nil
+			})
+
+			if err != nil {
+				ctx.Error(err.Error(), status)
+			}
 		})
 	}
 }

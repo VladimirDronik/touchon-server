@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -16,95 +15,6 @@ import (
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 )
-
-type SensorValues struct {
-	ID     int                `json:"id"`
-	Type   string             `json:"type"`
-	Values map[string]float32 `json:"values,omitempty"`
-	Error  string             `json:"error,omitempty"`
-}
-
-// Получение значений датчиков
-// @Summary Получение значений датчиков
-// @Tags Service
-// @Description Получение значений датчиков
-// @ID ServiceSensors
-// @Produce json
-// @Success      200 {object} http.Response[[]SensorValues]
-// @Failure      400 {object} http.Response[any]
-// @Failure      500 {object} http.Response[any]
-// @Router /_/sensors [get]
-func (o *Server) handleGetSensors(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	filters := map[string]interface{}{"category": string(model.CategorySensor)}
-	tags := strings.Split(helpers.GetParam(ctx, "tags"), ",")
-
-	tagsMap := make(map[string]bool, len(tags))
-	for _, tag := range tags {
-		tag = strings.TrimSpace(tag)
-		if tag != "" {
-			tagsMap[tag] = true
-		}
-	}
-
-	tags = tags[:0]
-	for tag := range tagsMap {
-		tags = append(tags, tag)
-	}
-
-	rows, err := store.I.ObjectRepository().GetObjects(filters, tags, 0, 1000, model.ChildTypeNobody)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	r := make([]*SensorValues, 0, len(rows))
-
-	for _, row := range rows {
-		objModel, err := objects.LoadObject(row.ID, "", "", model.ChildTypeInternal)
-		if err != nil {
-			return nil, http.StatusInternalServerError, err
-		}
-
-		rItem := &SensorValues{
-			ID:     objModel.GetID(),
-			Type:   objModel.GetType(),
-			Values: make(map[string]float32, 5),
-		}
-
-		m, err := objModel.GetMethods().Get("check")
-		if err != nil {
-			rItem.Error = err.Error()
-			r = append(r, rItem)
-			continue
-		}
-
-		if _, err = m.Func(nil); err != nil {
-			rItem.Values = nil
-			rItem.Error = err.Error()
-			r = append(r, rItem)
-			continue
-		}
-
-		for _, valueObj := range objModel.GetChildren().GetAll() {
-			if valueObj.GetCategory() != model.CategorySensorValue {
-				continue
-			}
-
-			v, err := valueObj.GetProps().GetFloatValue("value")
-			if err != nil {
-				rItem.Values = nil
-				rItem.Error = err.Error()
-				r = append(r, rItem)
-				break
-			}
-
-			rItem.Values[valueObj.GetType()] = v
-		}
-
-		r = append(r, rItem)
-	}
-
-	return r, http.StatusOK, nil
-}
 
 // Получение команды от контроллера megaD
 // @Summary Получение команды от контроллера megaD
