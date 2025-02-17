@@ -91,6 +91,10 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	scripts("DELETE", "/{id}", o.handleDeleteScript)
 	scripts("POST", "/{id}/exec", o.handleExecScript)
 
+	// NodeRed
+	nodeRed := o.addRawMiddleware("/nodered", o.authMiddleware)
+	nodeRed("*", "/", g.NodeRed.Handler)
+
 	// AR
 
 	events := o.addMiddleware("/events", o.authMiddleware)

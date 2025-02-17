@@ -27,6 +27,7 @@ import (
 	"touchon-server/internal/cron"
 	"touchon-server/internal/g"
 	httpServer "touchon-server/internal/http"
+	"touchon-server/internal/http/nodered"
 	_ "touchon-server/internal/object/GenericInput"
 	_ "touchon-server/internal/object/MegaD"
 	_ "touchon-server/internal/object/Modbus"
@@ -51,7 +52,6 @@ import (
 	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/internal/store/sqlstore"
 	"touchon-server/internal/ws"
-	httpClient "touchon-server/lib/http/client"
 	"touchon-server/lib/messages"
 	"touchon-server/lib/service"
 	_ "touchon-server/migrations"
@@ -136,13 +136,15 @@ func main() {
 
 	check(action_router.I.Start())
 
-	httpClient.I = httpClient.New()
-
 	g.HttpServer, err = httpServer.New(rb)
 	check(err)
 
+	g.NodeRed = nodered.New()
+
 	// Старт HTTP API сервера
 	check(g.HttpServer.Start(cfg["http_addr"]))
+
+	check(g.NodeRed.Start())
 
 	sch, err := cron.New()
 	check(err)
@@ -155,6 +157,10 @@ func main() {
 	logger.Info("Получен сигнал на завершение...")
 
 	if err := sch.Shutdown(); err != nil {
+		logger.Error(err)
+	}
+
+	if err := g.NodeRed.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 

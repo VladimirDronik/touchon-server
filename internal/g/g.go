@@ -10,4 +10,5 @@ var (
 	Logger     *logrus.Logger
 	Msgs       interfaces.MessagesService
 	HttpServer interfaces.HttpServer
+	NodeRed    interfaces.NodeRed
 )

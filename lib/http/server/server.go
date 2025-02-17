@@ -84,6 +84,10 @@ func (o *Server) AddHandler(method, path string, handler interfaces.RequestHandl
 	o.router.Handle(method, path, JsonHandlerWrapper(handler))
 }
 
+func (o *Server) AddRawHandler(method, path string, handler fasthttp.RequestHandler) {
+	o.router.Handle(method, path, handler)
+}
+
 func (o *Server) GetContext() context.Context {
 	return o.ctx
 }
