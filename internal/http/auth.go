@@ -15,7 +15,7 @@ import (
 	"touchon-server/lib/interfaces"
 )
 
-const disabledAuthDeviceID = 0
+const disabledAuthDeviceID = 10
 
 func (o *Server) disableAuth(ctx *fasthttp.RequestCtx) *model.Tokens {
 	if tokenSecret := o.GetConfig()["token_secret"]; tokenSecret == "disable_auth" {
