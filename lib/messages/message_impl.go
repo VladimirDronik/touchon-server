@@ -190,11 +190,11 @@ func (o *MessageImpl) GetBoolValue(name string) (bool, error) {
 }
 
 type message struct {
-	MsgType    interfaces.MessageType `json:"type"`        // event,command
-	Name       string                 `json:"name"`        // onChange,check
-	TargetType interfaces.TargetType  `json:"target_type"` //
-	TargetID   int                    `json:"target_id"`   // 82
-	Payload    map[string]interface{} `json:"payload"`     //
+	MsgType    interfaces.MessageType `json:"type"`              // event,command
+	Name       string                 `json:"name"`              // onChange,check
+	TargetType interfaces.TargetType  `json:"target_type"`       //
+	TargetID   int                    `json:"target_id"`         // 82
+	Payload    map[string]interface{} `json:"payload,omitempty"` //
 }
 
 func (o *MessageImpl) MarshalJSON() ([]byte, error) {
@@ -207,4 +207,20 @@ func (o *MessageImpl) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(m)
+}
+
+func (o *MessageImpl) UnmarshalJSON(data []byte) error {
+	m := &message{}
+
+	if err := json.Unmarshal(data, m); err != nil {
+		return err
+	}
+
+	o.msgType = m.MsgType
+	o.name = m.Name
+	o.targetType = m.TargetType
+	o.targetID = m.TargetID
+	o.payload = m.Payload
+
+	return nil
 }

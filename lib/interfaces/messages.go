@@ -55,6 +55,7 @@ type Message interface {
 	GetBoolValue(name string) (bool, error)
 
 	json.Marshaler
+	json.Unmarshaler
 }
 
 type MessageSender interface {

@@ -1,15 +1,16 @@
 <script type="text/javascript">
-    RED.nodes.registerType('touchon-in',{
+    RED.nodes.registerType('touchon-out',{
         category: 'TouchOn',
         color: '#C7E9C0', // https://nodered.org/docs/creating-nodes/appearance#background-colour
         defaults: {
-            name: { value:"TouchOn-In" },
+            name: { value:"TouchOn-Out" },
             targettype: { value:"object" },
-            targetid: { value:82, validate:RED.validators.number() },
-            eventname: { value:"object.sensor.on_check" },
+            targetid: { value:391, validate:RED.validators.number() },
+            commandname: { value:"check" },
+            args: { value:"{}" },
         },
-        inputs: 0,
-        outputs: 1,
+        inputs: 1,
+        outputs: 0,
         icon: "white-globe.svg",
         label: function() {
             var items = []
@@ -22,11 +23,11 @@
                 items.push(this.targetid)
             }
 
-            if (this.eventname) {
-                items.push(this.eventname)
+            if (this.commandname) {
+                items.push(this.commandname)
             }
 
-            var label = this.name||"touchon-in"
+            var label = this.name||"touchon-out"
 
             if (items.length > 0) {
                 label += ' [ ' + items.join(" / ") + ' ]'
@@ -34,7 +35,7 @@
 
             return label;
         },
-        paletteLabel: "TouchOn In",
+        paletteLabel: "TouchOn Out",
         // inputLabels: ""
         oneditprepare: function () {
             $("#node-input-targettype").typedInput({
@@ -42,18 +43,22 @@
                     {
                         value: "targettype",
                         options: [
-                            { value: "", label: ""},
                             { value: "object", label: "Object"},
                             { value: "item", label: "Item"},
                         ]
                     }
                 ]
             });
+
+            $("#node-input-args").typedInput({
+                type:"json",
+                types:["json"]
+            })
         }
     });
 </script>
 
-<script type="text/html" data-template-name="touchon-in">
+<script type="text/html" data-template-name="touchon-out">
     <div class="form-row">
         <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -67,16 +72,21 @@
 
         <div class="form-row">
         <label for="node-input-targetid"><i class="fa fa-tag"></i> Target ID</label>
-        <input type="text" id="node-input-targetid" placeholder="82">
+        <input type="text" id="node-input-targetid" placeholder="391">
         </div>
 
         <div class="form-row">
-        <label for="node-input-eventname"><i class="fa fa-tag"></i> Event name</label>
-        <input type="text" id="node-input-eventname" placeholder="object.sensor.on_check">
+        <label for="node-input-commandname"><i class="fa fa-tag"></i> Event name</label>
+        <input type="text" id="node-input-commandname" placeholder="check">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-args"><i class="fa fa-tag"></i> Args</label>
+        <input type="text" id="node-input-args" placeholder="{}">
         </div>
     </div>
 </script>
 
-<script type="text/html" data-help-name="touchon-in">
+<script type="text/html" data-help-name="touchon-out">
     <p>A simple node that converts the message payloads into all lower-case characters</p>
 </script>

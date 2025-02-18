@@ -12,6 +12,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
 	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 	"touchon-server/lib/parallel"
 )
 
@@ -72,7 +73,29 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 		o.mu.Unlock()
 
 		ws.ReadMessages(func(ws interfaces.WebSocket, messageType int, message []byte) {
-			g.Logger.Debug("Received from NodeRed:", string(message))
+			cmd, err := messages.NewCommand("", interfaces.TargetTypeObject, 0, nil)
+			if err != nil {
+				g.Logger.Error(errors.Wrap(err, "ws.ReadMessages"))
+				return
+			}
+
+			if err := json.Unmarshal(message, &cmd); err != nil {
+				g.Logger.Error(errors.Wrap(err, "ws.ReadMessages"))
+				return
+			}
+
+			if err := g.Msgs.Send(cmd); err != nil {
+				g.Logger.Error(errors.Wrap(err, "ws.ReadMessages"))
+				return
+			}
+
+			// TODO remove it after testing
+			data, err := json.Marshal(cmd)
+			if err != nil {
+				g.Logger.Error(errors.Wrap(err, "ws.ReadMessages"))
+				return
+			}
+			g.Logger.Debug(">>>> Received from NodeRed:", string(data))
 		})
 
 		if err := ws.Close(); err != nil {
@@ -96,7 +119,7 @@ type nodeRedMsg struct {
 func (o *NodeRedImpl) sendAll(message interface{}) {
 	if g.Logger.Level >= logrus.DebugLevel {
 		data, _ := json.Marshal(message)
-		g.Logger.Debug("Send to NodeRed:", string(data))
+		g.Logger.Debug("<<<< Send to NodeRed:", string(data))
 	}
 
 	tasks := make([]parallel.Task, 0, len(o.clients))

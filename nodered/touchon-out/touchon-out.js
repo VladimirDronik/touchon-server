@@ -1,12 +1,13 @@
 const rws = require("reconnecting-websocket");
 
 module.exports = function (RED) {
-    class TouchOn_In {
+    class TouchOn_Out {
         constructor(config) {
             RED.nodes.createNode(this, config);
             this.targettype = config.targettype;
-            this.targetid = config.targetid;
-            this.eventname = config.eventname;
+            this.targetid = Number(config.targetid);
+            this.commandname = config.commandname;
+            this.args = JSON.parse(config.args);
             var node = this;
 
             const ws = new rws('ws://localhost:8081/nodered');
@@ -20,30 +21,6 @@ module.exports = function (RED) {
                 node.status({fill: "green", shape: "dot", text: "connected"});
             });
 
-            ws.on('message', function(event) {
-                let msg = JSON.parse(event.data)
-
-                // Фильтруем сообщения по targetType, targetID, eventName
-
-                if (node.targettype !== undefined && node.targettype !== '' && node.targettype !== msg.payload.target_type) {
-                    // console.log('>>>', node.targettype, msg.payload.target_type)
-                    return
-                }
-
-                const targetID = Number(node.targetid)
-                if (node.targetid !== undefined && targetID > 0 && targetID !== msg.payload.target_id) {
-                    // console.log('>>>', node.targetid, msg.payload.target_id)
-                    return
-                }
-
-                if (node.eventname !== undefined && node.eventname !== '' && node.eventname !== msg.payload.name) {
-                    // console.log('>>>', node.eventname, msg.payload.event_name)
-                    return
-                }
-
-                node.send(msg)
-            });
-
             // ===========================================
 
             node.status({fill: "red", shape: "ring", text: "disconnected"});
@@ -51,6 +28,19 @@ module.exports = function (RED) {
             // node.send([[out1msg1, out1msg2], [out2msg1, out2msg2]]);
             // node.send(msg);
             // node.error('error msg');
+
+            this.on('input', function (mess, send, done) {
+                let msg = {
+                    type: 'command',
+                    target_type: node.targettype,
+                    target_id: node.targetid,
+                    name: node.commandname,
+                    payload: node.args,
+                }
+
+                ws.send(JSON.stringify(msg))
+                done()
+            });
 
             this.on('close', function (removed, done) {
                 ws.on('close', function () {
@@ -63,5 +53,5 @@ module.exports = function (RED) {
         }
     }
 
-    RED.nodes.registerType("touchon-in", TouchOn_In);
+    RED.nodes.registerType("touchon-out", TouchOn_Out);
 }
