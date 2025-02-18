@@ -262,6 +262,10 @@ func (o *Server) saveItem(requestBody []byte) (*model.ViewItem, int, error) {
 		item.Params = "{}"
 	}
 
+	if *item.ZoneID == 0 {
+		item.ZoneID = nil
+	}
+
 	item.Enabled = true
 
 	if err := store.I.Items().SaveItem(item); err != nil {

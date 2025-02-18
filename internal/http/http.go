@@ -183,7 +183,7 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("POST", "/item-change", o.itemChange)
 	private("PATCH", "/items/order", o.setItemsOrder) // Изменение порядка элементов
 
-	// Датчики
+	// Итемы датчиков
 	private("GET", "/item/sensor", o.getSensor)           //получение данных датчика
 	private("POST", "/item/sensor", o.handleCreateSensor) // Создание датчика
 	private("PATCH", "/item/sensor", o.handleUpdateSensor)

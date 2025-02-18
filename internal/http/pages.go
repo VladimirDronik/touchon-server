@@ -11,7 +11,7 @@ import (
 )
 
 type getControlPanelResponse struct {
-	ScenarioItems []*model.Scenario  `json:"scenario_items"`
+	ScenarioItems []*model.ViewItem  `json:"scenario_items"`
 	ZoneItems     []*model.GroupRoom `json:"room_items"`
 }
 

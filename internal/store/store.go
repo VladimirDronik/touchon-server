@@ -150,7 +150,7 @@ type Items interface {
 	GetItem(itemID int) (*model.ViewItem, error)
 	UpdateItem(viewItem *model.ViewItem) error
 	DeleteItem(itemID int) error
-	GetScenarios() ([]*model.Scenario, error) // Отдает элементы для кнопок без комнат
+	GetScenarios() ([]*model.ViewItem, error) // Отдает элементы для кнопок без комнат
 	GetZoneItems() ([]*model.GroupRoom, error)
 	GetZoneSensors(zoneID int) ([]*model.SensorItem, error)
 	GetGroupElements(groupID int) ([]*model.ViewItem, error)
