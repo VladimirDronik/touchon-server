@@ -186,8 +186,9 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	// Датчики
 	private("GET", "/item/sensor", o.getSensor)           //получение данных датчика
 	private("POST", "/item/sensor", o.handleCreateSensor) // Создание датчика
-	//private("PATCH", "/item/sensor", o.handleUpdateSensor)
+	private("PATCH", "/item/sensor", o.handleUpdateSensor)
 	private("DELETE", "/item/sensor", o.handleDeleteSensor)
+	private("PATCH", "/item/sensor/value", o.handleSetTargetSensor) //Установка значение target для датчика
 
 	// Загрузка меню
 	private("GET", "/menu", o.getMenu)

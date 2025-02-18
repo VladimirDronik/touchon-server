@@ -167,6 +167,66 @@ func (o *Server) handleDeleteSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 	return o.deleteItem(itemID)
 }
 
+func (o *Server) handleUpdateSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	sensor := &model.Sensor{}
+	if err := json.Unmarshal(ctx.Request.Body(), sensor); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	//TODO: Сделать редактирование итема датчика
+	return nil, 0, nil
+}
+
+type targetRequest struct {
+	ItemID      int     `json:"item_id"`
+	TargetValue float32 `json:"target"`
+}
+
+// Обновление target у датчика
+// @Security TokenAuth
+// @Summary Обновление target у датчика
+// @Tags Items
+// @Description Обновление target у датчика
+// @ID UpdateTarget
+// @Accept json
+// @Produce json
+// @Param item body targetRequest true "Датчик"
+// @Success      200 {object} Response[any]
+// @Failure      400 {object} Response[any]
+// @Failure      500 {object} Response[any]
+// @Router /private/item/sensor/value [patch]
+func (o *Server) handleSetTargetSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	targetReq := &targetRequest{}
+	if err := json.Unmarshal(ctx.Request.Body(), targetReq); err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	sensorItem, err := store.I.Devices().GetSensor(targetReq.ItemID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Wrap(err, "Sensor not found: "+strconv.Itoa(targetReq.ItemID))
+	}
+
+	sensorObj, err := objects.LoadObject(sensorItem.ObjectID, "", "", model.ChildTypeAll)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Wrap(err, "Object not loaded: "+strconv.Itoa(sensorItem.ObjectID))
+	}
+
+	childrens := sensorObj.GetChildren().GetAll()
+	for _, child := range childrens {
+		child.SetEnabled(true)
+		target, err := child.GetProps().Get("target_sp")
+		if err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Target property not found for object: "+strconv.Itoa(sensorItem.ObjectID))
+		}
+		target.SetValue(targetReq.TargetValue)
+		if err := child.Save(); err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Unable to save prop 'target' for object: "+strconv.Itoa(sensorItem.ObjectID))
+		}
+		break
+	}
+
+	return nil, http.StatusOK, nil
+}
+
 // Обновление элемента
 // @Security TokenAuth
 // @Summary Обновление элемента
@@ -373,6 +433,20 @@ func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	sensor.Current, err = sensorVal.GetProps().GetFloatValue("value")
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.Wrap(err, "Error of get value for sensor: "+strconv.Itoa(sensor.ObjectID))
+	}
+
+	minThresholdOfStoredValue, err := sensorVal.GetProps().GetFloatValue("min_threshold")
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Wrap(err, "Error of get value for min_threshold: "+strconv.Itoa(sensor.ObjectID))
+	}
+	if sensor.MinThreshold == nil || *sensor.MinThreshold < minThresholdOfStoredValue {
+		sensor.MinThreshold = new(float32)
+		*sensor.MinThreshold = minThresholdOfStoredValue
+	}
+	maxThresholdOfStoredValue, err := sensorVal.GetProps().GetFloatValue("max_threshold")
+	if sensor.MaxThreshold == nil || *sensor.MaxThreshold > maxThresholdOfStoredValue {
+		sensor.MaxThreshold = new(float32)
+		*sensor.MaxThreshold = maxThresholdOfStoredValue
 	}
 
 	//У регулятора датчика получаем целевое показание

@@ -2,13 +2,13 @@ package model
 
 // Sensor Структура итемов сенсора
 type Sensor struct {
-	ID           int     `json:"-"`
-	ViewItemID   int     `json:"item_id"`
-	ObjectID     int     `json:"object_id,omitempty"`
-	Type         string  `json:"type"`
-	MinThreshold float32 `json:"min_threshold,omitempty"`
-	MaxThreshold float32 `json:"max_threshold,omitempty"`
-	Adjustment   bool    `json:"adjustment,omitempty"`
+	ID           int      `json:"-"`
+	ViewItemID   int      `json:"item_id"`
+	ObjectID     int      `json:"object_id,omitempty"`
+	Type         string   `json:"type"`
+	MinThreshold *float32 `json:"min_threshold,omitempty"`
+	MaxThreshold *float32 `json:"max_threshold,omitempty"`
+	Adjustment   bool     `json:"adjustment,omitempty"`
 
 	Current float32 `json:"current" gorm:"-"`
 	Target  float32 `json:"target,omitempty" gorm:"-"`
