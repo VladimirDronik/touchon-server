@@ -14,61 +14,52 @@ module.exports = function (RED) {
             const ws = new rws('ws://localhost:8081/nodered');
             ws.on = ws.addEventListener
 
-            // ws.addEventListener('open', () => {
-            //     ws.send('hello!');
-            // });
-
             // ws.addEventListener('error', console.error);
 
-            // ws.addEventListener('open', function open() {
-            //     ws.send('something');
-            // });
+            ws.on('open', () => {
+                // https://nodered.org/docs/creating-nodes/status
+                // red, green, yellow, blue or grey
+                node.status({fill: "green", shape: "dot", text: "connected"});
+            });
 
-            ws.on('message', function message(data) {
-                console.log('received: %s', data);
-                ws.send(data)
+            ws.on('message', (msg) => {
+                // TODO фильтруем сообщения по targetType, targetID, eventName !!
+                node.send(msg)
             });
 
             // ===========================================
 
             node.status({fill: "red", shape: "ring", text: "disconnected"});
 
-            node.on('input', function (msg, send, done) {
-                msg.payload = msg.payload.toLowerCase();
-                send(msg);
-
-                // https://nodered.org/docs/creating-nodes/status
-                // red, green, yellow, blue or grey
-                node.status({fill: "green", shape: "dot", text: "connected"});
-                done(); // done('error msg')
-            });
-
             // node.send([[out1msg1, out1msg2], [out2msg1, out2msg2]]);
             // node.send(msg);
             // node.error('error msg');
 
             this.on('close', function (removed, done) {
-                // doSomethingWithACallback(function() { done(); });
-                node.status({fill: "red", shape: "ring", text: "disconnected"});
-                done();
+                ws.on('close', function open() {
+                    node.status({fill: "red", shape: "ring", text: "disconnected"});
+                    done();
+                });
+
+                ws.close()
             });
         }
     }
 
     RED.nodes.registerType("touchon-in", TouchOn_In, {
-        settings: {
-            touchonInTargetType: {
-                value: "",
-                exportable: true
-            },
-            touchonInTargetID: {
-                value: 0,
-                exportable: true
-            },
-            touchonInEventName: {
-                value: "",
-                exportable: true
-            }
-        }
+        // settings: {
+        //     touchonInTargetType: {
+        //         value: "",
+        //         exportable: true
+        //     },
+        //     touchonInTargetID: {
+        //         value: 0,
+        //         exportable: true
+        //     },
+        //     touchonInEventName: {
+        //         value: "",
+        //         exportable: true
+        //     }
+        // }
     });
 }

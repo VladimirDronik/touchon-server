@@ -44,11 +44,13 @@ func (o *NodeRedImpl) Start() error {
 func (o *NodeRedImpl) Shutdown() error {
 	g.Msgs.Unsubscribe(o.noderedHandlerID)
 
+	o.mu.Lock()
 	for ws := range o.clients {
 		if err := ws.Close(); err != nil {
 			g.Logger.Error(errors.Wrap(err, "NodeRedImpl.Shutdown"))
 		}
 	}
+	o.mu.Unlock()
 
 	return nil
 }
