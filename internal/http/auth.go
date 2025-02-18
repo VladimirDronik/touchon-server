@@ -7,12 +7,30 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/internal/token"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/http/server"
 	"touchon-server/lib/interfaces"
 )
+
+const disabledAuthDeviceID = 10
+
+func (o *Server) disableAuth(ctx *fasthttp.RequestCtx) *model.Tokens {
+	if tokenSecret := o.GetConfig()["token_secret"]; tokenSecret == "disable_auth" {
+		tokens, err := o.createSession(disabledAuthDeviceID)
+		if err != nil {
+			return nil
+		}
+
+		o.setCookie(ctx, "refreshToken", tokens.RefreshToken, true)
+
+		return tokens
+	}
+
+	return nil
+}
 
 // Генерация нового токена
 // @Summary Генерация нового токена
@@ -28,6 +46,11 @@ import (
 // @Failure      500 {object} Response[any]
 // @Router /token [get]
 func (o *Server) getToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	// Disable auth
+	if tokens := o.disableAuth(ctx); tokens != nil {
+		return tokens, http.StatusOK, nil
+	}
+
 	// Сравниваем полученный server_key с тем, что лежит в конфиге
 	apiKey := string(ctx.Request.Header.Peek("api-key"))
 	if apiKey != o.GetConfig()["server_key"] {
@@ -77,6 +100,11 @@ func (o *Server) getToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 // @Failure      500 {object} Response[any]
 // @Router /token [post]
 func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	// Disable auth
+	if tokens := o.disableAuth(ctx); tokens != nil {
+		return tokens, http.StatusOK, nil
+	}
+
 	// Попытка получить refreshToken из httpOnly cookie
 	refreshToken := string(ctx.Request.Header.Cookie("refreshToken"))
 	if refreshToken == "" {
@@ -105,6 +133,10 @@ func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error
 		return nil, http.StatusUnauthorized, err
 	}
 
+	if user.DeviceID <= 0 {
+		return nil, http.StatusUnauthorized, err
+	}
+
 	tokens, err := o.createSession(user.DeviceID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -122,7 +154,7 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.Reques
 	tokenSecret := o.GetConfig()["token_secret"]
 	if tokenSecret == "disable_auth" {
 		// Disable auth
-		ctx.SetUserValue("device_id", 10)
+		ctx.SetUserValue("device_id", disabledAuthDeviceID)
 		return next(ctx)
 	}
 
@@ -137,6 +169,10 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.Reques
 	// Проверяем, не протух ли токен и извлекаем ID юзера
 	deviceID, err := token.KeysExtract(tkn, tokenSecret)
 	if err != nil {
+		return nil, http.StatusUnauthorized, err
+	}
+
+	if deviceID <= 0 {
 		return nil, http.StatusUnauthorized, err
 	}
 
