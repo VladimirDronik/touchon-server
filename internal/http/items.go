@@ -433,6 +433,13 @@ func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusBadRequest, err
 	}
 
+	item, err := store.I.Items().GetItem(sensor.ViewItemID)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	sensor.Title = item.Title
+
 	//Берем у объекта текущее значение
 	sensorVal, err := objects.LoadObject(sensor.ObjectID, "", "", model.ChildTypeAll)
 	if err != nil {
