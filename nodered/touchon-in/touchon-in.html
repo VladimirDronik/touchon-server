@@ -1,0 +1,95 @@
+<script type="text/javascript">
+    RED.nodes.registerType('touchon-in',{
+        category: 'TouchOn',
+        color: '#C7E9C0', // https://nodered.org/docs/creating-nodes/appearance#background-colour
+        defaults: {
+            name: { value:"TouchOn-In" },
+            targettype: { value:"object" },
+            targetid: { value:82, validate:RED.validators.number() },
+            eventname: { value:"object.sensor.on_check" },
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "white-globe.svg",
+        label: function() {
+            var items = []
+
+            if (this.targettype) {
+                items.push(this.targettype)
+            }
+
+            if (this.targetid) {
+                items.push(this.targetid)
+            }
+
+            if (this.eventname) {
+                items.push(this.eventname)
+            }
+
+            var label = this.name||"touchon-in"
+
+            if (items.length > 0) {
+                label += ' [ ' + items.join(" / ") + ' ]'
+            }
+
+            return label;
+        },
+        paletteLabel: "TouchOn In",
+        // inputLabels: ""
+        oneditprepare: function () {
+            $("#node-input-targettype").typedInput({
+                types: [
+                    {
+                        value: "targettype",
+                        options: [
+                            { value: "object", label: "Object"},
+                            { value: "item", label: "Item"},
+                        ]
+                    }
+                ]
+            });
+
+            // $("#node-input-args").typedInput({
+            //     type:"json",
+            //     types:["json"]
+            // })
+        },
+
+        oneditsave: function() {
+            // this.label = `${this.name||"touchon-in"} [${RED.settings.touchonInTargetType} ${RED.settings.touchonInTargetID} ${RED.settings.touchonInEventName}]`;
+            console.log(RED)
+        },
+
+        oneditcancel: function() {
+            console.log("oneditcancel", arguments)
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="touchon-in">
+    <div class="form-row">
+        <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-targettype"><i class="fa fa-tag"></i> Target type</label>
+        <input type="text" id="node-input-targettype" placeholder="object">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-targetid"><i class="fa fa-tag"></i> Target ID</label>
+        <input type="text" id="node-input-targetid" placeholder="82">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-eventname"><i class="fa fa-tag"></i> Event name</label>
+        <input type="text" id="node-input-eventname" placeholder="object.sensor.on_check">
+        </div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="touchon-in">
+    <p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>
