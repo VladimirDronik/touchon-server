@@ -77,7 +77,7 @@ func (o *Items) DeleteItem(itemID int) error {
 func (o *Items) GetScenarios() ([]*model.ViewItem, error) {
 	r := make([]*model.ViewItem, 0)
 
-	if err := o.store.db.Where("enabled").Where("zone_id IS NULL").Order("sort").Find(&r).Error; err != nil {
+	if err := o.store.db.Where("enabled").Where("zone_id IS NULL").Where("type IN ('switch','button')").Order("sort").Find(&r).Error; err != nil {
 		return nil, errors.Wrap(err, "GetScenarios")
 	}
 
