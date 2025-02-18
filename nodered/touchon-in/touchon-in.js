@@ -12,11 +12,7 @@ module.exports = function (RED) {
             const ws = new rws('ws://localhost:8081/nodered');
             ws.on = ws.addEventListener
 
-            // ws.addEventListener('error', console.error);
-
             ws.on('open', function() {
-                // https://nodered.org/docs/creating-nodes/status
-                // red, green, yellow, blue or grey
                 node.status({fill: "green", shape: "dot", text: "connected"});
             });
 
@@ -44,13 +40,7 @@ module.exports = function (RED) {
                 node.send(msg)
             });
 
-            // ===========================================
-
             node.status({fill: "red", shape: "ring", text: "disconnected"});
-
-            // node.send([[out1msg1, out1msg2], [out2msg1, out2msg2]]);
-            // node.send(msg);
-            // node.error('error msg');
 
             this.on('close', function (removed, done) {
                 ws.on('close', function () {

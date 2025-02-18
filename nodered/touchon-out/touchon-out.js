@@ -13,21 +13,11 @@ module.exports = function (RED) {
             const ws = new rws('ws://localhost:8081/nodered');
             ws.on = ws.addEventListener
 
-            // ws.addEventListener('error', console.error);
-
             ws.on('open', function() {
-                // https://nodered.org/docs/creating-nodes/status
-                // red, green, yellow, blue or grey
                 node.status({fill: "green", shape: "dot", text: "connected"});
             });
 
-            // ===========================================
-
             node.status({fill: "red", shape: "ring", text: "disconnected"});
-
-            // node.send([[out1msg1, out1msg2], [out2msg1, out2msg2]]);
-            // node.send(msg);
-            // node.error('error msg');
 
             this.on('input', function (mess, send, done) {
                 let msg = {
