@@ -84,6 +84,7 @@ func (o *WebSocketImpl) ping() {
 
 func (o *WebSocketImpl) ReadMessages(handler interfaces.WebSocketMsgHandler) {
 	for {
+		// TODO сделать обработку чтения с таймаутом и обработку завершения (close(done))
 		mt, message, err := o.conn.ReadMessage()
 		if err != nil || mt == websocket.CloseMessage {
 			break // Выходим из цикла, если клиент пытается закрыть соединение или связь прервана

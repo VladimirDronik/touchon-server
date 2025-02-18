@@ -80,6 +80,7 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 }
 
 func (o *NodeRedImpl) sendAll(message interface{}) {
+	// TODO отправлять сообщения с помощью группы воркеров в несколько потоков
 	for ws := range o.clients {
 		if g.Logger.Level >= logrus.DebugLevel {
 			data, _ := json.Marshal(message)
