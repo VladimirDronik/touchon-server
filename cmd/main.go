@@ -136,10 +136,10 @@ func main() {
 
 	check(action_router.I.Start())
 
+	g.NodeRed = nodered.New()
+
 	g.HttpServer, err = httpServer.New(rb)
 	check(err)
-
-	g.NodeRed = nodered.New()
 
 	// Старт HTTP API сервера
 	check(g.HttpServer.Start(cfg["http_addr"]))

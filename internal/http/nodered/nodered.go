@@ -2,6 +2,7 @@ package nodered
 
 import (
 	"encoding/json"
+	"runtime"
 	"sync"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
 	"touchon-server/lib/interfaces"
+	"touchon-server/lib/parallel"
 )
 
 func New() interfaces.NodeRed {
@@ -80,15 +82,24 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 }
 
 func (o *NodeRedImpl) sendAll(message interface{}) {
-	// TODO отправлять сообщения с помощью группы воркеров в несколько потоков
-	for ws := range o.clients {
-		if g.Logger.Level >= logrus.DebugLevel {
-			data, _ := json.Marshal(message)
-			g.Logger.Debugf("Send to NodeRed: %v", string(data))
-		}
+	tasks := make([]parallel.Task, 0, len(o.clients))
 
-		if err := ws.WriteJSON(message); err != nil {
-			g.Logger.Error(errors.Wrap(err, "send"))
-		}
+	for ws := range o.clients {
+		ws := ws // !
+		tasks = append(tasks, func() {
+			if g.Logger.Level >= logrus.DebugLevel {
+				data, _ := json.Marshal(message)
+				g.Logger.Debugf("Send to NodeRed: %v", string(data))
+			}
+
+			if err := ws.WriteJSON(message); err != nil {
+				g.Logger.Error(errors.Wrap(err, "send"))
+			}
+		})
+	}
+
+	// Отправляем сообщение в несколько потоков
+	if err := parallel.Do(runtime.NumCPU(), tasks, 10*time.Second); err != nil {
+		g.Logger.Error(errors.Wrap(err, "NodeRedImpl.sendAll"))
 	}
 }

@@ -42,6 +42,7 @@ type WebSocketImpl struct {
 	mu     *sync.Mutex
 	conn   *websocket.Conn
 	pinger *helpers.Timer
+	done   chan struct{}
 }
 
 func (o *WebSocketImpl) ReadMessage() (messageType int, p []byte, err error) {
@@ -66,6 +67,7 @@ func (o *WebSocketImpl) Close() error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
+	close(o.done)
 	o.pinger.Stop()
 
 	return o.conn.Close()
@@ -83,13 +85,29 @@ func (o *WebSocketImpl) ping() {
 }
 
 func (o *WebSocketImpl) ReadMessages(handler interfaces.WebSocketMsgHandler) {
-	for {
-		// TODO сделать обработку чтения с таймаутом и обработку завершения (close(done))
-		mt, message, err := o.conn.ReadMessage()
-		if err != nil || mt == websocket.CloseMessage {
-			break // Выходим из цикла, если клиент пытается закрыть соединение или связь прервана
-		}
+	type R struct {
+		MessageType int
+		Message     []byte
+		Error       error
+	}
 
-		handler(o, mt, message)
+	msgs := make(chan *R, 1)
+
+	for {
+		go func() {
+			mt, message, err := o.conn.ReadMessage()
+			msgs <- &R{mt, message, err}
+		}()
+
+		select {
+		case <-o.done:
+			return
+		case msg := <-msgs:
+			if msg.Error != nil || msg.MessageType == websocket.CloseMessage {
+				return // Выходим из цикла, если клиент пытается закрыть соединение или связь прервана
+			}
+
+			handler(o, msg.MessageType, msg.Message)
+		}
 	}
 }
