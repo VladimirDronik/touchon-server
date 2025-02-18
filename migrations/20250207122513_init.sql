@@ -1088,8 +1088,8 @@ INSERT INTO scenarios VALUES(5,230,'button','','kino','Кино',5,'light_purple
 INSERT INTO scenarios VALUES(6,231,'switch','','book','Чтение',6,'light_green','',1);
 CREATE TABLE sensors (
     id            INTEGER not null primary key autoincrement,
-    view_item_id  INTEGER not null unique references view_items on update cascade on delete cascade,
-    object_id     INTEGER not null unique references om_objects on update cascade on delete cascade,
+    view_item_id  INTEGER not null references view_items on update cascade on delete cascade,
+    object_id     INTEGER not null references om_objects on update cascade on delete cascade,
     type          TEXT    not null default '',
     min_threshold REAL    default null,
     max_threshold REAL    default null,
