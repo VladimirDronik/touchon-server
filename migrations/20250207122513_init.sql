@@ -1091,8 +1091,8 @@ CREATE TABLE sensors (
     view_item_id  INTEGER not null unique references view_items on update cascade on delete cascade,
     object_id     INTEGER not null unique references om_objects on update cascade on delete cascade,
     type          TEXT    not null default '',
-    min_threshold REAL    not null default 0,
-    max_threshold REAL    not null default 0,
+    min_threshold REAL    default null,
+    max_threshold REAL    default null,
     adjustment    BOOL    not_null default false
 );
 CREATE TABLE temp_presets (
