@@ -22,8 +22,9 @@ func New() interfaces.NodeRed {
 }
 
 type NodeRedImpl struct {
-	mu               sync.Mutex
-	clients          map[interfaces.WebSocket]bool
+	mu      sync.Mutex
+	clients map[interfaces.WebSocket]bool
+
 	noderedHandlerID int
 }
 
@@ -64,8 +65,9 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 			return
 		}
 
-		o.clients[ws] = true  // Сохраняем соединение
-		delete(o.clients, ws) // Удаляем соединение
+		o.mu.Lock()
+		o.clients[ws] = true // Сохраняем соединение
+		o.mu.Unlock()
 
 		ws.ReadMessages(func(ws interfaces.WebSocket, messageType int, message []byte) {
 			g.Logger.Debug(string(message))
@@ -74,11 +76,19 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 		if err := ws.Close(); err != nil {
 			g.Logger.Error(errors.Wrap(err, "NodeRedImpl.Handler"))
 		}
+
+		o.mu.Lock()
+		delete(o.clients, ws) // Удаляем соединение
+		o.mu.Unlock()
 	})
 
 	if err != nil {
 		g.Logger.Error(err)
 	}
+}
+
+type nodeRedMsg struct {
+	Payload interface{} `json:"payload"`
 }
 
 func (o *NodeRedImpl) sendAll(message interface{}) {
@@ -92,7 +102,7 @@ func (o *NodeRedImpl) sendAll(message interface{}) {
 				g.Logger.Debugf("Send to NodeRed: %v", string(data))
 			}
 
-			if err := ws.WriteJSON(message); err != nil {
+			if err := ws.WriteJSON(nodeRedMsg{Payload: message}); err != nil {
 				g.Logger.Error(errors.Wrap(err, "send"))
 			}
 		})

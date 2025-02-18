@@ -30,6 +30,7 @@ func NewWS(conn *websocket.Conn, tickerInterval time.Duration) (interfaces.WebSo
 	o := &WebSocketImpl{
 		mu:   &sync.Mutex{},
 		conn: conn,
+		done: make(chan struct{}),
 	}
 
 	o.pinger = helpers.NewTimer(tickerInterval, o.ping)
@@ -66,6 +67,18 @@ func (o *WebSocketImpl) WriteControl(messageType int, data []byte, deadline time
 func (o *WebSocketImpl) Close() error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
+
+	// Предотвращаем повторное закрытие.
+	// Если клиент отправил сообщение на закрытие, то мы завершаем цикл
+	// обработки входящих сообщений и вызываем данный метод.
+	// Если мы останавливаем сервис, то вызываем данный метод, в этом случае
+	// цикл обработки входящих сообщений также прекращается и происходит повторный
+	// вызов данного метода.
+	select {
+	case <-o.done:
+		return nil
+	default:
+	}
 
 	close(o.done)
 	o.pinger.Stop()
