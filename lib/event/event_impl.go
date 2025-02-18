@@ -1,8 +1,6 @@
 package event
 
 import (
-	"encoding/json"
-
 	"github.com/pkg/errors"
 	"touchon-server/lib/interfaces"
 )
@@ -30,14 +28,4 @@ func (o *EventImpl) CheckEvent() error {
 	}
 
 	return nil
-}
-
-func (o *EventImpl) MarshalJSON() ([]byte, error) {
-	type R struct {
-		Code        string `json:"code"`
-		Name        string `json:"name"`
-		Description string `json:"description,omitempty"`
-	}
-
-	return json.Marshal(&R{o.GetName(), o.Title, o.Description})
 }

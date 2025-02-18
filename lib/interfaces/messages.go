@@ -1,5 +1,7 @@
 package interfaces
 
+import "encoding/json"
+
 type MessageType = string
 
 const (
@@ -51,6 +53,8 @@ type Message interface {
 	GetStringValue(name string) (string, error)
 	GetIntValue(name string) (int, error)
 	GetBoolValue(name string) (bool, error)
+
+	json.Marshaler
 }
 
 type MessageSender interface {

@@ -37,6 +37,8 @@ func (o *Events) DeleteAll() {
 }
 
 func (o *Events) Add(items ...interfaces.Event) error {
+	items = ToApiEvents(items...)
+
 	for _, item := range items {
 		if err := o.m.Add(item.GetName(), item); err != nil {
 			return errors.Wrap(err, "Events.Add")
@@ -53,4 +55,29 @@ func (o *Events) MarshalJSON() ([]byte, error) {
 func (o *Events) UnmarshalJSON([]byte) error {
 	// События нельзя переопределять с фронта
 	return nil
+}
+
+type ApiEventImpl struct {
+	interfaces.Event
+}
+
+func (o *ApiEventImpl) MarshalJSON() ([]byte, error) {
+	type R struct {
+		Code        string `json:"code"`
+		Name        string `json:"name"`
+		Description string `json:"description,omitempty"`
+	}
+
+	return json.Marshal(&R{o.GetName(), o.GetTitle(), o.GetDescription()})
+}
+
+// ToApiEvents заменяет реализацию MarshalJSON() для того, чтобы скрыть лишние поля
+func ToApiEvents(items ...interfaces.Event) []interfaces.Event {
+	r := make([]interfaces.Event, 0, len(items))
+
+	for _, item := range items {
+		r = append(r, &ApiEventImpl{Event: item})
+	}
+
+	return r
 }

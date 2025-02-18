@@ -31,7 +31,7 @@ type NodeRedImpl struct {
 func (o *NodeRedImpl) Start() error {
 	var err error
 
-	o.noderedHandlerID, err = g.Msgs.Subscribe("", "", "", nil, func(svc interfaces.MessageSender, msg interfaces.Message) {
+	o.noderedHandlerID, err = g.Msgs.Subscribe(interfaces.MessageTypeEvent, "", "", nil, func(svc interfaces.MessageSender, msg interfaces.Message) {
 		o.sendAll(msg)
 	})
 	if err != nil {
@@ -70,7 +70,7 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 		o.mu.Unlock()
 
 		ws.ReadMessages(func(ws interfaces.WebSocket, messageType int, message []byte) {
-			g.Logger.Debug(string(message))
+			g.Logger.Debug("Received from NodeRed:", string(message))
 		})
 
 		if err := ws.Close(); err != nil {
@@ -92,16 +92,16 @@ type nodeRedMsg struct {
 }
 
 func (o *NodeRedImpl) sendAll(message interface{}) {
+	if g.Logger.Level >= logrus.DebugLevel {
+		data, _ := json.Marshal(message)
+		g.Logger.Debug("Send to NodeRed:", string(data))
+	}
+
 	tasks := make([]parallel.Task, 0, len(o.clients))
 
 	for ws := range o.clients {
 		ws := ws // !
 		tasks = append(tasks, func() {
-			if g.Logger.Level >= logrus.DebugLevel {
-				data, _ := json.Marshal(message)
-				g.Logger.Debugf("Send to NodeRed: %v", string(data))
-			}
-
 			if err := ws.WriteJSON(nodeRedMsg{Payload: message}); err != nil {
 				g.Logger.Error(errors.Wrap(err, "send"))
 			}

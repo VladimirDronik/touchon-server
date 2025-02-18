@@ -1,6 +1,8 @@
 package messages
 
 import (
+	"encoding/json"
+
 	"github.com/pkg/errors"
 	"touchon-server/lib/interfaces"
 )
@@ -185,4 +187,24 @@ func (o *MessageImpl) GetBoolValue(name string) (bool, error) {
 	default:
 		return false, errors.Wrap(errors.Errorf("unexpected data type %T", v), "GetBoolValue")
 	}
+}
+
+type message struct {
+	MsgType    interfaces.MessageType `json:"type"`        // event,command
+	Name       string                 `json:"name"`        // onChange,check
+	TargetType interfaces.TargetType  `json:"target_type"` //
+	TargetID   int                    `json:"target_id"`   // 82
+	Payload    map[string]interface{} `json:"payload"`     //
+}
+
+func (o *MessageImpl) MarshalJSON() ([]byte, error) {
+	m := &message{
+		MsgType:    o.GetType(),
+		Name:       o.GetName(),
+		TargetType: o.GetTargetType(),
+		TargetID:   o.GetTargetID(),
+		Payload:    o.GetPayload(),
+	}
+
+	return json.Marshal(m)
 }
