@@ -10,6 +10,7 @@ import (
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
+	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/lib/events/item"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
@@ -205,7 +206,7 @@ func (o *Server) handleSetTargetSensor(ctx *fasthttp.RequestCtx) (interface{}, i
 		return nil, http.StatusInternalServerError, errors.Wrap(err, "Sensor not found: "+strconv.Itoa(targetReq.ItemID))
 	}
 
-	sensorObj, err := objects.LoadObject(sensorItem.ObjectID, "", "", model.ChildTypeAll)
+	sensorObj, err := memStore.I.GetObject(sensorItem.ObjectID) //objects.LoadObject(sensorItem.ObjectID, "", "", model.ChildTypeAll)
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.Wrap(err, "Object not loaded: "+strconv.Itoa(sensorItem.ObjectID))
 	}
@@ -215,11 +216,15 @@ func (o *Server) handleSetTargetSensor(ctx *fasthttp.RequestCtx) (interface{}, i
 		child.SetEnabled(true)
 		target, err := child.GetProps().Get("target_sp")
 		if err != nil {
-			return nil, http.StatusInternalServerError, errors.Wrap(err, "Target property not found for object: "+strconv.Itoa(sensorItem.ObjectID))
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Property 'target_sp' not found for object: "+strconv.Itoa(sensorItem.ObjectID))
 		}
 		target.SetValue(targetReq.TargetValue)
 		if err := child.Save(); err != nil {
-			return nil, http.StatusInternalServerError, errors.Wrap(err, "Unable to save prop 'target' for object: "+strconv.Itoa(sensorItem.ObjectID))
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Unable to save object: "+strconv.Itoa(sensorItem.ObjectID))
+		}
+
+		if err := memStore.I.SaveObject(child); err != nil {
+			return nil, http.StatusInternalServerError, errors.Wrap(err, "Unable to save to memory object: "+strconv.Itoa(sensorItem.ObjectID))
 		}
 		break
 	}
