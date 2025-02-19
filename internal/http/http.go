@@ -81,6 +81,7 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	objects("GET", "/tags", o.handleGetAllObjectsTags)         // получение всех тегов
 	objects("GET", "/by_tags", o.handleGetObjectsByTags)       // получение объектов по тегам
 	objects("POST", "/{id}/exec/{method}", o.handleExecMethod) // Запуск метода объекта
+	objects("GET", "/by_props", o.handleGetObjectByProps)      // получение объекта по его свойствам
 
 	scripts := o.addMiddleware("/scripts", o.authMiddleware)
 	scripts("GET", "/model", o.handleGetScriptModel)
