@@ -1,15 +1,16 @@
 // TouchOn Server
 //
-// go install github.com/swaggo/swag/cmd/swag@latest
-// ./bin $ swag init --dir=../cmd,../internal,../lib --output=../docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
-// ./bin $ mockery --dir=../internal --all --inpackage --inpackage-suffix --with-expecter && mockery --dir=../lib --all --inpackage --inpackage-suffix --with-expecter
+// ./bin $ go generate -C ../cmd
 // ./bin $ go build -C ../cmd -o ../bin/cmd && TOKEN_SECRET=disable_auth ./cmd
 // docker build --progress=plain -t ts . && docker run --rm -it --network=host --name ts ts
 //
-// go install github.com/pressly/goose/v3/cmd/goose@latest
-// GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=bin/db.sqlite GOOSE_MIGRATION_DIR=migrations goose status
+// GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=bin/db.sqlite GOOSE_MIGRATION_DIR=migrations go tool goose status
 
 package main
+
+//go:generate go tool swag init --dir=../cmd,../internal,../lib --output=../docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
+//go:generate go tool mockery --dir=../internal --all --inpackage --inpackage-suffix --with-expecter
+//go:generate go tool mockery --dir=../lib --all --inpackage --inpackage-suffix --with-expecter
 
 import (
 	"database/sql"

@@ -1,7 +1,7 @@
-# docker build --file Dockerfile-w64 -t ts_w64 . && docker run --rm -v .:/host ts_w64
-# set DATABASE_URL=db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\ts.exe
+# docker build --file Dockerfile-w64 --progress=plain -t ts_w64 . && docker run --rm -v .:/host ts_w64
+# set DATABASE_URL=db.sqlite && set LOG_LEVEL=debug && .\ts.exe
 
-FROM golang:1.23.2 AS builder
+FROM golang:1.24 AS builder
 
 # RUN apt-get update && apt-get install -y zip gcc mingw-w64
 RUN apt-get update && apt-get install -y zip
@@ -10,11 +10,9 @@ WORKDIR /opt/service
 
 ENV GO111MODULE=on
 
-RUN go install github.com/swaggo/swag/cmd/swag@latest
-
 COPY . ./
-RUN swag init --dir=cmd,internal,lib --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 
+RUN go generate -C cmd
 # RUN GOOS=windows GOARCH=amd64 go build -C cmd -mod vendor -o ../bin/ts.exe
 RUN go build -C cmd -mod vendor -o ../bin/ts.exe
 
@@ -22,7 +20,7 @@ RUN go build -C cmd -mod vendor -o ../bin/ts.exe
 #-ldflags="-X 'main.Version=$(git rev-parse --verify --short HEAD)' -X \"main.BuildAt=$(date '+%d.%m.%Y %H:%M:%S')\" -extldflags=-static" \
 #-o ../bin/ts.exe
 
-RUN echo 'set DATABASE_URL=db.sqlite && set MQTT_CONNECTION_STRING=mqtt://services:12345678@10.35.16.1:1883/# set LOG_LEVEL=debug && .\\ts.exe' > bin/start.bat
+RUN echo 'set DATABASE_URL=db.sqlite && set LOG_LEVEL=debug && .\\ts.exe' > bin/start.bat
 RUN echo 'pause' >> bin/start.bat
 RUN chmod +x bin/start.bat
 
