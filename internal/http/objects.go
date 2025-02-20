@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"
@@ -602,51 +601,4 @@ func (o *Server) handleGetAllObjectsTags(ctx *fasthttp.RequestCtx) (interface{},
 	}
 
 	return tags, http.StatusOK, nil
-}
-
-// Запуск метода объекта
-// @Summary Запуск метода объекта
-// @Tags Objects
-// @Description Запуск метода объекта
-// @ID ExecMethod
-// @Produce json
-// @Param id path int true "ID объекта" default(391)
-// @Param method path string true "Название метода" default(check)
-// @Param args body object false "Параметры запуска метода" default({})
-// @Success      200 {object} http.Response[any]
-// @Failure      400 {object} http.Response[any]
-// @Failure      500 {object} http.Response[any]
-// @Router /objects/{id}/exec/{method} [post]
-func (o *Server) handleExecMethod(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	objectID, err := helpers.GetUintPathParam(ctx, "id")
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	methodName := helpers.GetPathParam(ctx, "method")
-
-	obj, err := memStore.I.GetObject(objectID)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	method, err := obj.GetMethods().Get(methodName)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	args := make(map[string]interface{}, 10)
-	body := ctx.Request.Body()
-	if len(body) >= 2 {
-		if err := json.Unmarshal(ctx.Request.Body(), &args); err != nil {
-			return nil, http.StatusBadRequest, err
-		}
-	}
-
-	r, err := method.Func(args)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	return r, http.StatusOK, nil
 }

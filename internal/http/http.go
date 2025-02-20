@@ -71,16 +71,15 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	ctrl("GET", "/{id}/ports", o.handleGetControllerPorts) // получение портов контроллера
 
 	objects := o.addMiddleware("/objects", o.authMiddleware)
-	objects("GET", "/types", o.handleGetObjectsTypes)          // получение категорий и типов объектов
-	objects("GET", "/model", o.handleGetObjectModel)           // получение модели объекта
-	objects("GET", "/", o.handleGetObjects)                    // получение объектов
-	objects("GET", "/{id}", o.handleGetObject)                 // получение объекта
-	objects("POST", "/", create_object.Handler)                // добавление объекта с методами
-	objects("PUT", "/", update_object.Handler)                 // обновление объекта
-	objects("DELETE", "/{id}", o.handleDeleteObject)           // удаление объекта
-	objects("GET", "/tags", o.handleGetAllObjectsTags)         // получение всех тегов
-	objects("GET", "/by_tags", o.handleGetObjectsByTags)       // получение объектов по тегам
-	objects("POST", "/{id}/exec/{method}", o.handleExecMethod) // Запуск метода объекта
+	objects("GET", "/types", o.handleGetObjectsTypes)    // получение категорий и типов объектов
+	objects("GET", "/model", o.handleGetObjectModel)     // получение модели объекта
+	objects("GET", "/", o.handleGetObjects)              // получение объектов
+	objects("GET", "/{id}", o.handleGetObject)           // получение объекта
+	objects("POST", "/", create_object.Handler)          // добавление объекта с методами
+	objects("PUT", "/", update_object.Handler)           // обновление объекта
+	objects("DELETE", "/{id}", o.handleDeleteObject)     // удаление объекта
+	objects("GET", "/tags", o.handleGetAllObjectsTags)   // получение всех тегов
+	objects("GET", "/by_tags", o.handleGetObjectsByTags) // получение объектов по тегам
 
 	scripts := o.addMiddleware("/scripts", o.authMiddleware)
 	scripts("GET", "/model", o.handleGetScriptModel)

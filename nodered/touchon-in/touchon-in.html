@@ -36,14 +36,13 @@
             return label;
         },
         paletteLabel: "TouchOn In",
-        // inputLabels: ""
         oneditprepare: function () {
             $("#node-input-targettype").typedInput({
                 types: [
                     {
                         value: "targettype",
                         options: [
-                            { value: "", label: ""},
+                            { value: "", label: "-----"},
                             { value: "object", label: "Object"},
                             { value: "item", label: "Item"},
                         ]
@@ -84,5 +83,5 @@
 </script>
 
 <script type="text/html" data-help-name="touchon-in">
-    <p>A simple node that converts the message payloads into all lower-case characters</p>
+    <p>TouchOn In</p>
 </script>
