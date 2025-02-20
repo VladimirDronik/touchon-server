@@ -1,0 +1,14 @@
+{
+  "name" : "touchon-server",
+  "version"      : "1.0.0",
+  "description"  : "TouchOn Server",
+  "keywords": [ "touchon", "server" ],
+  "dependencies": {
+    "reconnecting-websocket": "^4.4.0"
+  },
+  "node-red" : {
+    "nodes": {
+      "touchon-server": "touchon-server.js"
+    }
+  }
+}

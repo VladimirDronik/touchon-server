@@ -1,0 +1,33 @@
+<script type="text/javascript">
+    RED.nodes.registerType('touchon-server',{
+        category: 'config',
+        color: '#C7E9C0', // https://nodered.org/docs/creating-nodes/appearance#background-colour
+        defaults: {
+            host: { value:"localhost", required: true },
+            port: { value:8081, required: true, validate:RED.validators.number() },
+            path: { value:"/nodered", required: true }
+        },
+        label: function() {
+            return `ws://${this.host}:${this.port}${this.path}`;
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="touchon-server">
+    <div class="form-row">
+        <div class="form-row">
+        <label for="node-input-host"><i class="fa fa-tag"></i> Host</label>
+        <input type="text" id="node-input-host" placeholder="localhost">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-port"><i class="fa fa-tag"></i> Port</label>
+        <input type="text" id="node-input-port" placeholder="8081">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-path"><i class="fa fa-tag"></i> Path</label>
+        <input type="text" id="node-input-path" placeholder="/nodered">
+        </div>
+    </div>
+</script>

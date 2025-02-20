@@ -3,9 +3,6 @@
   "version"      : "1.0.0",
   "description"  : "TouchOn In",
   "keywords": [ "touchon", "in" ],
-  "dependencies": {
-    "reconnecting-websocket": "^4.4.0"
-  },
   "node-red" : {
     "nodes": {
       "touchon-in": "touchon-in.js"

@@ -4,6 +4,7 @@
         color: '#C7E9C0', // https://nodered.org/docs/creating-nodes/appearance#background-colour
         defaults: {
             name: { value:"TouchOn-Out" },
+            ws: { value:"", type:"touchon-server" },
             targettype: { value:"object" },
             targetid: { value:391, validate:RED.validators.number() },
             commandname: { value:"check" },
@@ -63,6 +64,11 @@
         <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-ws"><i class="fa fa-tag"></i> WS</label>
+        <input type="text" id="node-input-ws" placeholder="">
         </div>
 
         <div class="form-row">

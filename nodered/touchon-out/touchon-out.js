@@ -1,5 +1,3 @@
-const rws = require("reconnecting-websocket");
-
 module.exports = function (RED) {
     class TouchOn_Out {
         constructor(config) {
@@ -10,8 +8,17 @@ module.exports = function (RED) {
             this.args = JSON.parse(config.args);
             var node = this;
 
-            const ws = new rws('ws://localhost:8081/nodered');
-            ws.on = ws.addEventListener
+            let touchonServer = RED.nodes.getNode(config.ws);
+            if (!touchonServer) {
+                node.status({fill: "red", shape: "ring", text: "no server"});
+
+                this.on('close', function (removed, done) {
+                    done();
+                });
+
+                return
+            }
+            let ws = touchonServer.ws
 
             ws.on('open', function() {
                 node.status({fill: "green", shape: "dot", text: "connected"});

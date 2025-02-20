@@ -3,9 +3,6 @@
   "version"      : "1.0.0",
   "description"  : "TouchOn Out",
   "keywords": [ "touchon", "out" ],
-  "dependencies": {
-    "reconnecting-websocket": "^4.4.0"
-  },
   "node-red" : {
     "nodes": {
       "touchon-out": "touchon-out.js"
