@@ -119,6 +119,10 @@ type nodeRedMsg struct {
 }
 
 func (o *NodeRedImpl) sendAll(message interface{}) {
+	if len(o.clients) == 0 {
+		return
+	}
+
 	if g.Logger.Level >= logrus.DebugLevel {
 		data, _ := json.Marshal(message)
 		g.Logger.Debugf("<<<< Send to NodeRed (%d): %s", len(o.clients), string(data))

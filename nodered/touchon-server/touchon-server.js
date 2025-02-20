@@ -18,9 +18,17 @@ module.exports = function (RED) {
             this.ws.removeEventListener(eventName, handler)
         }
 
+        wsSend(data) {
+            this.ws.send(data)
+        }
+
         onClose(removed, done) {
-            this.ws.addEventListener('close', function(){ done(); });
-            this.ws.close()
+            if (this.ws.readyState === this.ws.OPEN) {
+                this.ws.addEventListener('close', function(){ done(); });
+                this.ws.close()
+            } else {
+                done();
+            }
         }
     }
 

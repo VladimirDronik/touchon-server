@@ -11,7 +11,7 @@ module.exports = function (RED) {
             node.ws = RED.nodes.getNode(config.ws);
             if (!node.ws) {
                 node.status({fill: "red", shape: "ring", text: "no server"});
-                this.on('close', function (removed, done) { done(); });
+                node.on('close', function (removed, done) { done(); });
                 return
             }
 

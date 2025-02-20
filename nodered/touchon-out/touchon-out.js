@@ -45,7 +45,7 @@ module.exports = function (RED) {
                 payload: this.args,
             }
 
-            this.ws.send(JSON.stringify(msg))
+            this.ws.wsSend(JSON.stringify(msg))
             done()
         }
 
