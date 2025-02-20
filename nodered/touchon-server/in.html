@@ -8,6 +8,7 @@
             targettype: { value:"object" },
             targetid: { value:82, validate:RED.validators.number() },
             eventname: { value:"object.sensor.on_check" },
+            object: { value:null },
         },
         inputs: 0,
         outputs: 1,
@@ -49,6 +50,28 @@
                     }
                 ]
             });
+
+            var node = this;
+            setTimeout(function(){
+                WB_getItemList(node.object, '#node-input-object', {allowEmpty:false});
+            }, 100);
+
+
+            // $("#node-input-outputError").prop('checked', node.outputs==2).change(function() {
+            //     node.outputs = this.checked ? 2 : 1;
+            // });
+        },
+        oneditsave: function () {
+            var selectedOptions = $('#node-input-object option:selected');
+            if (selectedOptions) {
+                this.object = selectedOptions.map(function () {
+                    return $(this).val();
+                });
+            } else {
+                this.object = null;
+            }
+
+            // node.outputs = $("#node-input-outputError").prop('checked') ? 2 : 1;
         }
     });
 </script>
@@ -78,6 +101,11 @@
         <div class="form-row">
         <label for="node-input-eventname"><i class="fa fa-tag"></i> Event name</label>
         <input type="text" id="node-input-eventname" placeholder="object.sensor.on_check">
+        </div>
+
+        <div class="form-row">
+        <label for="node-input-object" class="l-width"><i class="fa fa-crosshairs"></i> Object</label>
+        <select id="node-input-object" class="s-width" data-single="false" multiple="multiple"></select>
         </div>
     </div>
 </script>

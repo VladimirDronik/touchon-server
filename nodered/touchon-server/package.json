@@ -8,7 +8,9 @@
   },
   "node-red" : {
     "nodes": {
-      "touchon-server": "touchon-server.js"
+      "touchon-in": "in.js",
+      "touchon-out": "out.js",
+      "touchon-server": "server.js"
     }
   }
 }
