@@ -4,12 +4,23 @@ module.exports = function (RED) {
     class TouchOnServer {
         constructor(config) {
             RED.nodes.createNode(this, config);
-            this.ws = new rws(`ws://${config.host}:${config.port}${config.path}`);
-            this.ws.on = this.ws.addEventListener
+            let node = this;
 
-            this.on('close', function (removed, done) {
-                done();
-            });
+            node.ws = new rws(`ws://${config.host}:${config.port}${config.path}`);
+            node.on('close', node.onClose);
+        }
+
+        addEventListener(eventName, handler) {
+            this.ws.addEventListener(eventName, handler)
+        }
+
+        removeEventListener(eventName, handler) {
+            this.ws.removeEventListener(eventName, handler)
+        }
+
+        onClose(removed, done) {
+            this.ws.addEventListener('close', function(){ done(); });
+            this.ws.close()
         }
     }
 

@@ -73,6 +73,8 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 		o.mu.Unlock()
 
 		ws.ReadMessages(func(ws interfaces.WebSocket, messageType int, message []byte) {
+			g.Logger.Debug(">>>>>>>>>>>>>>:", string(message))
+
 			cmd, err := messages.NewCommand("", interfaces.TargetTypeObject, 0, nil)
 			if err != nil {
 				g.Logger.Error(errors.Wrap(err, "ws.ReadMessages"))
@@ -119,7 +121,7 @@ type nodeRedMsg struct {
 func (o *NodeRedImpl) sendAll(message interface{}) {
 	if g.Logger.Level >= logrus.DebugLevel {
 		data, _ := json.Marshal(message)
-		g.Logger.Debug("<<<< Send to NodeRed:", string(data))
+		g.Logger.Debugf("<<<< Send to NodeRed (%d): %s", len(o.clients), string(data))
 	}
 
 	tasks := make([]parallel.Task, 0, len(o.clients))
