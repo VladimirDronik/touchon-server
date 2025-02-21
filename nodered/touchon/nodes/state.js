@@ -34,7 +34,7 @@ module.exports = function (RED) {
             this.status({fill: "red", shape: "ring", text: "disconnected"});
         }
 
-        onInput(mess, send, done) {
+        onInput(oldMsg, send, done) {
             var node = this;
             let uri = `http://${node.ws.host}:${node.ws.port}/${node.targettype}s/${node.targetid}/state`
 
@@ -52,7 +52,10 @@ module.exports = function (RED) {
                     return msg
                 })
                 .then((msg) => {
-                    let m = {payload: msg.response}
+                    let m = {
+                        oldMessage: oldMsg, // Прокидываем исходное сообщение дальше
+                        payload: msg.response
+                    }
                     m.payload.props = m.payload.payload
                     delete m.payload.payload
                     send(m)

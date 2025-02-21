@@ -14,6 +14,7 @@ import (
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/sensor"
 	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 	"touchon-server/lib/models"
 )
 
@@ -296,4 +297,22 @@ func (o *SensorModel) DeleteChildren() error {
 	}
 
 	return nil
+}
+
+func (o *SensorModel) GetState() (interfaces.Message, error) {
+	msg, err := messages.NewEvent("on_get_state", interfaces.TargetTypeObject, o.GetID())
+	if err != nil {
+		return nil, errors.Wrap(err, "SensorModel.GetState")
+	}
+
+	for _, child := range o.GetChildren().GetAll() {
+		v, err := child.GetProps().GetFloatValue("value")
+		if err != nil {
+			return nil, errors.Wrap(err, "SensorModel.GetState")
+		}
+
+		msg.SetValue(child.GetType(), v)
+	}
+
+	return msg, nil
 }

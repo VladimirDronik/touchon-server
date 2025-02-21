@@ -92,7 +92,7 @@ func compareTags(inputsTags []string, objectTags []string) bool {
 // @Description Получение модели объекта
 // @ID GetObjectModel
 // @Produce json
-// @Param category query string true "Категория объекта" Enums(controller,sensor,regulator,generic_input,relay,modbus)
+// @Param category query string true "Категория объекта" Enums(controller,sensor,regulator,generic_input,relay,modbus,conditioner)
 // @Param type query string true "Тип объекта" example(mega_d,htu21d,regulator,generic_input,relay,wb_mrm2_mini)
 // @Success      200 {object} http.Response[objects.ObjectModel]
 // @Failure      400 {object} http.Response[any]
