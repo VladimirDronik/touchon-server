@@ -56,6 +56,11 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 	sensor.MinThreshold = nil
 	sensor.MaxThreshold = nil
 
+	sensorObj, err := memStore.I.GetObject(sensor.ObjectID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
 	//sensorValue, err := store.I.ObjectRepository().GetObjectByParent(sensor.ObjectID, sensor.Type)
 	//if err != nil {
 	//	return nil, http.StatusInternalServerError, errors.Wrap(err, "Get valueSensor by sensorID")
@@ -134,7 +139,7 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 	event := &model.TrEvent{
 		EventName:  "object.sensor.on_check",
 		TargetType: "object",
-		TargetID:   sensor.ObjectID,
+		TargetID:   *sensorObj.GetParentID(),
 		Value:      sensor.Type,
 		ItemID:     item.ID,
 	}
