@@ -5,6 +5,9 @@ module.exports = function (RED) {
         constructor(config) {
             RED.nodes.createNode(this, config);
             let node = this;
+            node.host = config.host
+            node.port = config.port
+            node.path = config.path
 
             node.ws = new rws(`ws://${config.host}:${config.port}${config.path}`);
             node.on('close', node.onClose);

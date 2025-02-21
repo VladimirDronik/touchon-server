@@ -73,8 +73,6 @@ func (o *NodeRedImpl) Handler(ctx *fasthttp.RequestCtx) {
 		o.mu.Unlock()
 
 		ws.ReadMessages(func(ws interfaces.WebSocket, messageType int, message []byte) {
-			g.Logger.Debug(">>>>>>>>>>>>>>:", string(message))
-
 			cmd, err := messages.NewCommand("", interfaces.TargetTypeObject, 0, nil)
 			if err != nil {
 				g.Logger.Error(errors.Wrap(err, "ws.ReadMessages"))

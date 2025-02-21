@@ -57,6 +57,9 @@ module.exports = function (RED) {
                 return
             }
 
+            msg.payload.props = msg.payload.payload
+            delete msg.payload.payload
+
             this.send(msg)
         }
 

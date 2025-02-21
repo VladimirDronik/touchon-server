@@ -11,6 +11,7 @@ import (
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 )
 
 // Implementation of Object interface
@@ -467,4 +468,19 @@ func (o *ObjectModelImpl) SetTimer(interval time.Duration, handler func()) {
 
 func (o *ObjectModelImpl) GetTimer() *helpers.Timer {
 	return o.intervalTimer
+}
+
+func (o *ObjectModelImpl) GetState() (interfaces.Message, error) {
+	msg, err := messages.NewEvent("on_get_state", interfaces.TargetTypeObject, o.GetID())
+	if err != nil {
+		return nil, errors.Wrap(err, "ObjectModelImpl.GetState")
+	}
+
+	for _, p := range o.GetProps().GetAll().GetValueList() {
+		if p.Visible.Check(o.GetProps()) {
+			msg.SetValue(p.Code, p.GetValue())
+		}
+	}
+
+	return msg, nil
 }

@@ -602,3 +602,33 @@ func (o *Server) handleGetAllObjectsTags(ctx *fasthttp.RequestCtx) (interface{},
 
 	return tags, http.StatusOK, nil
 }
+
+// Получение состояния объекта
+// @Summary Получение состояния объекта
+// @Tags Objects
+// @Description Получение состояния объекта
+// @ID GetState
+// @Produce json
+// @Param id path int true "ID объекта" default(391)
+// @Success      200 {object} http.Response[any]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /objects/{id}/state [get]
+func (o *Server) handleGetObjectState(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	objectID, err := helpers.GetUintPathParam(ctx, "id")
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	obj, err := memStore.I.GetObject(objectID)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	state, err := obj.GetState()
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	return state, http.StatusOK, nil
+}

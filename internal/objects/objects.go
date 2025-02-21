@@ -7,6 +7,7 @@ import (
 
 	"touchon-server/internal/model"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 )
 
 var ErrObjectDisabled = errors.New("object disabled")
@@ -85,6 +86,7 @@ type Object interface {
 
 	SetTimer(time.Duration, func())
 	GetTimer() *helpers.Timer
+	GetState() (interfaces.Message, error)
 }
 
 type ObjectModel struct {

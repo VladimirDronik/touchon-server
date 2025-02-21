@@ -1,0 +1,30 @@
+<script type="text/html" data-template-name="copy">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</span></label>
+        <input type="text" id="node-input-name" placeholder="">
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-outputs"><i class="fa fa-tag"></i> Outputs</span></label>
+        <input type="number" id="node-input-outputs" placeholder="2" min="1" max="100"/>
+    </div>
+</script>
+
+<script type="text/javascript">
+    (function() {
+        RED.nodes.registerType('copy', {
+            color: "#C7E9C0",
+            category: 'TouchOn',
+            defaults: {
+                name: { value:"" },
+                outputs: { value:2, required: true, validate:RED.validators.number() }
+            },
+            inputs: 1,
+            outputs: 2,
+            icon: "switch.svg",
+            label: function() {
+                return this.name||'copy';
+            }
+        });
+    })();
+</script>

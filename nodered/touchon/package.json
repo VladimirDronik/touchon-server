@@ -1,0 +1,21 @@
+{
+  "name" : "touchon-server",
+  "version"      : "1.0.0",
+  "description"  : "TouchOn Server",
+  "keywords": [ "touchon", "server" ],
+  "dependencies": {
+    "reconnecting-websocket": "^4.4.0",
+    "request": "^2.88.2"
+  },
+  "node-red" : {
+    "nodes": {
+      "touchon-in": "nodes/in.js",
+      "touchon-out": "nodes/out.js",
+      "touchon-do": "nodes/do.js",
+      "touchon-server": "nodes/server.js",
+      "touchon-state": "nodes/state.js",
+      "sequence": "nodes/copy.js",
+      "api": "api.js"
+    }
+  }
+}
