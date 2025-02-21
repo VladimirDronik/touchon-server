@@ -1,9 +1,0 @@
-NodeRed:
-$ sudo npm install -g --unsafe-perm node-red
-$ node-red
-
-$ cd ~/.node-red
-$ npm uninstall ~/go/src/touchon/touchon-server/nodered/touchon-server
-$ npm install ~/go/src/touchon/touchon-server/nodered/touchon
-
-/usr/local/lib/node_modules/node-red/node_modules
