@@ -436,3 +436,30 @@ func (o *ObjectRepository) SetEnabled(objectID int, enabled bool) error {
 
 	return nil
 }
+
+func (o *ObjectRepository) GetObjectIDByProps(props map[string]string, parentID int) (int, error) {
+	var objectID int
+
+	q := o.store.db.Table("om_props").Select("object_ID")
+
+	for code, value := range props {
+		q = q.Where("code = ?", code)
+		q = q.Where("value = ?", value)
+	}
+
+	if objectID != 0 {
+		q.Where("om_props.object_id = ?", objectID)
+	}
+
+	if parentID != 0 {
+		q.InnerJoins("JOIN om_objects ON om_objects.id = om_props.object_id")
+		q.Where("om_objects.parent_id = ?", parentID)
+	}
+
+	err := q.Find(&objectID).Error
+	if err != nil {
+		return 0, errors.Wrap(err, "GetObjectIDByProps")
+	}
+
+	return objectID, nil
+}

@@ -211,6 +211,51 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 	return m, nil
 }
 
+// Получение объекта по его свойствам
+// @Summary Получение объекта по его свойствам
+// @Tags Objects
+// @Description Получение объекта по его свойствам
+// @ID GetObjectByProps
+// @Produce json
+// @Param props query string false "Массив свойств объекта" example(address=1, interface=I2C)
+// @Param parent_id query string false "ID родительского объекта"
+// @Success      200 {object} http.Response[int]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /objects/by_props [get]
+func (o *Server) handleGetObjectByProps(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	propsReq := helpers.GetParam(ctx, "props")
+	parentID, err := helpers.GetIntParam(ctx, "parent_id")
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.Wrap(err, "param object_id is not valid")
+	}
+
+	if propsReq == "" {
+		return nil, http.StatusBadRequest, errors.New("props is empty")
+	}
+
+	propsSlice := strings.Split(propsReq, ",")
+	if len(propsSlice) == 0 {
+		return nil, http.StatusBadRequest, errors.New("props string is bad")
+	}
+
+	propsMap := make(map[string]string, 10)
+	for _, p := range propsSlice {
+		prop := strings.Split(p, "=")
+		if len(prop) < 2 {
+			return nil, http.StatusBadRequest, errors.New("props string is bad")
+		}
+		propsMap[prop[0]] = prop[1]
+	}
+
+	objectID, err := store.I.ObjectRepository().GetObjectIDByProps(propsMap, parentID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Wrap(err, "GetObjectIDByProps")
+	}
+
+	return objectID, http.StatusOK, nil
+}
+
 type GetObjectsResponse struct {
 	Total int                  `json:"total"`
 	List  []*model.StoreObject `json:"list"`

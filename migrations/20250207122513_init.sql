@@ -953,12 +953,12 @@ INSERT INTO view_items VALUES(448,32,11,'switch','off','socket','Розетка 
 INSERT INTO view_items VALUES(449,32,11,'switch','off','socket','Розетка оборудование',13,'{}','','','',0,0,0,1);
 INSERT INTO view_items VALUES(450,0,12,'button','off','mirror','Зеркало',14,'{}','','','',0,0,0,1);
 INSERT INTO view_items VALUES(451,0,13,'conditioner','off','conditioner','Кондиционер',4,'{}','dark_purple','','',0,0,0,1);
-INSERT INTO view_items VALUES(452,0,0,'scenario','','','',0,'{}','','','',0,0,0,1);
-INSERT INTO view_items VALUES(453,0,0,'scenario','','','',0,'{}','','','',0,0,0,1);
-INSERT INTO view_items VALUES(454,0,0,'scenario','','','',0,'{}','','','',0,0,0,1);
-INSERT INTO view_items VALUES(455,0,0,'scenario','','','',0,'{}','','','',0,0,0,1);
-INSERT INTO view_items VALUES(456,0,0,'scenario','','','',0,'{}','','','',0,0,0,1);
-INSERT INTO view_items VALUES(457,0,0,'scenario','','','',0,'{}','','','',0,0,0,1);
+INSERT INTO view_items VALUES(452,0,0,'switch','','door','Я ухожу',1,'{}','orange','','',0,0,0,1);
+INSERT INTO view_items VALUES(453,0,0,'switch','','moon','Ночной режим',2,'{}','dark_purple','','',0,0,0,1);
+INSERT INTO view_items VALUES(454,0,0,'switch','','sun','Доброе утро',3,'{}','yellow','','',0,0,0,1);
+INSERT INTO view_items VALUES(455,0,0,'switch','','binoculars','Камеры',4,'{}','light_blue','','',0,0,0,1);
+INSERT INTO view_items VALUES(456,0,0,'button','','kino','Кино',5,'{}','light_purple','','',0,0,0,1);
+INSERT INTO view_items VALUES(457,0,0,'switch','','book','Чтение',6,'{}','light_green','','',0,0,0,1);
 INSERT INTO view_items VALUES(458,0,0,'sensor','','','',0,'{}','','','',0,0,0,1);
 INSERT INTO view_items VALUES(459,0,0,'sensor','','','',0,'{}','','','',0,0,0,1);
 INSERT INTO view_items VALUES(460,0,0,'sensor','','','',0,'{}','','','',0,0,0,1);
@@ -1068,31 +1068,13 @@ INSERT INTO notifications VALUES(9,'critical','2024-06-03T12:23:30','Крити�
 INSERT INTO notifications VALUES(10,'','2024-08-26T12:00:34','Сработал датчик дыма в техпомещении',1);
 INSERT INTO notifications VALUES(11,'','2024-08-26T13:00:42','Сработал датчик дыма в техпомещении',1);
 INSERT INTO notifications VALUES(12,'','2024-08-27T07:44:54','Сработал датчик дыма в техпомещении',1);
-CREATE TABLE scenarios (
-    id           INTEGER not null primary key autoincrement,
-    view_item_id INTEGER not null unique references view_items on update cascade on delete cascade,
-    type         TEXT    not null default '',
-    description  TEXT    not null default '',
-    icon         TEXT    not null default '',
-    title        TEXT    not null default '',
-    sort         INTEGER not null default 0,
-    color        TEXT    not null default '',
-    auth         TEXT    not null default '',
-    enabled      bool    not null default false
-);
-INSERT INTO scenarios VALUES(1,226,'switch','','door','Я ухожу',1,'orange','',1);
-INSERT INTO scenarios VALUES(2,227,'switch','','moon','Ночной режим',2,'dark_purple','',1);
-INSERT INTO scenarios VALUES(3,228,'switch','','sun','Доброе утро',3,'yellow','',1);
-INSERT INTO scenarios VALUES(4,229,'switch','','binoculars','Камеры',4,'light_blue','',1);
-INSERT INTO scenarios VALUES(5,230,'button','','kino','Кино',5,'light_purple','',1);
-INSERT INTO scenarios VALUES(6,231,'switch','','book','Чтение',6,'light_green','',1);
 CREATE TABLE sensors (
     id            INTEGER not null primary key autoincrement,
-    view_item_id  INTEGER not null unique references view_items on update cascade on delete cascade,
-    object_id     INTEGER not null unique references om_objects on update cascade on delete cascade,
+    view_item_id  INTEGER not null references view_items on update cascade on delete cascade,
+    object_id     INTEGER not null references om_objects on update cascade on delete cascade,
     type          TEXT    not null default '',
-    min_threshold REAL    not null default 0,
-    max_threshold REAL    not null default 0,
+    min_threshold REAL    default null,
+    max_threshold REAL    default null,
     adjustment    BOOL    not_null default false
 );
 CREATE TABLE temp_presets (

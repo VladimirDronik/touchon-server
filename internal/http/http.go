@@ -81,6 +81,7 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	objects("GET", "/tags", o.handleGetAllObjectsTags)    // получение всех тегов
 	objects("GET", "/by_tags", o.handleGetObjectsByTags)  // получение объектов по тегам
 	objects("GET", "/{id}/state", o.handleGetObjectState) // Получение состояния объекта
+	objects("GET", "/by_props", o.handleGetObjectByProps) // получение объекта по его свойствам
 
 	scripts := o.addMiddleware("/scripts", o.authMiddleware)
 	scripts("GET", "/model", o.handleGetScriptModel)
@@ -188,11 +189,12 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("POST", "/item-change", o.itemChange)
 	private("PATCH", "/items/order", o.setItemsOrder) // Изменение порядка элементов
 
-	// Датчики
+	// Итемы датчиков
 	private("GET", "/item/sensor", o.getSensor)           //получение данных датчика
 	private("POST", "/item/sensor", o.handleCreateSensor) // Создание датчика
-	//private("PATCH", "/item/sensor", o.handleUpdateSensor)
+	private("PATCH", "/item/sensor", o.handleUpdateSensor)
 	private("DELETE", "/item/sensor", o.handleDeleteSensor)
+	private("PATCH", "/item/sensor/value", o.handleSetTargetSensor) //Установка значение target для датчика
 
 	// Загрузка меню
 	private("GET", "/menu", o.getMenu)
