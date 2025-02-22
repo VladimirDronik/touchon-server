@@ -41,6 +41,7 @@ import (
 	_ "touchon-server/internal/object/Sensor/cs"
 	_ "touchon-server/internal/object/Sensor/ds18b20"
 	_ "touchon-server/internal/object/Sensor/htu21d"
+	_ "touchon-server/internal/object/Sensor/htu31d"
 	_ "touchon-server/internal/object/Sensor/motion"
 	_ "touchon-server/internal/object/Sensor/outdoor"
 	_ "touchon-server/internal/object/Sensor/presence"

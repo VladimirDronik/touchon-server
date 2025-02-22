@@ -214,6 +214,7 @@ func ConfigureDevice(interfaceConnection string, addressObject string, options m
 func FillOptions(typeObject string, props map[string]interface{}) (map[string]string, error) {
 	paramsI2C := map[string]map[string]string{
 		"htu21d": {"gr": "1", "d": "1"},
+		"htu31d": {"gr": "1", "d": "56"},
 		"bme280": {"gr": "1", "d": "6"},
 		"bmp280": {"gr": "1", "d": "6"},
 		"bh1750": {"gr": "2", "d": "2"},

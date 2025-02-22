@@ -20,7 +20,7 @@ func init() {
 func MakeModel() (objects.Object, error) {
 	baseObj, err := Sensor.MakeModel()
 	if err != nil {
-		return nil, errors.Wrap(err, "htu21d.MakeModel")
+		return nil, errors.Wrap(err, "ds18b20.MakeModel")
 	}
 
 	obj := &SensorModel{}
