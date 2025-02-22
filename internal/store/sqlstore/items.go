@@ -74,10 +74,16 @@ func (o *Items) DeleteItem(itemID int) error {
 }
 
 // GetScenarios Функция извлекает данные для главной комнтаты на дашборде и отдает их в формате модели
-func (o *Items) GetScenarios() ([]*model.ViewItem, error) {
+func (o *Items) GetScenarios(withDisabledItems bool) ([]*model.ViewItem, error) {
 	r := make([]*model.ViewItem, 0)
 
-	if err := o.store.db.Where("enabled").Where("zone_id IS NULL").Where("type IN ('switch','button')").Order("sort").Find(&r).Error; err != nil {
+	q := o.store.db.Where("zone_id IS NULL").Where("type IN ('switch','button')")
+
+	if withDisabledItems == false {
+		q = q.Where("enabled")
+	}
+
+	if err := q.Order("sort").Find(&r).Error; err != nil {
 		return nil, errors.Wrap(err, "GetScenarios")
 	}
 
@@ -89,10 +95,10 @@ func (o *Items) GetScenarios() ([]*model.ViewItem, error) {
 // наборе для каждой группы запрашиваем элементы отображения, которые относятся к группе. Вместе с этими элементами
 // отображения приходят помещения, в которых эти элементы располагаются. Из этих помещений формируем массив,
 // который прикрепляем к группе параллельно элементам отображения
-func (o *Items) GetZoneItems() ([]*model.GroupRoom, error) {
+func (o *Items) GetZoneItems(withEmptyRooms bool, withDisabledItems bool) ([]*model.GroupRoom, error) {
 	var r []*model.GroupRoom
 
-	zones, err := o.GetZones()
+	zones, err := o.GetZones(withEmptyRooms)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZoneItems")
 	}
@@ -104,12 +110,12 @@ func (o *Items) GetZoneItems() ([]*model.GroupRoom, error) {
 			Style: zone.Style,
 		}
 
-		groupRoom.Sensors, err = o.GetZoneSensors(zone.ID)
+		groupRoom.Sensors, err = o.GetZoneSensors(zone.ID, withDisabledItems)
 		if err != nil {
 			return nil, errors.Wrap(err, "GetZoneItems")
 		}
 
-		groupRoom.Items, err = o.GetItems(zone.ID)
+		groupRoom.Items, err = o.GetItems(zone.ID, withDisabledItems)
 		if err != nil {
 			return nil, errors.Wrap(err, "GetZoneItems")
 		}
@@ -126,8 +132,8 @@ type getZonesRow struct {
 	Children   []*getZonesRow `gorm:"-"`
 }
 
-// GetZones Получение списка помещений в которых имеются итемы
-func (o *Items) GetZones() ([]*model.Zone, error) {
+// GetZones Получение списка помещений в которых имеются итемы (либо без итемов с флагом withEmptyRooms)
+func (o *Items) GetZones(withEmptyRooms bool) ([]*model.Zone, error) {
 	var rows []*getZonesRow
 
 	q := `select zones.id, zones.parent_id, zones.name, zones.style, count(view_items.id) items_count
@@ -172,7 +178,7 @@ func (o *Items) GetZones() ([]*model.Zone, error) {
 	}
 
 	// Рекурсивно удаляем пустые зоны и сортируем
-	items = deleteEmptyZonesAndSort(items)
+	items = deleteEmptyZonesAndSort(items, withEmptyRooms)
 
 	// Рекурсивно перекладываем данные
 	r := zonesRowToZones(items)
@@ -180,15 +186,15 @@ func (o *Items) GetZones() ([]*model.Zone, error) {
 	return r, nil
 }
 
-func deleteEmptyZonesAndSort(items []*getZonesRow) []*getZonesRow {
+func deleteEmptyZonesAndSort(items []*getZonesRow, withEmptyRooms bool) []*getZonesRow {
 	r := items[:0]
 
 	for _, item := range items {
 		if len(item.Children) > 0 {
-			item.Children = deleteEmptyZonesAndSort(item.Children)
+			item.Children = deleteEmptyZonesAndSort(item.Children, withEmptyRooms)
 		}
 
-		if len(item.Children) > 0 || item.ItemsCount > 0 {
+		if len(item.Children) > 0 || item.ItemsCount > 0 || withEmptyRooms {
 			r = append(r, item)
 		}
 	}
@@ -317,12 +323,12 @@ func (o *Items) GetZone(roomID int) (*model.GroupRoom, error) {
 		Style: row.Style,
 	}
 
-	zone.Sensors, err = o.GetZoneSensors(zone.ID)
+	zone.Sensors, err = o.GetZoneSensors(zone.ID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZone")
 	}
 
-	zone.Items, err = o.GetItems(zone.ID)
+	zone.Items, err = o.GetItems(zone.ID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZone")
 	}
@@ -412,7 +418,7 @@ func (o *Items) getMenus(m map[int]*model.Menu, parentIDs ...int) error {
 	return nil
 }
 
-func (o *Items) GetZoneSensors(zoneID int) ([]*model.SensorItem, error) {
+func (o *Items) GetZoneSensors(zoneID int, withDisabledItems bool) ([]*model.SensorItem, error) {
 	zones, err := o.store.Zones().GetZoneTrees(zoneID)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZoneSensors")
@@ -420,7 +426,7 @@ func (o *Items) GetZoneSensors(zoneID int) ([]*model.SensorItem, error) {
 
 	zoneIDs := collectZoneIDs(nil, zones)
 
-	r, err := o.getSensors(zoneIDs...)
+	r, err := o.getSensors(withDisabledItems, zoneIDs...)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZoneSensors")
 	}
@@ -440,17 +446,21 @@ func collectZoneIDs(ids []int, zones []*model.Zone) []int {
 	return ids
 }
 
-func (o *Items) getSensors(zoneIDs ...int) ([]*model.SensorItem, error) {
+func (o *Items) getSensors(withDisabledItems bool, zoneIDs ...int) ([]*model.SensorItem, error) {
 	var sensorsStorage, sensors []*model.SensorItem
 
-	err := o.store.db.Table("view_items").
+	q := o.store.db.Table("view_items").
 		Select("view_items.id AS item_id, view_items.title AS title,"+
 			" view_items.zone_id, sensors.adjustment AS adjustment,"+
 			"view_items.icon AS icon, sensors.type AS type, view_items.auth AS auth, sensors.object_id AS object_id").
 		Joins("INNER JOIN sensors ON view_items.id = sensors.view_item_id").
-		Where("view_items.zone_id in ?", zoneIDs).
-		Where("view_items.enabled").
-		Order("view_items.sort").
+		Where("view_items.zone_id in ?", zoneIDs)
+
+	if withDisabledItems == false {
+		q = q.Where("view_items.enabled")
+	}
+
+	err := q.Order("view_items.sort").
 		Find(&sensorsStorage).Error
 
 	if err != nil {
@@ -477,7 +487,7 @@ func (o *Items) getSensors(zoneIDs ...int) ([]*model.SensorItem, error) {
 }
 
 // GetItems Получение устройств
-func (o *Items) GetItems(zoneID int) ([]*model.ViewItem, error) {
+func (o *Items) GetItems(zoneID int, withDisabledItems bool) ([]*model.ViewItem, error) {
 	zones, err := o.store.Zones().GetZoneTrees(zoneID)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetItems")
@@ -485,7 +495,7 @@ func (o *Items) GetItems(zoneID int) ([]*model.ViewItem, error) {
 
 	zoneIDs := collectZoneIDs(nil, zones)
 
-	r, err := o.getItems(zoneIDs...)
+	r, err := o.getItems(withDisabledItems, zoneIDs...)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetItems")
 	}
@@ -493,16 +503,17 @@ func (o *Items) GetItems(zoneID int) ([]*model.ViewItem, error) {
 	return r, nil
 }
 
-func (o *Items) getItems(zoneIDs ...int) ([]*model.ViewItem, error) {
+func (o *Items) getItems(withDisabledItems bool, zoneIDs ...int) ([]*model.ViewItem, error) {
 	var r []*model.ViewItem
 
-	err := o.store.db.Table("view_items").
-		Select("id, type, title, icon, auth, status, params, color").
-		Where("type NOT IN ('sensor', 'scenario')").
-		Where("enabled").
-		Where("zone_id in ?", zoneIDs).
-		Order("sort").
-		Find(&r).Error
+	q := o.store.db.Table("view_items").
+		Select("id, type, title, icon, auth, status, params, color")
+
+	if withDisabledItems == false {
+		q = q.Where("enabled")
+	}
+
+	err := q.Where("type NOT IN ('sensor', 'scenario')").Where("zone_id IN ?", zoneIDs).Order("sort").Find(&r).Error
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getItems")

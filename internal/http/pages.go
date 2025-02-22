@@ -2,9 +2,8 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
-
 	"github.com/valyala/fasthttp"
+	"net/http"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
@@ -22,17 +21,29 @@ type getControlPanelResponse struct {
 // @Description Получение элементов панели управления
 // @ID GetControlPanel
 // @Produce json
+// @Param with_empty_rooms query string false "Выводить в структуре пустые комнаты" Enums(true, false)
+// @Param with_disabled_items query string false "Выводить в комнатах отключенные итемы" Enums(true, false)
 // @Success      200 {object} Response[getControlPanelResponse]
 // @Failure      400 {object} Response[any]
 // @Failure      500 {object} Response[any]
 // @Router /private/cp [get]
 func (o *Server) getControlPanel(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zoneItems, err := o.outputZoneItems()
+	withEmptyRooms := false
+	if helpers.GetParam(ctx, "with_empty_rooms") == "true" {
+		withEmptyRooms = true
+	}
+
+	withDisabledItems := false
+	if helpers.GetParam(ctx, "with_disabled_items") == "true" {
+		withDisabledItems = true
+	}
+
+	zoneItems, err := o.outputZoneItems(withEmptyRooms, withDisabledItems)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	scenarios, err := store.I.Items().GetScenarios()
+	scenarios, err := store.I.Items().GetScenarios(withDisabledItems)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -107,7 +118,7 @@ func (o *Server) handleCreateZone(ctx *fasthttp.RequestCtx) (interface{}, int, e
 // @Failure      500 {object} Response[any]
 // @Router /private/rooms-list [get]
 func (o *Server) getZones(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zones, err := store.I.Items().GetZones()
+	zones, err := store.I.Items().GetZones(false)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}

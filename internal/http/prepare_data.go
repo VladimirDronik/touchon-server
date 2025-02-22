@@ -9,8 +9,8 @@ import (
 )
 
 // outputZoneItems Формирование JSON с кнопками всех остальных комнат для отправки на сервер
-func (o *Server) outputZoneItems() ([]*model.GroupRoom, error) {
-	groupZoneRep, err := store.I.Items().GetZoneItems()
+func (o *Server) outputZoneItems(withEmptyRooms bool, withDisabledItems bool) ([]*model.GroupRoom, error) {
+	groupZoneRep, err := store.I.Items().GetZoneItems(withEmptyRooms, withDisabledItems)
 	if err != nil {
 		return nil, errors.Wrap(err, "outputZoneItems")
 	}
