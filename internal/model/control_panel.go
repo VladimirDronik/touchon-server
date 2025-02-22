@@ -63,11 +63,9 @@ type Zone struct {
 	Name     string `json:"name"`
 	Style    string `json:"style"`
 	Sort     int    `json:"sort"`
+	IsGroup  bool   `json:"is_group"`
 
 	Children []*Zone `json:"rooms_in_group,omitempty" gorm:"-"`
-
-	// Backward compatibility
-	IsGroup bool `json:"is_group" gorm:"-"`
 }
 
 // Children Структура комнаты для вывода внутри группы

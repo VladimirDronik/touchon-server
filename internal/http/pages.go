@@ -147,12 +147,14 @@ func setIsGroup(items []*model.Zone) {
 // @Description Получение списка всех помещений, независимо от того есть там итемы или нет
 // @ID GetAllZones
 // @Produce json
+// @Param type_zones query string false "Тип выводимых помещений (all - все, groups_only - только группы)" Enums(all, groups_only)
 // @Success      200 {object} Response[[]model.Zone]
 // @Failure      400 {object} Response[any]
 // @Failure      500 {object} Response[any]
 // @Router /private/rooms-list-all [get]
 func (o *Server) getAllZones(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zones, err := store.I.Zones().GetZoneTrees(0)
+	typeZones := helpers.GetParam(ctx, "type_zones")
+	zones, err := store.I.Zones().GetZoneTrees(typeZones)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}

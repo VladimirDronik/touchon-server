@@ -20,11 +20,21 @@ func (z *Zones) CreateZone(zone *model.Zone) (int, error) {
 }
 
 // GetZoneTrees получение всех помещений
-func (z *Zones) GetZoneTrees(parentIDs ...int) ([]*model.Zone, error) {
+func (z *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone, error) {
 	m := make(map[int]*model.Zone, len(parentIDs))
 
 	var rows []*model.Zone
-	if err := z.store.db.Where("id in ?", parentIDs).Find(&rows).Error; err != nil {
+	q := z.store.db
+
+	if parentIDs != nil {
+		q = q.Where("id in ?", parentIDs)
+	}
+
+	if typeZones == "groups_only" {
+		q = q.Where("is_group = true")
+	}
+
+	if err := q.Find(&rows).Error; err != nil {
 		return nil, errors.Wrap(err, "GetZoneTrees")
 	}
 

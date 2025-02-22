@@ -227,12 +227,12 @@ type Lights interface {
 }
 
 type Zones interface {
-	CreateZone(zone *model.Zone) (int, error)                        // Создает новое помещение
-	GetZoneTrees(parentIDs ...int) ([]*model.Zone, error)            // Отдает список всех помещения
-	UpdateZones(zones []*model.Zone) error                           // Изменяет помещения, которые переданы как структура
-	SetOrder(zoneIDs []int) error                                    // Задает порядок сортировки
-	SetFieldValue(zoneID int, field string, value interface{}) error // Установить значение для поля помещения
-	DeleteZone(zoneID int) error                                     //Удаление помещения
+	CreateZone(zone *model.Zone) (int, error)                               // Создает новое помещение
+	GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone, error) // Отдает список всех помещения
+	UpdateZones(zones []*model.Zone) error                                  // Изменяет помещения, которые переданы как структура
+	SetOrder(zoneIDs []int) error                                           // Задает порядок сортировки
+	SetFieldValue(zoneID int, field string, value interface{}) error        // Установить значение для поля помещения
+	DeleteZone(zoneID int) error                                            //Удаление помещения
 }
 
 type Events interface {

@@ -882,24 +882,25 @@ CREATE TABLE zones (
     parent_id INTEGER not null default 0 references zones on update cascade on delete set default,
     name      TEXT    not null default '',
     style     TEXT    not null default '',
-    sort      INTEGER not null default 0
+    sort      INTEGER not null default 0,
+    is_group  BOOL    not null default 0
 );
-INSERT INTO zones VALUES(1,0,'1й этаж','green',1);
-INSERT INTO zones VALUES(2,0,'2й этаж','blue',2);
-INSERT INTO zones VALUES(3,1,'Кухня','green',1);
-INSERT INTO zones VALUES(4,1,'Зал','green',2);
-INSERT INTO zones VALUES(5,1,'Туалет','green',3);
+INSERT INTO zones VALUES(1,0,'1й этаж','green',1, 1);
+INSERT INTO zones VALUES(2,0,'2й этаж','blue',2, 1);
+INSERT INTO zones VALUES(3,1,'Кухня','green',1, 0);
+INSERT INTO zones VALUES(4,1,'Зал','green',2,0 );
+INSERT INTO zones VALUES(5,1,'Туалет','green',3,0);
 INSERT INTO zones VALUES(6,1,'Постирочная','green',4);
-INSERT INTO zones VALUES(7,1,'Гостевая спальня','green',5);
-INSERT INTO zones VALUES(8,2,'Спальня 1','blue',1);
-INSERT INTO zones VALUES(9,2,'Спальня 2','blue',2);
-INSERT INTO zones VALUES(10,2,'Детская','blue',3);
-INSERT INTO zones VALUES(11,2,'Кабинет','blue',4);
-INSERT INTO zones VALUES(12,2,'Туалет','blue',5);
-INSERT INTO zones VALUES(13,0,'Мансарда','green',3);
-INSERT INTO zones VALUES(14,0,'Беседка','orange',4);
-INSERT INTO zones VALUES(15,0,'Гараж','orange',5);
-INSERT INTO zones VALUES(16,0,'Двор','orange',6);
+INSERT INTO zones VALUES(7,1,'Гостевая спальня','green',5,0);
+INSERT INTO zones VALUES(8,2,'Спальня 1','blue',1,0);
+INSERT INTO zones VALUES(9,2,'Спальня 2','blue',2,0);
+INSERT INTO zones VALUES(10,2,'Детская','blue',3,0);
+INSERT INTO zones VALUES(11,2,'Кабинет','blue',4,0);
+INSERT INTO zones VALUES(12,2,'Туалет','blue',5,0);
+INSERT INTO zones VALUES(13,0,'Мансарда','green',3,0);
+INSERT INTO zones VALUES(14,0,'Беседка','orange',4,0);
+INSERT INTO zones VALUES(15,0,'Гараж','orange',5,0);
+INSERT INTO zones VALUES(16,0,'Двор','orange',6,0);
 CREATE TABLE view_items (
     id            INTEGER not null primary key autoincrement,
     parent_id     INTEGER not null default 0 references view_items on update cascade on delete set default,

@@ -419,7 +419,7 @@ func (o *Items) getMenus(m map[int]*model.Menu, parentIDs ...int) error {
 }
 
 func (o *Items) GetZoneSensors(zoneID int, withDisabledItems bool) ([]*model.SensorItem, error) {
-	zones, err := o.store.Zones().GetZoneTrees(zoneID)
+	zones, err := o.store.Zones().GetZoneTrees("all", zoneID)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZoneSensors")
 	}
@@ -488,7 +488,7 @@ func (o *Items) getSensors(withDisabledItems bool, zoneIDs ...int) ([]*model.Sen
 
 // GetItems Получение устройств
 func (o *Items) GetItems(zoneID int, withDisabledItems bool) ([]*model.ViewItem, error) {
-	zones, err := o.store.Zones().GetZoneTrees(zoneID)
+	zones, err := o.store.Zones().GetZoneTrees("all", zoneID)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetItems")
 	}
