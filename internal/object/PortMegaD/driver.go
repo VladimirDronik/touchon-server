@@ -15,7 +15,7 @@ import (
 )
 
 // ResCommand прием команды от megaD
-func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value string) ([]interfaces.Message, error) {
+func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value, countImpulse string) ([]interfaces.Message, error) {
 	objectID, err := store.I.PortRepository().GetPortObjectID(controllerID, portNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "ResCommand")
@@ -78,8 +78,12 @@ func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCou
 		return msgs, nil
 
 	default:
+		cnt, err := strconv.Atoi(countImpulse)
+		if err != nil {
+			return nil, errors.Wrap(err, "ResCommand: count impulse is fall")
+		}
 		// вызываем событие одиночного нажатия
-		msgs = append(msgs, port.OnPress())
+		msgs = append(msgs, port.OnPress(cnt))
 	}
 
 	return msgs, nil

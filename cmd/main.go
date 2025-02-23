@@ -30,6 +30,7 @@ import (
 	httpServer "touchon-server/internal/http"
 	"touchon-server/internal/http/nodered"
 	_ "touchon-server/internal/object/GenericInput"
+	_ "touchon-server/internal/object/ImpulseCounter"
 	_ "touchon-server/internal/object/MegaD"
 	_ "touchon-server/internal/object/Modbus"
 	_ "touchon-server/internal/object/Onokom/Conditioner"

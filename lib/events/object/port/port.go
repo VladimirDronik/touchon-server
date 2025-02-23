@@ -7,7 +7,7 @@ import (
 	"touchon-server/lib/messages"
 )
 
-func NewOnPress(targetID int) (interfaces.Event, error) {
+func NewOnPress(targetID, countImpulse int) (interfaces.Event, error) {
 	msg, err := messages.NewEvent("object.port.on_press", interfaces.TargetTypeObject, targetID)
 	if err != nil {
 		return nil, errors.Wrap(err, "NewOnPress")
@@ -20,6 +20,8 @@ func NewOnPress(targetID int) (interfaces.Event, error) {
 			Description: "Порт замкнут",
 		},
 	}
+
+	o.SetValue("count_impulse", countImpulse)
 
 	return o, nil
 }

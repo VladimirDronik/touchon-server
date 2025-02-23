@@ -11,8 +11,8 @@ import (
 )
 
 // OnPress событие генерируется при замыкании порта
-func (o *PortModel) OnPress() interfaces.Message {
-	msg, err := port.NewOnPress(o.GetID())
+func (o *PortModel) OnPress(countImpulse int) interfaces.Message {
+	msg, err := port.NewOnPress(o.GetID(), countImpulse)
 	if err != nil {
 		g.Logger.Error(errors.Wrap(err, "OnPress"))
 		return nil

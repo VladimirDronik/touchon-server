@@ -98,7 +98,7 @@ func MakeModel() (objects.Object, error) {
 		},
 	}
 
-	onPress, err := port.NewOnPress(0)
+	onPress, err := port.NewOnPress(0, 0)
 	if err != nil {
 		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
 	}

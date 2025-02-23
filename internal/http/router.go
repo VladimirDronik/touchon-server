@@ -49,6 +49,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 	clickCount := helpers.GetParam(ctx, "click") // одинарный (1) или двойной (2) клик
 	holdRelease := helpers.GetParam(ctx, "m")    // при удержании передается 2, при отпускании 1
 	value := helpers.GetParam(ctx, "v")          // Отправляется при срабатывании порта OUT
+	countImpulse := helpers.GetParam(ctx, "c")   // Количество срабатываний порта IN
 
 	var allMsgs []interfaces.Message
 
@@ -83,7 +84,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 			return nil, http.StatusInternalServerError, err
 		}
 
-		msgs, err := port.ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value)
+		msgs, err := port.ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value, countImpulse)
 		if err != nil {
 			err = errors.Wrap(err, "ResCommand")
 			g.Logger.Warn(err)
