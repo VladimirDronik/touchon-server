@@ -211,7 +211,7 @@ func (o *ObjectModelImpl) UnmarshalJSON(data []byte) error {
 	// o.SetType(v.Type)         // Нельзя переопределять с фронта
 	// o.SetInternal(v.Internal) // Нельзя переопределять с фронта
 	o.SetName(v.Name)
-	// o.SetStatus(v.Status)     // Нельзя переопределять с фронта
+	// o.SaveAndSendStatus(v.Status)     // Нельзя переопределять с фронта
 	o.SetTags(v.Tags...)
 	o.SetEnabled(v.Enabled)
 

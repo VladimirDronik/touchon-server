@@ -2,7 +2,6 @@ package Sensor
 
 import (
 	"fmt"
-
 	"github.com/pkg/errors"
 	"touchon-server/internal/objects"
 )

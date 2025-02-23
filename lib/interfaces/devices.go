@@ -8,4 +8,5 @@ type Port interface {
 	Off(args map[string]interface{}) ([]Message, error)
 	Toggle(args map[string]interface{}) ([]Message, error)
 	SetTypeMode(typePt string, modePt string, title string, params map[string]string) error
+	SetPortParams(params map[string]string) (int, error)
 }

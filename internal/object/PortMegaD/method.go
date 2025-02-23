@@ -280,3 +280,8 @@ func (o *PortModel) SetTypeMode(typePt string, modePt string, title string, extP
 
 	return nil
 }
+
+func (o *PortModel) SetPortParams(params map[string]string) (int, error) {
+	code, _, err := o.sendCommand(o.GetContrAddr(), o.GetPortNumber(), false, "", params, time.Duration(5)*time.Second)
+	return code, err
+}

@@ -3,6 +3,7 @@ package ImpulseCounter
 import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/g"
+	helpersObj "touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/impulse_counter"
@@ -150,11 +151,18 @@ func MakeModel() (objects.Object, error) {
 		},
 	}
 
+	//events
 	onThreshold, err := impulse_counter.NewOnThreshold(0, 0)
 	if err != nil {
 		return nil, errors.Wrap(err, "ImpulseCounter.MakeModel")
 	}
 
+	onCheck, err := impulse_counter.NewOnCheck(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "ImpulseCounter.MakeModel")
+	}
+
+	//model
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryGenericInput,
 		"impulse_counter",
@@ -162,7 +170,7 @@ func MakeModel() (objects.Object, error) {
 		"Счетчик импульсов",
 		props,
 		nil,
-		[]interfaces.Event{onThreshold},
+		[]interfaces.Event{onThreshold, onCheck},
 		nil,
 		[]string{"счетчик", "counter", "импульс"},
 	)
@@ -172,6 +180,7 @@ func MakeModel() (objects.Object, error) {
 
 	o := &ImpulseCounter{ObjectModelImpl: impl}
 
+	//methods
 	check, err := objects.NewMethod("check", "Получение количества импульсов", nil, o.Check)
 	if err != nil {
 		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
@@ -214,6 +223,7 @@ func (o *ImpulseCounter) Start() error {
 
 func (o *ImpulseCounter) handler(svc interfaces.MessageSender, msg interfaces.Message) {
 	var err error
+	status := model.StatusAvailable
 
 	switch msg.GetName() {
 	case "object.port.on_press":
@@ -223,8 +233,22 @@ func (o *ImpulseCounter) handler(svc interfaces.MessageSender, msg interfaces.Me
 			return
 		}
 
-		//TODO: логика сбрасывания значений счетчика, с учетом порогового значения
-		o.Check()
+		//логика сбрасывания значений счетчика, с учетом порогового значения
+		resetValue, err := o.GetProps().GetIntValue("reset_value")
+		if err != nil {
+			g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler"))
+			return
+		}
+		err = o.resetTo(65535 - resetValue)
+		if err != nil {
+			g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler: reset counter"))
+			return
+		}
+		err = o.saveImpulses(countImpulse)
+		if err != nil {
+			g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler: save impulse data to DB failed"))
+			return
+		}
 
 		msg, err = impulse_counter.NewOnThreshold(o.GetID(), countImpulse)
 	default:
@@ -232,10 +256,12 @@ func (o *ImpulseCounter) handler(svc interfaces.MessageSender, msg interfaces.Me
 	}
 
 	if err != nil {
+		status = model.StatusUnavailable
 		g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler"))
 		return
 	}
 
+	helpersObj.SaveAndSendStatus(o, status)
 	if err := svc.Send(msg); err != nil {
 		g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler"))
 		return

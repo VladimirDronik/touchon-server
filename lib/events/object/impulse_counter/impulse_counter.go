@@ -30,3 +30,27 @@ func NewOnThreshold(targetID, countImpulse int) (interfaces.Event, error) {
 type OnThreshold struct {
 	interfaces.Event
 }
+
+func NewOnCheck(targetID, countImpulse int) (interfaces.Event, error) {
+	msg, err := messages.NewEvent("object.impulse_counter.on_check", interfaces.TargetTypeObject, targetID)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewOnCheck")
+	}
+
+	o := &OnThreshold{
+		Event: &event.EventImpl{
+			Message:     msg,
+			Title:       "on_check",
+			Description: "Произведено снятие количества импульсов со счетчика",
+		},
+	}
+
+	o.SetValue("count_impulse", countImpulse)
+
+	return o, nil
+}
+
+// OnCheck Произведено снятие количества импульсов со счетчика
+type OnCheck struct {
+	interfaces.Event
+}

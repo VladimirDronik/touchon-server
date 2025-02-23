@@ -98,3 +98,9 @@ func StoreObjectToJsonObject(o *StoreObject) *JsonObject {
 func (o *StoreObject) TableName() string {
 	return "om_objects"
 }
+
+type ObjectForWS struct {
+	ID     int          `json:"item_id"`
+	Status ObjectStatus `json:"status,omitempty"`
+	Value  float32      `json:"value,omitempty" gorm:"-"`
+}
