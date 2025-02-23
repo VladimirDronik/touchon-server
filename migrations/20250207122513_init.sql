@@ -890,7 +890,7 @@ INSERT INTO zones VALUES(2,0,'2й этаж','blue',2, 1);
 INSERT INTO zones VALUES(3,1,'Кухня','green',1, 0);
 INSERT INTO zones VALUES(4,1,'Зал','green',2,0 );
 INSERT INTO zones VALUES(5,1,'Туалет','green',3,0);
-INSERT INTO zones VALUES(6,1,'Постирочная','green',4);
+INSERT INTO zones VALUES(6,1,'Постирочная','green',4, 0);
 INSERT INTO zones VALUES(7,1,'Гостевая спальня','green',5,0);
 INSERT INTO zones VALUES(8,2,'Спальня 1','blue',1,0);
 INSERT INTO zones VALUES(9,2,'Спальня 2','blue',2,0);
