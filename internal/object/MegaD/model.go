@@ -13,6 +13,8 @@ import (
 	"touchon-server/internal/object/PortMegaD"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
+	"touchon-server/lib/events/object/controller"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
 )
 
@@ -30,9 +32,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "password",
@@ -42,9 +44,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "sec",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "address",
@@ -54,9 +56,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "127.0.0.1",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 			CheckValue: func(p *objects.Prop, allProps map[string]*objects.Prop) error {
 				if v, _ := p.GetStringValue(); net.ParseIP(v) == nil {
 					return errors.New("IP address is bad")
@@ -74,9 +76,9 @@ func MakeModel() (objects.Object, error) {
 				Values:       map[string]string{"http": "http", "mqtt": "mqtt"},
 				DefaultValue: "http",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "module",
@@ -86,9 +88,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeBool,
 				DefaultValue: false,
 			},
-			Required: objects.NewRequired(false),
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied),
-			Visible:  objects.NewCondition().AccessLevel(model.AccessLevelDenied),
+			Required: objects.False(),
+			Editable: objects.False(),
+			Visible:  objects.False(),
 		},
 	}
 
@@ -212,6 +214,16 @@ func MakeModel() (objects.Object, error) {
 		children = append(children, port)
 	}
 
+	onLoad, err := controller.NewOnLoad(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "MegaD.MakeModel")
+	}
+
+	onUnavailable, err := controller.NewOnUnavailable(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "MegaD.MakeModel")
+	}
+
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryController,
 		"mega_d",
@@ -219,7 +231,7 @@ func MakeModel() (objects.Object, error) {
 		"MegaD",
 		props,
 		children,
-		[]string{"object.controller.on_load", "object.controller.on_unavailable"},
+		[]interfaces.Event{onLoad, onUnavailable},
 		nil,
 		[]string{"controller", "mega_d"},
 	)

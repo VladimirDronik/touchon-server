@@ -7,43 +7,25 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"touchon-server/internal/model"
+	"touchon-server/internal/g"
 	"touchon-server/internal/store"
-	"touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 )
 
-func New(store store.Store, cfg map[string]string, mqttClient client.Client) (*Scheduler, error) {
-	switch {
-	case store == nil:
-		return nil, errors.Wrap(errors.New("store is nil"), "cron.New")
-	case cfg == nil:
-		return nil, errors.Wrap(errors.New("cfg is nil"), "cron.New")
-	case mqttClient == nil:
-		return nil, errors.Wrap(errors.New("mqttClient is nil"), "cron.New")
-	}
-
+func New() (*Scheduler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Scheduler{
-		logger:     logrus.New(),
-		store:      store,
-		config:     cfg,
-		mqttClient: mqttClient,
-		ctx:        ctx,
-		cancel:     cancel,
+		ctx:    ctx,
+		cancel: cancel,
 	}, nil
 }
 
 type Scheduler struct {
-	logger     *logrus.Logger
-	store      store.Store
-	config     map[string]string
-	mqttClient client.Client
-	ctx        context.Context
-	cancel     context.CancelFunc
-	wg         sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 func (o *Scheduler) Start() error {
@@ -54,7 +36,7 @@ func (o *Scheduler) Start() error {
 
 		tasks, err := store.I.CronRepo().GetEnabledTasks()
 		if err != nil {
-			o.logger.Error(err)
+			g.Logger.Error(err)
 		}
 
 		for {
@@ -66,18 +48,18 @@ func (o *Scheduler) Start() error {
 				if _, _, sec := time.Now().Clock(); sec == 0 {
 					tasks, err = store.I.CronRepo().GetEnabledTasks()
 					if err != nil {
-						o.logger.Error(err)
+						g.Logger.Error(err)
 						continue
 					}
 				}
 
-				m := make(map[string][]*model.CronTask, len(tasks))
+				m := make(map[string][]*interfaces.CronTask, len(tasks))
 				for _, task := range tasks {
 					m[task.Period] = append(m[task.Period], task)
 				}
 
 				if err := o.task(m); err != nil {
-					o.logger.Error(err)
+					g.Logger.Error(err)
 					continue
 				}
 			}
@@ -112,7 +94,7 @@ var taskConditions = map[string]func(h, m, s int) bool{
 	"12h": func(h, m, s int) bool { return s == 0 && m == 0 && h%12 == 0 },
 }
 
-func (o *Scheduler) task(tasks map[string][]*model.CronTask) error {
+func (o *Scheduler) task(tasks map[string][]*interfaces.CronTask) error {
 	h, m, s := time.Now().Clock()
 
 	for period, cond := range taskConditions {
@@ -127,11 +109,11 @@ func (o *Scheduler) task(tasks map[string][]*model.CronTask) error {
 	return nil
 }
 
-func (o *Scheduler) doAction(tasks []*model.CronTask) error {
+func (o *Scheduler) doAction(tasks []*interfaces.CronTask) error {
 	for _, task := range tasks {
 		for _, act := range task.Actions {
 			switch act.Type {
-			case model.ActionTypeDelay:
+			case interfaces.ActionTypeDelay:
 				v, ok := act.Args["duration"]
 				if !ok {
 					return errors.Wrap(errors.New("duration not found"), "doAction")
@@ -149,15 +131,13 @@ func (o *Scheduler) doAction(tasks []*model.CronTask) error {
 
 				time.Sleep(d)
 
-			case model.ActionTypeMethod:
+			case interfaces.ActionTypeMethod:
 				msg, err := messages.NewCommand(act.Name, act.TargetType, act.TargetID, act.Args)
 				if err != nil {
 					return errors.Wrap(err, "doAction")
 				}
 
-				msg.SetTopic(msg.GetPublisher() + "/command")
-
-				if err := o.mqttClient.Send(msg); err != nil {
+				if err := g.Msgs.Send(msg); err != nil {
 					return errors.Wrap(err, "doAction")
 				}
 

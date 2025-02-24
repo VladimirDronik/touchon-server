@@ -31,7 +31,6 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 	fmt.Print("Version: ", cfg["version"], "\n\n\n")
 
 	info.Config = cfg
-	info.Name = cfg["service_name"]
 
 	logger, err := models.NewLogger(cfg["log_level"])
 	if err != nil {
@@ -48,7 +47,7 @@ func Prolog(banner string, configDefaults map[string]string, version, buildAt st
 
 	logger.Debugf("ENV: %#v", cfg)
 
-	db, err := helpers.NewDB(cfg["database_url"])
+	db, err := helpers.NewDB(cfg["database_url"], logger)
 	if err != nil {
 		return nil, nil, nil, nil, errors.Wrap(err, "Prolog")
 	}

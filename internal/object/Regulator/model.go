@@ -5,18 +5,17 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/regulator"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	mqttClient "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
 )
 
-type Type string // Тип регулятора
+type Type = string // Тип регулятора
 
 const (
 	TypeSimple  Type = "simple"  // Простой регулятор, управление одним выходом
@@ -31,33 +30,21 @@ func init() {
 func MakeModel() (objects.Object, error) {
 	props := []*objects.Prop{
 		{
-			Code:        "enable",
-			Name:        "Состояние регулятора",
-			Description: "true - автоматический режим, false - регулятор выключен",
-			Item: &models.Item{
-				Type:         models.DataTypeBool,
-				DefaultValue: false,
-			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
-		},
-		{
 			Code:        "type",
 			Name:        "Тип регулятора",
 			Description: "",
 			Item: &models.Item{
 				Type: models.DataTypeEnum,
 				Values: map[string]string{
-					string(TypeSimple):  "Simple",
-					string(TypeComplex): "Complex",
-					string(TypePID):     "PID",
+					TypeSimple:  "Simple",
+					TypeComplex: "Complex",
+					TypePID:     "PID",
 				},
-				DefaultValue: string(TypeSimple),
+				DefaultValue: TypeSimple,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "fallback_sensor_value_id",
@@ -67,9 +54,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(false),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.False(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "sensor_value_ttl",
@@ -79,9 +66,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 30,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.AboveOrEqual1(),
 		},
 		{
@@ -92,9 +79,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.BelowOrEqual("target_sp"),
 		},
 		{
@@ -105,9 +92,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.BelowOrEqual("max_sp"),
 		},
 		{
@@ -118,9 +105,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "below_tolerance",
@@ -130,9 +117,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.BelowOrEqual("above_tolerance"),
 		}, {
 			Code:        "above_tolerance",
@@ -142,9 +129,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "complex_tolerance",
@@ -154,10 +141,45 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
-			Required: objects.NewCondition().PropValueEq("type", string(TypeComplex)),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.NewCondition().PropValueEq("type", TypeComplex),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
+	}
+
+	onBelow, err := regulator.NewOnBelow(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onAbove, err := regulator.NewOnAbove(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onStale, err := regulator.NewOnStale(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexBelow1, err := regulator.NewOnComplexBelow1(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexBelow2, err := regulator.NewOnComplexBelow2(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexAbove1, err := regulator.NewOnComplexAbove1(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
+	}
+
+	onComplexAbove2, err := regulator.NewOnComplexAbove2(0, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Regulator.MakeModel")
 	}
 
 	impl, err := objects.NewObjectModelImpl(
@@ -167,15 +189,7 @@ func MakeModel() (objects.Object, error) {
 		"Регулятор",
 		props,
 		nil,
-		[]string{
-			"object.regulator.on_below",
-			"object.regulator.on_above",
-			"object.regulator.on_stale",
-			"object.regulator.on_complex_below_1",
-			"object.regulator.on_complex_above_1",
-			"object.regulator.on_complex_below_2",
-			"object.regulator.on_complex_above_2",
-		},
+		[]interfaces.Event{onBelow, onAbove, onStale, onComplexBelow1, onComplexBelow2, onComplexAbove1, onComplexAbove2},
 		nil,
 		[]string{"regulator"},
 	)
@@ -190,122 +204,129 @@ func MakeModel() (objects.Object, error) {
 
 type RegulatorModel struct {
 	*objects.ObjectModelImpl
-	timer *helpers.Timer
 }
 
-func (o *RegulatorModel) sensorOnCheckHandler(messages.Message) ([]messages.Message, error) {
-	// Получаем значения свойств
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
-	}
-
-	if !enable {
-		return nil, nil
+func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ interfaces.Message) {
+	if !o.GetEnabled() {
+		return
 	}
 
 	// Раз попали сюда, значит значение датчика обновилось
 	// o.timer будет nil, если не выполняли вызов метода Start
 	// Start вызывается в memstore, не вызывается в http эндпоинтах
-	if o.timer != nil {
-		o.timer.Reset()
+	if o.GetTimer() != nil {
+		o.GetTimer().Reset()
 	}
 
 	regTypeS, err := o.GetProps().GetStringValue("type")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 	regType := Type(regTypeS)
 
 	fallbackSensorValueID, err := o.GetProps().GetIntValue("fallback_sensor_value_id")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	//minSP, err := o.GetProps().GetFloatValue("min_sp")
 	//if err != nil {
-	//	return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+	//context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	//return
 	//}
 	//
 	//maxSP, err := o.GetProps().GetFloatValue("max_sp")
 	//if err != nil {
-	//	return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+	//context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	//return
 	//}
 
 	targetSP, err := o.GetProps().GetFloatValue("target_sp")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	aboveTolerance, err := o.GetProps().GetFloatValue("above_tolerance")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	belowTolerance, err := o.GetProps().GetFloatValue("below_tolerance")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	complexTolerance, err := o.GetProps().GetFloatValue("complex_tolerance")
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	parentID := o.GetParentID()
 	if parentID == nil {
-		return nil, errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	// Запрос данных TargetSensor
 	sensorValue, err := o.requestSensorValue(*parentID)
 	if err != nil {
 		if fallbackSensorValueID < 1 {
-			return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			return
 		}
 
 		sensorValue, err = o.requestSensorValue(fallbackSensorValueID)
 		if err != nil {
-			return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			return
 		}
 	}
 
-	var msg messages.Message
+	var msg interfaces.Message
 
 	switch regType {
 	case TypeSimple:
 		switch {
 		case sensorValue < (targetSP - belowTolerance): // TODO minSP ???
-			msg, err = regulator.NewOnBelowMessage("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnBelow(*parentID, sensorValue)
 		case sensorValue > (targetSP + aboveTolerance): // TODO maxSP ???
-			msg, err = regulator.NewOnAboveMessage("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnAbove(*parentID, sensorValue)
 		}
 
 	case TypeComplex:
 		switch {
 		case sensorValue < (targetSP - complexTolerance - belowTolerance):
-			msg, err = regulator.NewOnComplexBelow1Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexBelow1(*parentID, sensorValue)
 		case sensorValue < (targetSP - complexTolerance + aboveTolerance):
-			msg, err = regulator.NewOnComplexAbove1Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexAbove1(*parentID, sensorValue)
 		case sensorValue > (targetSP + complexTolerance - belowTolerance):
-			msg, err = regulator.NewOnComplexBelow2Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexBelow2(*parentID, sensorValue)
 		case sensorValue > (targetSP + complexTolerance + aboveTolerance):
-			msg, err = regulator.NewOnComplexAbove2Message("object_manager/object/event", *parentID, sensorValue)
+			msg, err = regulator.NewOnComplexAbove2(*parentID, sensorValue)
 		}
 
 	case TypePID:
 		err = errors.New("regulator(TypePID) logic not implemented")
 
 	default:
-		return nil, errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler")
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := svc.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	}
 }
 
 func (o *RegulatorModel) requestSensorValue(sensorValueID int) (float32, error) {
@@ -327,15 +348,6 @@ func (o *RegulatorModel) Start() error {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "RegulatorModel.Start")
-	}
-
-	if !enable {
-		return nil
-	}
-
 	parentID := o.GetParentID()
 	if parentID == nil {
 		return errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.Start")
@@ -347,11 +359,9 @@ func (o *RegulatorModel) Start() error {
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.sensor.on_check",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		sensorValue.ParentID,
 		o.sensorOnCheckHandler,
 	)
@@ -364,46 +374,40 @@ func (o *RegulatorModel) Start() error {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	o.timer = helpers.NewTimer(time.Duration(sensorValueTTL)*time.Second, o.timerHandler)
-	o.timer.Start()
+	o.SetTimer(time.Duration(sensorValueTTL)*time.Second, o.timerHandler)
+	o.GetTimer().Start()
 
-	context.Logger.Debugf("Regulator(%d) started", o.GetID())
+	g.Logger.Debugf("Regulator(%d) started", o.GetID())
 
 	return nil
 }
 
 func (o *RegulatorModel) timerHandler() {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
+	if !o.GetEnabled() {
 		return
 	}
 
-	if !enable {
-		return
-	}
-
-	context.Logger.Debugf("Regulator(%d): timerHandler(%s)", o.GetID(), o.timer.GetDuration())
+	g.Logger.Debugf("Regulator(%d): timerHandler(%s)", o.GetID(), o.GetTimer().GetDuration())
 
 	parentID := o.GetParentID()
 	if parentID == nil {
-		context.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.timerHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.timerHandler"))
 		return
 
 	}
 
-	msg, err := regulator.NewOnStaleMessage("object_manager/object/event", *parentID)
+	msg, err := regulator.NewOnStale(*parentID)
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
 		return
 	}
 
-	if err := mqttClient.I.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
+	if err := g.Msgs.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
 		return
 	}
 
-	o.timer.Reset()
+	o.GetTimer().Reset()
 }
 
 func (o *RegulatorModel) Shutdown() error {
@@ -411,18 +415,9 @@ func (o *RegulatorModel) Shutdown() error {
 		return errors.Wrap(err, "RegulatorModel.Shutdown")
 	}
 
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "RegulatorModel.Shutdown")
-	}
+	o.GetTimer().Stop()
 
-	if !enable {
-		return nil
-	}
-
-	o.timer.Stop()
-
-	context.Logger.Debugf("Regulator(%d) stopped", o.GetID())
+	g.Logger.Debugf("Regulator(%d) stopped", o.GetID())
 
 	return nil
 }

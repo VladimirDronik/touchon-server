@@ -8,30 +8,29 @@ import (
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
-	_ "touchon-server/lib/events"
 	"touchon-server/lib/events/object/relay"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
-func (o *RelayModel) On(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) On(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
 	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
 	if err != nil {
-		return nil, errors.Wrap(err, "getValues")
+		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
-	relayMsg, err := relay.NewOnStateMessage("object_manager/object/event", o.GetID())
+	relayMsg, err := relay.NewOnStateOn(o.GetID())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
 	portMsg, err := portObj.On(nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
 	//TODO:: сделать тут сохранение статуса объекта в БД
@@ -39,7 +38,7 @@ func (o *RelayModel) On(args map[string]interface{}) ([]messages.Message, error)
 	return append(portMsg, relayMsg), nil
 }
 
-func (o *RelayModel) Off(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) Off(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return nil, err
@@ -47,17 +46,17 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]messages.Message, error
 
 	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
 	if err != nil {
-		return nil, errors.Wrap(err, "getValues")
+		return nil, errors.Wrap(err, "RelayModel.Off")
 	}
 
-	relayMsg, err := relay.NewOffStateMessage("object_manager/object/event", o.GetID())
+	relayMsg, err := relay.NewOnStateOff(o.GetID())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.Off")
 	}
 
 	portMsg, err := portObj.Off(nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.Off")
 	}
 
 	//TODO:: сделать тут сохранение статуса объекта в БД
@@ -65,25 +64,34 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]messages.Message, error
 	return append(portMsg, relayMsg), nil
 }
 
-func (o *RelayModel) Toggle(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
 	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
 	if err != nil {
-		return nil, errors.Wrap(err, "getValues")
+		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
 	portMsg, err := portObj.Toggle(nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
-	relayMsg, err := events.NewOnChangeStateMessage("object_manager/object/event", messages.TargetTypeObject, o.GetID(), strings.ToLower(portMsg[0].GetPayload()["state"].(string)), "")
+	var state string
+	if len(portMsg) > 0 && portMsg[0].GetPayload() != nil {
+		if v, ok := portMsg[0].GetPayload()["state"]; ok {
+			if v, ok := v.(string); ok {
+				state = v
+			}
+		}
+	}
+
+	relayMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), "")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
 	//TODO:: сделать тут сохранение статуса объекта в БД
@@ -91,26 +99,26 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]messages.Message, er
 	return append(portMsg, relayMsg), nil
 }
 
-func (o *RelayModel) Check(args map[string]interface{}) ([]messages.Message, error) {
+func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.Check")
 	}
 
 	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
 	if err != nil {
-		return nil, errors.Wrap(err, "getValues")
+		return nil, errors.Wrap(err, "RelayModel.Check")
 	}
 
 	stateRelay, err := portObj.GetPortState("get", nil, time.Duration(1)*time.Second)
 	if err != nil {
-		return nil, errors.Wrap(err, "getValues")
+		return nil, errors.Wrap(err, "RelayModel.Check")
 	}
 
-	relayMsg, err := relay.NewCheckMessage("object_manager/object/event", messages.TargetTypeObject, o.GetID(), strings.ToLower(stateRelay), "")
+	relayMsg, err := relay.NewOnCheck(o.GetID(), strings.ToLower(stateRelay), "")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RelayModel.Check")
 	}
 
-	return []messages.Message{relayMsg}, nil
+	return []interfaces.Message{relayMsg}, nil
 }

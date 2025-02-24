@@ -3,20 +3,20 @@ package objects
 import (
 	"encoding/json"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
-	mqttService "touchon-server/internal/mqtt"
-	"touchon-server/internal/mqtt/subscribers"
 	"touchon-server/internal/store"
-	"touchon-server/lib/event"
 	"touchon-server/lib/helpers"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 )
 
 // Implementation of Object interface
 
-func NewObjectModelImpl(category model.Category, objType string, internal bool, name string, props []*Prop, children []Object, events []string, methods []*Method, tags []string) (*ObjectModelImpl, error) {
+func NewObjectModelImpl(category model.Category, objType string, internal bool, name string, props []*Prop, children []Object, events []interfaces.Event, methods []*Method, tags []string) (*ObjectModelImpl, error) {
 	o := &ObjectModelImpl{
 		category: category,
 		objType:  objType,
@@ -28,6 +28,7 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 		events:   NewEvents(),
 		methods:  NewMethods(),
 		tags:     make(map[string]bool, len(tags)),
+		enabled:  true,
 	}
 
 	if err := o.GetProps().Add(props...); err != nil {
@@ -37,15 +38,8 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 	o.GetChildren().Add(children...)
 	o.GetMethods().Add(methods...)
 
-	for _, eventName := range events {
-		event, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "NewObjectModelImpl")
-		}
-
-		if err := o.GetEvents().Add(event); err != nil {
-			return nil, errors.Wrap(err, "NewObjectModelImpl")
-		}
+	if err := o.GetEvents().Add(events...); err != nil {
+		return nil, errors.Wrap(err, "NewObjectModelImpl")
 	}
 
 	o.SetTags(tags...)
@@ -56,7 +50,7 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 type ObjectModelImpl struct {
 	id       int
 	parentID *int
-	zoneID   int
+	zoneID   *int
 
 	category model.Category
 	objType  string
@@ -69,8 +63,12 @@ type ObjectModelImpl struct {
 	events   *Events
 	methods  *Methods
 	tags     map[string]bool
+	enabled  bool
 
-	mqttMsgHandlerIDs []int
+	msgHandlerIDs []int
+
+	// Используется для выполнения периодических действий
+	intervalTimer *helpers.Timer
 }
 
 func (o *ObjectModelImpl) GetID() int {
@@ -89,11 +87,11 @@ func (o *ObjectModelImpl) SetParentID(parentID *int) {
 	o.parentID = parentID
 }
 
-func (o *ObjectModelImpl) GetZoneID() int {
+func (o *ObjectModelImpl) GetZoneID() *int {
 	return o.zoneID
 }
 
-func (o *ObjectModelImpl) SetZoneID(zoneID int) {
+func (o *ObjectModelImpl) SetZoneID(zoneID *int) {
 	o.zoneID = zoneID
 }
 
@@ -180,6 +178,7 @@ func (o *ObjectModelImpl) MarshalJSON() ([]byte, error) {
 		Events:   events,
 		Methods:  methods,
 		Tags:     o.GetTags(),
+		Enabled:  o.GetEnabled(),
 	})
 }
 
@@ -214,6 +213,7 @@ func (o *ObjectModelImpl) UnmarshalJSON(data []byte) error {
 	o.SetName(v.Name)
 	// o.SetStatus(v.Status)     // Нельзя переопределять с фронта
 	o.SetTags(v.Tags...)
+	o.SetEnabled(v.Enabled)
 
 	return nil
 }
@@ -236,6 +236,7 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 	o.SetName(storeObj.Name)
 	o.SetStatus(storeObj.Status)
 	o.SetTagsMap(storeObj.Tags)
+	o.SetEnabled(storeObj.Enabled)
 
 	// Загружаем свойства объекта
 	props, err := store.I.ObjectRepository().GetProps(storeObj.ID)
@@ -307,19 +308,32 @@ func (o *ObjectModelImpl) Save() error {
 	return nil
 }
 
-func (o *ObjectModelImpl) Subscribe(publisher, topic string, msgType messages.MessageType, name string, targetType messages.TargetType, targetID *int, handler subscribers.MqttMsgHandler) error {
-	handlerID, err := mqttService.I.Subscribe(publisher, topic, msgType, name, targetType, targetID, handler)
+func (o *ObjectModelImpl) Subscribe(msgType interfaces.MessageType, name string, targetType interfaces.TargetType, targetID *int, handler interfaces.MsgHandler) error {
+	handlerID, err := g.Msgs.Subscribe(msgType, name, targetType, targetID, handler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Subscribe")
 	}
 
-	o.mqttMsgHandlerIDs = append(o.mqttMsgHandlerIDs, handlerID)
+	o.msgHandlerIDs = append(o.msgHandlerIDs, handlerID)
+
+	return nil
+}
+
+func (o *ObjectModelImpl) CheckEnabled() error {
+	if !o.enabled {
+		return ErrObjectDisabled
+	}
 
 	return nil
 }
 
 func (o *ObjectModelImpl) Start() error {
-	err := o.Subscribe("", "", messages.MessageTypeCommand, "", messages.TargetTypeObject, &o.id, o.mqttMsgHandler)
+	if err := o.CheckEnabled(); err != nil {
+		return errors.Wrap(err, "ObjectModelImpl.Start")
+	}
+
+	// Подписываем объект на обработку команд (вызов методов)
+	err := o.Subscribe(interfaces.MessageTypeCommand, "", interfaces.TargetTypeObject, &o.id, o.commandHandler)
 	if err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
@@ -327,23 +341,40 @@ func (o *ObjectModelImpl) Start() error {
 	return nil
 }
 
-// MqttMsgHandler позволяет обрабатывать сообщения из брокера сообщений
-func (o *ObjectModelImpl) mqttMsgHandler(msg messages.Message) ([]messages.Message, error) {
-	method, err := o.GetMethods().Get(msg.GetName())
-	if err != nil {
-		return nil, errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler")
+func (o *ObjectModelImpl) commandHandler(svc interfaces.MessageSender, msg interfaces.Message) {
+	cmd, ok := msg.(interfaces.Command)
+	if !ok {
+		g.Logger.Error(errors.Wrap(errors.Errorf("msg is not command: %T", msg), "ObjectModelImpl.commandHandler"))
+		return
 	}
 
-	msgs, err := method.Func(msg.GetPayload())
+	method, err := o.GetMethods().Get(cmd.GetName())
 	if err != nil {
-		return nil, errors.Wrap(err, "ObjectModelImpl.mqttMsgHandler")
+		g.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
+		return
 	}
 
-	return msgs, nil
+	msgsList, err := method.Func(cmd.GetArgs())
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
+		return
+	}
+
+	if err := svc.Send(msgsList...); err != nil {
+		g.Logger.Error(errors.Wrap(err, "ObjectModelImpl.commandHandler"))
+	}
 }
 
 func (o *ObjectModelImpl) Shutdown() error {
-	mqttService.I.Unsubscribe(o.mqttMsgHandlerIDs...)
+	if err := o.CheckEnabled(); err != nil {
+		return errors.Wrap(err, "ObjectModelImpl.Shutdown")
+	}
+
+	g.Msgs.Unsubscribe(o.msgHandlerIDs...)
+
+	if o.intervalTimer != nil {
+		o.intervalTimer.Stop()
+	}
 
 	return nil
 }
@@ -359,6 +390,7 @@ func (o *ObjectModelImpl) GetStoreObject() *model.StoreObject {
 		Name:     o.name,
 		Status:   o.status,
 		Tags:     o.GetTagsMap(),
+		Enabled:  o.enabled,
 	}
 }
 
@@ -408,6 +440,14 @@ func (o *ObjectModelImpl) SetTagsMap(tags map[string]bool) {
 	}
 }
 
+func (o *ObjectModelImpl) GetEnabled() bool {
+	return o.enabled
+}
+
+func (o *ObjectModelImpl) SetEnabled(v bool) {
+	o.enabled = v
+}
+
 func (o *ObjectModelImpl) DeleteChildren() error {
 	for _, child := range o.GetChildren().GetAll() {
 		if err := child.DeleteChildren(); err != nil {
@@ -416,4 +456,31 @@ func (o *ObjectModelImpl) DeleteChildren() error {
 	}
 
 	return nil
+}
+
+func (o *ObjectModelImpl) SetTimer(interval time.Duration, handler func()) {
+	if o.intervalTimer != nil {
+		o.intervalTimer.Stop()
+	}
+
+	o.intervalTimer = helpers.NewTimer(interval, handler)
+}
+
+func (o *ObjectModelImpl) GetTimer() *helpers.Timer {
+	return o.intervalTimer
+}
+
+func (o *ObjectModelImpl) GetState() (interfaces.Message, error) {
+	msg, err := messages.NewEvent("on_get_state", interfaces.TargetTypeObject, o.GetID())
+	if err != nil {
+		return nil, errors.Wrap(err, "ObjectModelImpl.GetState")
+	}
+
+	for _, p := range o.GetProps().GetAll().GetValueList() {
+		if p.Visible.Check(o.GetProps()) {
+			msg.SetValue(p.Code, p.GetValue())
+		}
+	}
+
+	return msg, nil
 }

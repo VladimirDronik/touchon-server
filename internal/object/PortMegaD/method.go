@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 )
 
 type method struct {
@@ -84,24 +85,24 @@ func (o *PortModel) GetPortNumber() int {
 }
 
 // On Включаем порт
-func (o *PortModel) On(args map[string]interface{}) ([]messages.Message, error) {
+func (o *PortModel) On(args map[string]interface{}) ([]interfaces.Message, error) {
 	command := fmt.Sprintf("%d:1", o.GetPortNumber())
 	return o.setPortStatus(false, command, nil)
 }
 
 // Off Выключаем порт
-func (o *PortModel) Off(args map[string]interface{}) ([]messages.Message, error) {
+func (o *PortModel) Off(args map[string]interface{}) ([]interfaces.Message, error) {
 	command := fmt.Sprintf("%d:0", o.GetPortNumber())
 	return o.setPortStatus(false, command, nil)
 }
 
-func (o *PortModel) Toggle(args map[string]interface{}) ([]messages.Message, error) {
+func (o *PortModel) Toggle(args map[string]interface{}) ([]interfaces.Message, error) {
 	command := fmt.Sprintf("%d:2", o.GetPortNumber())
 	return o.setPortStatus(false, command, nil)
 }
 
 // SetPWM установка ШИМ для порта
-func (o *PortModel) SetPWM(args map[string]interface{}) (msgs []messages.Message, e error) {
+func (o *PortModel) SetPWM(args map[string]interface{}) (msgs []interfaces.Message, e error) {
 	value := 0
 	smooth := 0
 
@@ -115,7 +116,7 @@ func (o *PortModel) SetPWM(args map[string]interface{}) (msgs []messages.Message
 	}
 
 	defer func() {
-		msg, err := messages.NewCommand("check", messages.TargetTypeObject, o.GetID(), nil)
+		msg, err := messages.NewCommand("check", interfaces.TargetTypeObject, o.GetID(), nil)
 		if err != nil {
 			e = errors.Wrap(err, "SetPWM")
 		}
@@ -151,7 +152,7 @@ func (o *PortModel) SetPWM(args map[string]interface{}) (msgs []messages.Message
 	return msgs, nil
 }
 
-func (o *PortModel) Impulse(args map[string]interface{}) ([]messages.Message, error) {
+func (o *PortModel) Impulse(args map[string]interface{}) ([]interfaces.Message, error) {
 	value := 0
 
 	if args["value"] != nil {
@@ -179,7 +180,7 @@ func (o *PortModel) Impulse(args map[string]interface{}) ([]messages.Message, er
 }
 
 // Check получение статуса порта
-func (o *PortModel) Check(args map[string]interface{}) ([]messages.Message, error) {
+func (o *PortModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
 	newState, err := o.GetPortState("get", nil, time.Duration(5)*time.Second)
 	if err != nil {
 		// сообщаем, что порт не поменял свой статус и отдаем текущее состояние порта
@@ -188,7 +189,7 @@ func (o *PortModel) Check(args map[string]interface{}) ([]messages.Message, erro
 
 	if string(o.GetStatus()) == newState { // если статус порта пришел такой же, как был уже в БД
 		msg := o.OnCheck(string(o.GetStatus()))
-		return []messages.Message{msg}, nil
+		return []interfaces.Message{msg}, nil
 	}
 
 	switch newState {
@@ -201,16 +202,16 @@ func (o *PortModel) Check(args map[string]interface{}) ([]messages.Message, erro
 	// заносим статус порта в БД
 	go func() {
 		if err := store.I.ObjectRepository().SetObjectStatus(o.GetID(), newState); err != nil {
-			context.Logger.Error(errors.Wrap(err, "PortModel.Check"))
+			g.Logger.Error(errors.Wrap(err, "PortModel.Check"))
 		}
 	}()
 
 	msg := o.OnChangeState(newState)
-	return []messages.Message{msg}, nil
+	return []interfaces.Message{msg}, nil
 }
 
 // setPortStatus установка статуса для порта
-func (o *PortModel) setPortStatus(portOption bool, command string, params map[string]string) ([]messages.Message, error) {
+func (o *PortModel) setPortStatus(portOption bool, command string, params map[string]string) ([]interfaces.Message, error) {
 	code, _, err := o.sendCommand(o.GetContrAddr(), o.GetPortNumber(), portOption, command, params, time.Duration(5)*time.Second)
 	if err != nil {
 		return nil, errors.Wrap(err, "setPortStatus")
@@ -261,6 +262,7 @@ func (o *PortModel) SetTypeMode(typePt string, modePt string, title string, extP
 		params[modeParam[0]] = modeParam[1]
 	}
 
+	time.Sleep(300 * time.Millisecond)
 	//Второй раз отправляем на контроллер команду, потому что сразу он не может поменять и тип порта и режим
 	code, _, err = o.sendCommand(o.GetContrAddr(), o.GetPortNumber(), false, command, params, time.Duration(5)*time.Second)
 	if err != nil || code > 299 {
@@ -268,8 +270,13 @@ func (o *PortModel) SetTypeMode(typePt string, modePt string, title string, extP
 	}
 
 	//Если получилось поменять тип и режим порта, то в БД тоже меняем
-	store.I.ObjectRepository().SetProp(o.GetID(), "type", typePt)
-	store.I.ObjectRepository().SetProp(o.GetID(), "mode", modePt)
+	if err := store.I.ObjectRepository().SetProp(o.GetID(), "type", typePt); err != nil {
+		return errors.Wrap(err, "SetTypeMode")
+	}
+
+	if err := store.I.ObjectRepository().SetProp(o.GetID(), "mode", modePt); err != nil {
+		return errors.Wrap(err, "SetTypeMode")
+	}
 
 	return nil
 }

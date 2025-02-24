@@ -8,15 +8,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/context"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // ResCommand прием команды от megaD
-func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value string) ([]messages.Message, error) {
+func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCount, holdRelease, value string) ([]interfaces.Message, error) {
 	objectID, err := store.I.PortRepository().GetPortObjectID(controllerID, portNumber)
 	if err != nil {
 		return nil, errors.Wrap(err, "ResCommand")
@@ -39,7 +38,7 @@ func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCou
 		return nil, errors.Wrap(errors.New("Поддержка расширителя не реализована"), "ResCommand")
 	}
 
-	msgs := make([]messages.Message, 0, 10)
+	msgs := make([]interfaces.Message, 0, 10)
 
 	switch {
 	case clickCount == "2":
@@ -105,7 +104,7 @@ func (o *PortModel) sendCommand(contrAddr string, portNumber int, portOption boo
 	u := fmt.Sprintf("http://%s/sec/?%s", contrAddr, args.Encode())
 
 	status, body, err := fasthttp.GetTimeout(nil, u, timeout)
-	context.Logger.Debugf("PortModel.sendCommand: GET %s Status=%d Body=%q Err=%v", u, status, body, err)
+	//g.Logger.Debugf("PortModel.sendCommand: GET %s Status=%d Body=%q Err=%v", u, status, body, err)
 	if err != nil {
 		return 0, nil, errors.Wrap(err, "sendCommand")
 	}

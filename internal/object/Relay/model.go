@@ -4,12 +4,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
+	"touchon-server/lib/events/object/relay"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -26,9 +27,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "interface",
@@ -38,10 +39,30 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "MEGA-OUT",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
+	}
+
+	onChangeState, err := events.NewOnChangeState(interfaces.TargetTypeObject, 0, "", "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
+	}
+
+	onStateOn, err := relay.NewOnStateOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
+	}
+
+	onStateOff, err := relay.NewOnStateOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
+	}
+
+	onCheck, err := relay.NewOnCheck(0, "", "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Relay.MakeModel")
 	}
 
 	impl, err := objects.NewObjectModelImpl(
@@ -51,12 +72,7 @@ func MakeModel() (objects.Object, error) {
 		"Реле",
 		props,
 		nil,
-		[]string{
-			"on_change_state",
-			"object.relay.on_state_on",
-			"object.relay.on_state_off",
-			"object.relay.on_check",
-		},
+		[]interfaces.Event{onChangeState, onStateOn, onStateOff, onCheck},
 		nil,
 		[]string{"Лампа", "relay", "output", "Насос", "Вентилятор", "Розетка", "Реле"},
 	)
@@ -106,11 +122,9 @@ func (o *RelayModel) Start() error {
 	}
 
 	err = o.Subscribe(
+		interfaces.MessageTypeEvent,
 		"",
-		"",
-		messages.MessageTypeEvent,
-		"",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.handler,
 	)
@@ -118,32 +132,37 @@ func (o *RelayModel) Start() error {
 		return errors.Wrap(err, "Relay.Start")
 	}
 
-	context.Logger.Debugf("Relay(%d) started", o.GetID())
+	g.Logger.Debugf("Relay(%d) started", o.GetID())
 
 	return nil
 }
 
-func (o *RelayModel) handler(msg messages.Message) ([]messages.Message, error) {
-	context.Logger.Debugf("Relay(%d): handler()", o.GetID())
+func (o *RelayModel) handler(svc interfaces.MessageSender, msg interfaces.Message) {
+	g.Logger.Debugf("Relay(%d): handler()", o.GetID())
 
 	var err error
 
 	switch msg.GetName() {
 	case "object.port.on_change_state":
-		msg, err = events.NewOnChangeStateMessage("object_manager/object/event", messages.TargetTypeObject, o.GetID(), strings.ToLower(msg.GetPayload()["status"].(string)), "")
+		// TODO
+		var state string // = msg.GetPayload()["status"].(string)
+		msg, err = events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), "")
 	default:
-		return nil, nil
+		return
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.handler")
+		g.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := svc.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "RelayModel.handler"))
+	}
 }
 
 func (o *RelayModel) Shutdown() error {
-	context.Logger.Debugf("RelayModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("RelayModel(%d) stopped", o.GetID())
 
 	return nil
 }

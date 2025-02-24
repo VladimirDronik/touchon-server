@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
+	"touchon-server/lib/interfaces"
 )
 
 // LoadObject создает модель объекта и заполняет его данными из БД
@@ -39,13 +40,13 @@ func LoadObject(objectID int, objCat model.Category, objType string, childType m
 	return objModel, nil
 }
 
-func LoadPort(objectID int, childType model.ChildType) (Port, error) {
+func LoadPort(objectID int, childType model.ChildType) (interfaces.Port, error) {
 	portObj, err := LoadObject(objectID, model.CategoryPort, "port_mega_d", childType)
 	if err != nil {
 		return nil, errors.Wrap(err, "LoadPort")
 	}
 
-	port, ok := portObj.(Port)
+	port, ok := portObj.(interfaces.Port)
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("object %T not implements interface Port", portObj), "LoadPort")
 	}
@@ -171,16 +172,22 @@ func ConfigureDevice(interfaceConnection string, addressObject string, options m
 		modePt[0] = "1wbus"
 	case "I2C":
 		ports := strings.Split(addressObject, ";")
-		port[0], _ = strconv.Atoi(ports[0])
-		port[1], _ = strconv.Atoi(ports[1])
+		if len(ports) > 0 {
+			port[0], _ = strconv.Atoi(ports[0])
+		}
+		if len(ports) > 1 {
+			port[1], _ = strconv.Atoi(ports[1])
+		}
 		typePt[0] = "i2c"
 		typePt[1] = "i2c"
 		modePt[0] = "sda"
 		modePt[1] = "scl"
 
-		portSCLObj, _ := getObjects(port[1], "", "")
-		portSCL, _ := portSCLObj[0].GetProps().GetIntValue("number")
-		params[0]["misc"] = strconv.Itoa(portSCL) //указываем порт, на котором находится SCL
+		if portSCLObject, err := getObjects(port[1], "", ""); err == nil && len(portSCLObject) > 0 {
+			if portSCL, err := portSCLObject[0].GetProps().GetIntValue("number"); err == nil {
+				params[0]["misc"] = strconv.Itoa(portSCL) //указываем порт, на котором находится SCL
+			}
+		}
 		params[0]["gr"] = options["gr"]
 		params[0]["d"] = options["d"]
 	}
@@ -207,6 +214,7 @@ func ConfigureDevice(interfaceConnection string, addressObject string, options m
 func FillOptions(typeObject string, props map[string]interface{}) (map[string]string, error) {
 	paramsI2C := map[string]map[string]string{
 		"htu21d": {"gr": "1", "d": "1"},
+		"htu31d": {"gr": "1", "d": "56"},
 		"bme280": {"gr": "1", "d": "6"},
 		"bmp280": {"gr": "1", "d": "6"},
 		"bh1750": {"gr": "2", "d": "2"},
@@ -302,15 +310,6 @@ func FindRelatedObjects(addressObject string, typeInterface string, objectID int
 	delete(objRelatedGroup, objectID)
 
 	return objResetGroup, objRelatedGroup, nil
-}
-
-// ResetParentAndAddress Убирает у объекта родителя и адрес в свойствах
-func ResetParentAndAddress(objectsToReset map[int]string) {
-	for objectID, _ := range objectsToReset {
-		store.I.ObjectRepository().SetProp(objectID, "address", "0")
-		store.I.ObjectRepository().SetParent(objectID, nil)
-		store.I.ObjectRepository().SetObjectStatus(objectID, string(model.StatusDisabled))
-	}
 }
 
 func ResetPortToDefault(objectsToReset map[int]string, relatedObjects map[int]string) {

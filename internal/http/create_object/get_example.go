@@ -41,23 +41,28 @@ func GetExample(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 
 	resp := &Request{
 		Object: struct {
-			ParentID int                    `json:"parent_id,omitempty"`
-			ZoneID   int                    `json:"zone_id,omitempty"`
+			ParentID *int                   `json:"parent_id,omitempty"`
+			ZoneID   *int                   `json:"zone_id,omitempty"`
 			Category model.Category         `json:"category"`
 			Type     string                 `json:"type"`
 			Name     string                 `json:"name"`
 			Props    map[string]interface{} `json:"props,omitempty"`
+			Enabled  bool                   `json:"enabled"`
 			Children []*Child               `json:"children,omitempty"`
 		}{
 			Category: obj.GetCategory(),
 			Type:     obj.GetType(),
 			Name:     obj.GetName(),
 			Props:    make(map[string]interface{}, obj.GetProps().Len()),
+			Enabled:  obj.GetEnabled(),
 		},
 	}
 
 	for _, p := range obj.GetProps().GetAll().GetValueList() {
-		if p.DefaultValue != nil {
+		switch {
+		case p.GetValue() != nil:
+			resp.Object.Props[p.Code] = p.GetValue()
+		case p.DefaultValue != nil:
 			resp.Object.Props[p.Code] = p.DefaultValue
 		}
 	}
@@ -74,7 +79,10 @@ func getChildProps(obj objects.Object) []*Child {
 		c := &Child{Props: map[string]interface{}{}}
 
 		for _, p := range child.GetProps().GetAll().GetValueList() {
-			if p.DefaultValue != nil {
+			switch {
+			case p.GetValue() != nil:
+				c.Props[p.Code] = p.GetValue()
+			case p.DefaultValue != nil:
 				c.Props[p.Code] = p.DefaultValue
 			}
 		}

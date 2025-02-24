@@ -6,11 +6,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 )
 
 func init() {
-	context.Logger = logrus.New()
+	g.Logger = logrus.New()
 }
 
 func setUp(t *testing.T) (*ModbusImpl, *MockClient) {

@@ -5,18 +5,15 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
-	"touchon-server/lib/event"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/sensor"
-	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	mqttClient "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -29,7 +26,7 @@ func MakeModel() (objects.Object, error) {
 		return nil, errors.Wrap(err, "motion.MakeModel")
 	}
 
-	obj := &SensorModel{}
+	obj := &MotionSensorModel{}
 	obj.SensorModel = baseObj.(*Sensor.SensorModel)
 
 	obj.SetType("motion")
@@ -39,19 +36,6 @@ func MakeModel() (objects.Object, error) {
 	// Датчик получает состояние через сообщения mqtt
 	obj.GetProps().Delete("update_interval")
 
-	e := &objects.Prop{
-		Code:        "enable",
-		Name:        "Состояние датчика",
-		Description: "вкл/выкл",
-		Item: &models.Item{
-			Type:         models.DataTypeBool,
-			DefaultValue: true,
-		},
-		Required: objects.NewRequired(true),
-		Editable: objects.NewCondition(),
-		Visible:  objects.NewCondition(),
-	}
-
 	p := &objects.Prop{
 		Code:        "period",
 		Name:        "Период (с)",
@@ -60,9 +44,9 @@ func MakeModel() (objects.Object, error) {
 			Type:         models.DataTypeInt,
 			DefaultValue: 120,
 		},
-		Required:   objects.NewRequired(true),
-		Editable:   objects.NewCondition(),
-		Visible:    objects.NewCondition(),
+		Required:   objects.True(),
+		Editable:   objects.True(),
+		Visible:    objects.True(),
 		CheckValue: objects.AboveOrEqual1(),
 	}
 
@@ -74,13 +58,13 @@ func MakeModel() (objects.Object, error) {
 			Type:         models.DataTypeString,
 			DefaultValue: "P",
 		},
-		Required:   objects.NewRequired(true),
-		Editable:   objects.NewCondition(),
-		Visible:    objects.NewCondition(),
+		Required:   objects.True(),
+		Editable:   objects.True(),
+		Visible:    objects.True(),
 		CheckValue: objects.AboveOrEqual1(),
 	}
 
-	if err := obj.GetProps().Add(e, p, mode); err != nil {
+	if err := obj.GetProps().Add(p, mode); err != nil {
 		return nil, errors.Wrap(err, "motion.MakeModel")
 	}
 
@@ -104,9 +88,9 @@ func MakeModel() (objects.Object, error) {
 			return nil, errors.Wrap(err, "motion.MakeModel")
 		}
 
-		prop.Required = objects.NewRequired(false)
-		prop.Editable = objects.NewCondition().AccessLevel(model.AccessLevelDenied)
-		prop.Visible = objects.NewCondition().AccessLevel(model.AccessLevelDenied)
+		prop.Required = objects.False()
+		prop.Editable = objects.False()
+		prop.Visible = objects.False()
 		prop.CheckValue = nil
 	}
 
@@ -119,209 +103,192 @@ func MakeModel() (objects.Object, error) {
 	obj.GetEvents().Delete("object.sensor.on_check", "object.sensor.on_alarm")
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.sensor.on_motion_on", "object.sensor.on_motion_off"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "motion.MakeModel")
-		}
+	onMotionOn, err := sensor.NewOnMotionOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "motion.MakeModel")
-		}
+	onMotionOff, err := sensor.NewOnMotionOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onMotionOn, onMotionOff); err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
 	}
 
 	return obj, nil
 }
 
-type SensorModel struct {
+type MotionSensorModel struct {
 	*Sensor.SensorModel
-	periodTimer *helpers.Timer
 }
 
-func (o *SensorModel) Check(args map[string]interface{}) ([]messages.Message, error) {
+func (o *MotionSensorModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
 	// Данный датчик сам не проверяет значения, а получает значения от порта
 	//TODO:: реализовать метод check всё равно, т.к. пользователь может запросить состояние датчика
-	return nil, errors.Wrap(errors.New("method 'check' not supported"), "motion.SensorModel.Check")
+	return nil, errors.Wrap(errors.New("method 'check' not supported"), "MotionSensorModel.Check")
 }
 
-func (o *SensorModel) Start() error {
+func (o *MotionSensorModel) Start() error {
 	if err := o.SensorModel.Start(); err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
-	}
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
-	}
-
-	if !enable {
-		return nil
+		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
 	address, err := o.GetProps().GetStringValue("address")
 	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
+		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
 	portID, err := strconv.Atoi(address)
 	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
+		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_long_press",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.onMotionOnHandler,
 	)
 	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
+		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_release",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.onMotionOffHandler,
 	)
 	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
+		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
-	context.Logger.Debugf("motion.SensorModel(%d) started", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d) started", o.GetID())
 
 	period, err := o.GetProps().GetIntValue("period")
 	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
+		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
-	o.periodTimer = helpers.NewTimer(time.Duration(period)*time.Second, o.periodTimerHandler)
+	o.SetTimer(time.Duration(period)*time.Second, o.periodTimerHandler)
 
 	// Получаем текущее состояние движения
 	state, err := o.getMotionState()
 	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Start")
+		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
 	// Если есть движение, отправляем сообщение в шину
 	if state {
-		msg, err := sensor.NewOnMotionOnMessage("object_manager/object/event", o.GetID())
+		msg, err := sensor.NewOnMotionOn(o.GetID())
 		if err != nil {
-			return errors.Wrap(err, "motion.SensorModel.Start")
+			return errors.Wrap(err, "MotionSensorModel.Start")
 		}
 
-		if err := mqttClient.I.Send(msg); err != nil {
-			return errors.Wrap(err, "motion.SensorModel.Start")
+		if err := g.Msgs.Send(msg); err != nil {
+			return errors.Wrap(err, "MotionSensorModel.Start")
 		}
 	}
 
 	return nil
 }
 
-func (o *SensorModel) onMotionOnHandler(messages.Message) ([]messages.Message, error) {
-	context.Logger.Debugf("motion.SensorModel(%d): onMotionOnHandler()", o.GetID())
+func (o *MotionSensorModel) onMotionOnHandler(svc interfaces.MessageSender, _ interfaces.Message) {
+	g.Logger.Debugf("MotionSensorModel(%d): onMotionOnHandler()", o.GetID())
 
 	// Запоминаем текущее состояние движения
 	currState, err := o.getMotionState()
 	if err != nil {
-		return nil, errors.Wrap(err, "motion.SensorModel.onMotionOnHandler")
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		return
 	}
 
-	context.Logger.Debug("motion.SensorModel.onMotionOnHandler: reset periodTimer")
-	o.periodTimer.Reset()
+	g.Logger.Debug("MotionSensorModel.onMotionOnHandler: reset periodTimer")
+	o.GetTimer().Reset()
 
 	// Обрабатываем только переход OFF -> ON
 	if currState {
-		return nil, nil
+		return
 	}
 
 	if err := o.setMotionState(true, true); err != nil {
-		return nil, errors.Wrap(err, "motion.SensorModel.onMotionOnHandler")
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		return
 	}
 
-	msg, err := sensor.NewOnMotionOnMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnMotionOn(o.GetID())
 	if err != nil {
-		return nil, errors.Wrap(err, "motion.SensorModel.onMotionOnHandler")
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := svc.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOnHandler"))
+	}
 }
 
-func (o *SensorModel) onMotionOffHandler(messages.Message) ([]messages.Message, error) {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return nil, errors.Wrap(err, "motion.SensorModel.onMotionOffHandler")
+func (o *MotionSensorModel) onMotionOffHandler(interfaces.MessageSender, interfaces.Message) {
+	if err := o.CheckEnabled(); err != nil {
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
+		return
 	}
 
-	if !enable {
-		return nil, errors.Wrap(err, "motion.SensorModel.onMotionOffHandler")
-	}
-
-	context.Logger.Debugf("motion.SensorModel(%d): onMotionOffHandler()", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d): onMotionOffHandler()", o.GetID())
 
 	if err := o.setMotionState(false, false); err != nil {
-		return nil, errors.Wrap(err, "motion.SensorModel.onMotionOffHandler")
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.onMotionOffHandler"))
+		return
 	}
-
-	return nil, nil
 }
 
-func (o *SensorModel) periodTimerHandler() {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "motion.SensorModel.periodTimerHandler"))
+func (o *MotionSensorModel) periodTimerHandler() {
+	if !o.GetEnabled() {
 		return
 	}
 
-	if !enable {
-		return
-	}
-
-	context.Logger.Debugf("motion.SensorModel(%d): periodTimerHandler()", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d): periodTimerHandler()", o.GetID())
 
 	// получаем текущее значение движения
 	currState, err := o.getMotionState()
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "motion.SensorModel.periodTimerHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 		return
 	}
 
 	// если движение есть - перезапускаем таймер и уходим
 	if currState {
-		o.periodTimer.Reset()
+		o.GetTimer().Reset()
 		return
 	}
 
 	// если при срабатывании таймера движения не было - выставляем статус о завершении движения
 	if err := o.setMotionState(false, true); err != nil {
-		context.Logger.Error(errors.Wrap(err, "motion.SensorModel.periodTimerHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 		return
 	}
 
-	msg, err := sensor.NewOnMotionOffMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnMotionOff(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "motion.SensorModel.periodTimerHandler"))
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 
-		msg, err = events.NewOnErrorMessage("object_manager/error", msg.GetTargetType(), msg.GetTargetID(), err.Error())
+		msg, err = events.NewOnError(msg.GetTargetType(), msg.GetTargetID(), err.Error())
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "motion.SensorModel.periodTimerHandler"))
+			g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 			return
 		}
 	}
 
-	if err := mqttClient.I.Send(msg); err != nil {
-		context.Logger.Error(errors.Wrap(err, "motion.SensorModel.periodTimerHandler"))
+	if err := g.Msgs.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "MotionSensorModel.periodTimerHandler"))
 		return
 	}
 }
 
-func (o *SensorModel) getMotionState() (bool, error) {
+func (o *MotionSensorModel) getMotionState() (bool, error) {
 	for _, child := range o.GetChildren().GetAll() {
 		if child.GetCategory() == model.CategorySensorValue && child.GetType() == SensorValue.TypeMotion {
 			v, err := child.GetProps().GetFloatValue("value")
@@ -343,7 +310,7 @@ func (o *SensorModel) getMotionState() (bool, error) {
 	return false, errors.Wrap(errors.New("child SensorValue.Motion not found"), "getMotionState")
 }
 
-func (o *SensorModel) setMotionState(state, save bool) error {
+func (o *MotionSensorModel) setMotionState(state, save bool) error {
 	for _, child := range o.GetChildren().GetAll() {
 		if child.GetCategory() == model.CategorySensorValue && child.GetType() == SensorValue.TypeMotion {
 			value := 0
@@ -371,21 +338,12 @@ func (o *SensorModel) setMotionState(state, save bool) error {
 	return errors.Wrap(errors.New("child SensorValue.Motion not found"), "setMotionState")
 }
 
-func (o *SensorModel) Shutdown() error {
+func (o *MotionSensorModel) Shutdown() error {
 	if err := o.SensorModel.Shutdown(); err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Shutdown")
+		return errors.Wrap(err, "MotionSensorModel.Shutdown")
 	}
 
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "motion.SensorModel.Shutdown")
-	}
-
-	if !enable {
-		return nil
-	}
-
-	context.Logger.Debugf("motion.SensorModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("MotionSensorModel(%d) stopped", o.GetID())
 
 	return nil
 }

@@ -15,13 +15,3 @@ const (
 	CategoryModbusGateway Category = "modbus_gateway" // Шлюз Modbus
 	CategoryConditioner   Category = "conditioner"    // Кондиционер
 )
-
-type AccessLevel int
-
-const (
-	AccessLevelDenied  AccessLevel = 4
-	AccessLevelRoot    AccessLevel = 3 // SuperAdmin
-	AccessLevelAdmin   AccessLevel = 2
-	AccessLevelUser    AccessLevel = 1
-	AccessLevelAllowed AccessLevel = 0
-)

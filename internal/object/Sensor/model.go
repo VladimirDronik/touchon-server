@@ -13,8 +13,9 @@ import (
 	"touchon-server/internal/store"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/sensor"
+	"touchon-server/lib/interfaces"
+	"touchon-server/lib/messages"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 const ValueUpdateAtFormat = "02.01.2006 15:04:05"
@@ -47,10 +48,10 @@ func MakeModel() (objects.Object, error) {
 				},
 				DefaultValue: "I2C",
 			},
-			Required: objects.NewRequired(true),
+			Required: objects.True(),
 			// По умолчанию, менять заданный в модели интерфейс датчика нельзя
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied),
-			Visible:  objects.NewCondition(),
+			Editable: objects.False(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "address",
@@ -60,23 +61,33 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "update_interval",
 			Name:        "Интервал (с)",
 			Description: "Интервал получения значения датчика",
 			Item: &models.Item{
-				Type:         models.DataTypeString,
-				DefaultValue: "1m",
+				Type:         models.DataTypeInt,
+				DefaultValue: 60,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.AboveOrEqual1(),
 		},
+	}
+
+	onCheck, err := sensor.NewOnCheck(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "Sensor.MakeModel")
+	}
+
+	onAlarm, err := sensor.NewOnAlarm(0, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "Sensor.MakeModel")
 	}
 
 	impl, err := objects.NewObjectModelImpl(
@@ -86,7 +97,7 @@ func MakeModel() (objects.Object, error) {
 		"",
 		props,
 		nil,
-		[]string{"object.sensor.on_check", "object.sensor.on_alarm"},
+		[]interfaces.Event{onCheck, onAlarm},
 		nil,
 		[]string{"sensor"},
 	)
@@ -165,10 +176,10 @@ func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _
 	return
 }
 
-func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorValue.Type]float32, error)) (_ []messages.Message, e error) {
+func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorValue.Type]float32, error)) (_ []interfaces.Message, e error) {
 	var values map[SensorValue.Type]float32
 	var err error
-	msgs := make([]messages.Message, 0, o.GetChildren().Len())
+	msgs := make([]interfaces.Message, 0, o.GetChildren().Len())
 
 	for i := 0; i < tries; i++ {
 		msgs = msgs[:0]
@@ -208,7 +219,7 @@ func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorVal
 		vals[string(k)] = v
 	}
 
-	msg, err := sensor.NewOnCheckMessage("object_manager/object/event", o.GetID(), vals)
+	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {
 		return nil, errors.Wrap(err, "Check")
 	}
@@ -218,7 +229,7 @@ func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorVal
 	return msgs, nil
 }
 
-func (o *SensorModel) processChild(child objects.Object, values map[SensorValue.Type]float32) (messages.Message, error) {
+func (o *SensorModel) processChild(child objects.Object, values map[SensorValue.Type]float32) (interfaces.Message, error) {
 	v, ok := values[SensorValue.Type(child.GetType())]
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("value for child object %q not found", child.GetName()), "processChild")
@@ -248,12 +259,12 @@ func (o *SensorModel) processChild(child objects.Object, values map[SensorValue.
 		}
 
 		text = fmt.Sprintf("Датчик %q (ID:%d): %s", o.GetName(), o.GetID(), text)
-		var msg messages.Message
+		var msg interfaces.Message
 
 		if errors.Is(err, SensorValue.ErrSensorAlarmValue) {
-			msg, err = sensor.NewOnAlarmMessage("object_manager/object/event", o.GetID(), text)
+			msg, err = sensor.NewOnAlarm(o.GetID(), text)
 		} else {
-			msg, err = events.NewOnErrorMessage("object_manager/error", messages.TargetTypeObject, o.GetID(), text)
+			msg, err = events.NewOnError(interfaces.TargetTypeObject, o.GetID(), text)
 		}
 		if err != nil {
 			return nil, errors.Wrap(err, "processChild")
@@ -286,4 +297,22 @@ func (o *SensorModel) DeleteChildren() error {
 	}
 
 	return nil
+}
+
+func (o *SensorModel) GetState() (interfaces.Message, error) {
+	msg, err := messages.NewEvent("on_get_state", interfaces.TargetTypeObject, o.GetID())
+	if err != nil {
+		return nil, errors.Wrap(err, "SensorModel.GetState")
+	}
+
+	for _, child := range o.GetChildren().GetAll() {
+		v, err := child.GetProps().GetFloatValue("value")
+		if err != nil {
+			return nil, errors.Wrap(err, "SensorModel.GetState")
+		}
+
+		msg.SetValue(child.GetType(), v)
+	}
+
+	return msg, nil
 }

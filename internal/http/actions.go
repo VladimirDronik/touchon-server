@@ -6,11 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/model"
 	"touchon-server/internal/store"
-	"touchon-server/lib/event"
 	"touchon-server/lib/helpers"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // Получение количества действий для событий
@@ -19,17 +17,16 @@ import (
 // @Description Получение количества действий для событий
 // @ID GetEventsActionsCount
 // @Produce json
-// @Param target_type query messages.TargetType true "Тип сущности" Enums(object,item,script) default(item)
+// @Param target_type query interfaces.TargetType true "Тип сущности" Enums(object,item,script) default(item)
 // @Param target_id query int true "ID сущности" default(1)
 // @Success      200 {object} http.Response[map[string]int]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /events/actions/count [get]
 func (o *Server) handleGetEventsActionsCount(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	targetTypeString := helpers.GetParam(ctx, "target_type")
-	targetType := messages.TargetType(targetTypeString)
+	targetType := helpers.GetParam(ctx, "target_type")
 
-	if _, ok := messages.TargetTypes[targetType]; !ok {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
 		return nil, http.StatusBadRequest, errors.Errorf("unknown target type %q", targetType)
 	}
 
@@ -67,17 +64,16 @@ func (o *Server) handleGetEventsActionsCount(ctx *fasthttp.RequestCtx) (interfac
 // @Description Получение действий для событий
 // @ID GetEventsActions
 // @Produce json
-// @Param target_type query messages.TargetType true "Тип сущности" Enums(object,item,script) default(item)
+// @Param target_type query interfaces.TargetType true "Тип сущности" Enums(object,item,script) default(item)
 // @Param target_id query int true "ID сущности" default(1)
-// @Success      200 {object} http.Response[map[string][]model.EventAction]
+// @Success      200 {object} http.Response[map[string][]interfaces.EventAction]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /events/actions [get]
 func (o *Server) handleGetEventsActions(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	targetTypeString := helpers.GetParam(ctx, "target_type")
-	targetType := messages.TargetType(targetTypeString)
+	targetType := helpers.GetParam(ctx, "target_type")
 
-	if _, ok := messages.TargetTypes[targetType]; !ok {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
 		return nil, http.StatusBadRequest, errors.Errorf("unknown target type %q", targetType)
 	}
 
@@ -101,7 +97,7 @@ func (o *Server) handleGetEventsActions(ctx *fasthttp.RequestCtx) (interface{}, 
 		return nil, http.StatusInternalServerError, err
 	}
 
-	r := make(map[string][]*model.EventAction, len(actionsMap))
+	r := make(map[string][]*interfaces.EventAction, len(actionsMap))
 	for _, ev := range events {
 		// Затираем EventID, чтобы не использовать ID вместо event_name
 		for _, act := range actionsMap[ev.ID] {
@@ -121,18 +117,18 @@ func (o *Server) handleGetEventsActions(ctx *fasthttp.RequestCtx) (interface{}, 
 // @ID CreateEventAction
 // @Accept json
 // @Produce json
-// @Param target_type query messages.TargetType true "Тип сущности" default(item)
+// @Param target_type query interfaces.TargetType true "Тип сущности" default(item)
 // @Param target_id query int true "ID сущности" default(1)
 // @Param event_name query string true "Название события" default(on_test)
-// @Param object body model.EventAction true "Действие"
+// @Param object body interfaces.EventAction true "Действие"
 // @Success      200 {object} http.Response[any]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /events/actions [post]
 func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	targetType := messages.TargetType(helpers.GetParam(ctx, "target_type"))
+	targetType := helpers.GetParam(ctx, "target_type")
 
-	if _, ok := messages.TargetTypes[targetType]; !ok {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
 		return nil, http.StatusBadRequest, errors.Errorf("unknown target type %q", targetType)
 	}
 
@@ -142,22 +138,40 @@ func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 	}
 
 	eventName := helpers.GetParam(ctx, "event_name")
-	if _, err := event.GetMaker(eventName); err != nil {
-		return nil, http.StatusBadRequest, err
-	}
+	// TODO
+	//if _, err := event.GetMaker(eventName); err != nil {
+	//	return nil, http.StatusBadRequest, err
+	//}
 
-	act := &model.EventAction{}
+	act := &interfaces.EventAction{}
 	if err := json.Unmarshal(ctx.Request.Body(), act); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
+	if err := o.CreateEventAction(targetType, targetID, eventName, act); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return nil, http.StatusOK, nil
+}
+
+func (o *Server) CreateEventAction(targetType string, targetID int, eventName string, act *interfaces.EventAction) error {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
+		return errors.Wrap(errors.Errorf("unknown target type %q", targetType), "CreateEventAction")
+	}
+
+	// TODO
+	//if _, err := event.GetMaker(eventName); err != nil {
+	//	return nil, http.StatusBadRequest, err
+	//}
+
 	event, err := store.I.EventsRepo().GetEvent(targetType, targetID, eventName)
 	if err != nil {
 		if !errors.Is(err, store.ErrNotFound) {
-			return nil, http.StatusInternalServerError, err
+			return errors.Wrap(err, "createEventAction")
 		}
 
-		event = &model.Event{
+		event = &interfaces.AREvent{
 			TargetType: targetType,
 			TargetID:   targetID,
 			EventName:  eventName,
@@ -165,17 +179,17 @@ func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 		}
 
 		if err := store.I.EventsRepo().SaveEvent(event); err != nil {
-			return nil, http.StatusInternalServerError, err
+			return errors.Wrap(err, "createEventAction")
 		}
 	}
 
 	act.EventID = event.ID
 
 	if err := store.I.EventActionsRepo().SaveAction(act); err != nil {
-		return nil, http.StatusInternalServerError, err
+		return errors.Wrap(err, "createEventAction")
 	}
 
-	return nil, http.StatusOK, nil
+	return nil
 }
 
 // Обновление действия
@@ -185,13 +199,13 @@ func (o *Server) handleCreateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 // @ID UpdateEventAction
 // @Accept json
 // @Produce json
-// @Param object body model.EventAction true "Действие"
+// @Param object body interfaces.EventAction true "Действие"
 // @Success      200 {object} http.Response[any]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /events/actions [put]
 func (o *Server) handleUpdateEventAction(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	act := &model.EventAction{}
+	act := &interfaces.EventAction{}
 	if err := json.Unmarshal(ctx.Request.Body(), act); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -209,17 +223,16 @@ func (o *Server) handleUpdateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 // @Description Удаление всех действий по фильтру
 // @ID DeleteAllEventActions
 // @Produce json
-// @Param target_type query messages.TargetType true "Тип сущности" default(object)
+// @Param target_type query interfaces.TargetType true "Тип сущности" default(object)
 // @Param target_id query int true "ID сущности" default(1)
 // @Success      200 {object} http.Response[any]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /events/all-actions [delete]
 func (o *Server) handleDeleteAllEventActions(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	targetTypeString := helpers.GetParam(ctx, "target_type")
-	targetType := messages.TargetType(targetTypeString)
+	targetType := helpers.GetParam(ctx, "target_type")
 
-	if _, ok := messages.TargetTypes[targetType]; !ok {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
 		return nil, http.StatusBadRequest, errors.Errorf("unknown target type %q", targetType)
 	}
 
@@ -291,7 +304,7 @@ func (o *Server) handleOrderEventActions(ctx *fasthttp.RequestCtx) (interface{},
 // @ID DeleteEvent
 // @Accept json
 // @Produce json
-// @Param target_type query messages.TargetType true "Тип сущности" default(item)
+// @Param target_type query interfaces.TargetType true "Тип сущности" default(item)
 // @Param target_id query int true "ID сущности" default(1)
 // @Param event_name query string true "Название события. all - удаляет все события" default(all)
 // @Success      200 {object} http.Response[any]
@@ -299,10 +312,9 @@ func (o *Server) handleOrderEventActions(ctx *fasthttp.RequestCtx) (interface{},
 // @Failure      500 {object} http.Response[any]
 // @Router /events [delete]
 func (o *Server) handleDeleteEvent(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	targetTypeString := helpers.GetParam(ctx, "target_type")
-	targetType := messages.TargetType(targetTypeString)
+	targetType := helpers.GetParam(ctx, "target_type")
 
-	if _, ok := messages.TargetTypes[targetType]; !ok {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
 		return nil, http.StatusBadRequest, errors.Errorf("unknown target type %q", targetType)
 	}
 

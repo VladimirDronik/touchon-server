@@ -8,15 +8,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
-	"touchon-server/lib/event"
-	httpClient "touchon-server/lib/http/client"
 	_ "touchon-server/lib/http/server"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // Создание объекта (с действиями)
@@ -32,11 +31,6 @@ import (
 // @Failure      500 {object} server.Response[any]
 // @Router /objects [post]
 func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
-	accessLevel, err := context.GetAccessLevel(ctx)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
 	req := &Request{}
 	if err := json.Unmarshal(ctx.Request.Body(), req); err != nil {
 		return nil, http.StatusBadRequest, err
@@ -44,9 +38,10 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 
 	// Проверяем названия событий на валидность
 	for _, item := range req.Events {
-		if _, err := event.GetMaker(item.Name); err != nil {
-			return nil, http.StatusBadRequest, err
-		}
+		// TODO
+		//if _, err := event.GetMaker(item.Name); err != nil {
+		//	return nil, http.StatusBadRequest, err
+		//}
 
 		if len(item.Actions) == 0 {
 			return nil, http.StatusBadRequest, errors.Errorf("event %q: actions list is empty", item.Name)
@@ -54,7 +49,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	}
 
 	// Сохраняем объект в базу и memstore
-	objectID, err := createObject(req, accessLevel)
+	objectID, err := createObject(req)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -65,7 +60,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		if e != nil {
 			if err := deleteObject(objectID); err != nil {
 				e = err
-				context.Logger.Error(err)
+				g.Logger.Error(err)
 			}
 		}
 	}()
@@ -98,11 +93,13 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	}
 	e = objects.ConfigureDevice(interfaceConnection, addressObject, options, title)
 
-	objects.ResetParentAndAddress(objectsToReset)
+	if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
+		return nil, http.StatusBadRequest, err
+	}
 
 	//Если объект является сенсором, то создаем в экшен-роутере действия для его проверки
-	if req.Object.Category == "sensor" {
-		_, e = createSensorCronTask(objectID, req)
+	if req.Object.Category == model.CategorySensor {
+		e = createSensorCronTask(objectID, req)
 	}
 
 	// Если событий нет, то уходим
@@ -110,35 +107,21 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return resp, http.StatusOK, nil
 	}
 
-	arBaseUrl := "http://" + context.Config["action_router_addr"]
-
 	// Если транзакцию не закончили, удаляем события со всеми действиями
 	defer func() {
 		if e != nil {
 			for _, ev := range req.Events {
-				params := map[string]string{
-					"target_type": string(messages.TargetTypeObject),
-					"target_id":   strconv.Itoa(objectID),
-					"event_name":  ev.Name,
-				}
-
-				if _, err := httpClient.I.DoRequest("DELETE", arBaseUrl+"/events", params, nil, nil); err != nil {
+				if err := store.I.EventsRepo().DeleteEvent(interfaces.TargetTypeObject, objectID, ev.Name); err != nil {
 					e = err
-					context.Logger.Error(err)
+					g.Logger.Error(err)
 				}
 			}
 		}
 	}()
 
 	for _, ev := range req.Events {
-		params := map[string]string{
-			"target_type": string(messages.TargetTypeObject),
-			"target_id":   strconv.Itoa(objectID),
-			"event_name":  ev.Name,
-		}
-
 		for _, act := range ev.Actions {
-			if _, err := httpClient.I.DoRequest("POST", arBaseUrl+"/events/actions", params, nil, act); err != nil {
+			if err := g.HttpServer.CreateEventAction(interfaces.TargetTypeObject, objectID, ev.Name, act); err != nil {
 				return nil, http.StatusInternalServerError, err
 			}
 		}
@@ -147,17 +130,16 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	return resp, http.StatusOK, nil
 }
 
-func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
+func createObject(req *Request) (int, error) {
 	objModel, err := objects.LoadObject(0, req.Object.Category, req.Object.Type, model.ChildTypeAll)
 	if err != nil {
 		return 0, errors.Wrap(err, "createObject")
 	}
 
-	if req.Object.ParentID > 0 {
-		objModel.SetParentID(&req.Object.ParentID)
-	}
+	objModel.SetParentID(req.Object.ParentID)
 	objModel.SetZoneID(req.Object.ZoneID)
 	objModel.SetName(req.Object.Name)
+	objModel.SetEnabled(req.Object.Enabled)
 
 	// Выставляем сначала значения по умолчанию
 	for _, p := range objModel.GetProps().GetAll().GetValueList() {
@@ -174,7 +156,7 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 			return 0, errors.Wrap(err, "createObject")
 		}
 
-		if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+		if !dstProp.Editable.Check(objModel.GetProps()) {
 			continue
 		}
 
@@ -183,16 +165,16 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 		}
 	}
 
-	if err := objModel.GetProps().Check(accessLevel); err != nil {
+	if err := objModel.GetProps().Check(); err != nil {
 		return 0, errors.Wrap(err, "createObject")
 	}
 
-	if err := setChildrenDefaultPropValues(objModel.GetChildren(), accessLevel); err != nil {
+	if err := setChildrenDefaultPropValues(objModel.GetChildren()); err != nil {
 		return 0, errors.Wrap(err, "createObject")
 	}
 
 	if len(req.Object.Children) > 0 {
-		if err := setChildrenProps(objModel.GetChildren(), req.Object.Children, accessLevel); err != nil {
+		if err := setChildrenProps(objModel.GetChildren(), req.Object.Children); err != nil {
 			return 0, errors.Wrap(err, "createObject")
 		}
 	}
@@ -208,7 +190,7 @@ func createObject(req *Request, accessLevel model.AccessLevel) (int, error) {
 	return objModel.GetID(), nil
 }
 
-func setChildrenProps(objModelChildren *objects.Children, children []*Child, accessLevel model.AccessLevel) error {
+func setChildrenProps(objModelChildren *objects.Children, children []*Child) error {
 	if objModelChildren.Len() != len(children) {
 		return errors.Wrap(errors.Errorf("objModelChildren.Len() != len(children), %d != %d", objModelChildren.Len(), len(children)), "setChildrenProps")
 	}
@@ -224,7 +206,7 @@ func setChildrenProps(objModelChildren *objects.Children, children []*Child, acc
 				return errors.Wrap(err, "setChildrenProps")
 			}
 
-			if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+			if !dstProp.Editable.Check(objModel.GetProps()) {
 				continue
 			}
 
@@ -233,12 +215,12 @@ func setChildrenProps(objModelChildren *objects.Children, children []*Child, acc
 			}
 		}
 
-		if err := objModel.GetProps().Check(accessLevel); err != nil {
+		if err := objModel.GetProps().Check(); err != nil {
 			return errors.Wrap(err, "setChildrenProps")
 		}
 
 		if len(child.Children) > 0 {
-			if err := setChildrenProps(objModel.GetChildren(), child.Children, accessLevel); err != nil {
+			if err := setChildrenProps(objModel.GetChildren(), child.Children); err != nil {
 				return err
 			}
 		}
@@ -248,7 +230,7 @@ func setChildrenProps(objModelChildren *objects.Children, children []*Child, acc
 }
 
 // setChildrenDefaultPropValues выставляет значения св-в по умолчанию
-func setChildrenDefaultPropValues(objModelChildren *objects.Children, accessLevel model.AccessLevel) error {
+func setChildrenDefaultPropValues(objModelChildren *objects.Children) error {
 	for _, objModel := range objModelChildren.GetAll() {
 		for _, p := range objModel.GetProps().GetAll().GetValueList() {
 			if p.GetValue() == nil && p.DefaultValue != nil {
@@ -258,12 +240,12 @@ func setChildrenDefaultPropValues(objModelChildren *objects.Children, accessLeve
 			}
 		}
 
-		if err := objModel.GetProps().Check(accessLevel); err != nil {
+		if err := objModel.GetProps().Check(); err != nil {
 			return errors.Wrap(err, "setChildrenDefaultPropValues")
 		}
 
 		if objModel.GetChildren().Len() > 0 {
-			if err := setChildrenDefaultPropValues(objModel.GetChildren(), accessLevel); err != nil {
+			if err := setChildrenDefaultPropValues(objModel.GetChildren()); err != nil {
 				return err
 			}
 		}
@@ -279,6 +261,36 @@ func deleteObject(objectID int) error {
 
 	if err := store.I.ObjectRepository().DelObject(objectID); err != nil {
 		return errors.Wrap(err, "deleteObject")
+	}
+
+	return nil
+}
+
+// createSensorCronTask отправляет в action-router запрос на добавление задачи и действия для крона
+func createSensorCronTask(objectID int, req *Request) error {
+	_, ok := req.Object.Props["update_interval"].(string)
+	if !ok {
+		return nil
+	}
+
+	task := &interfaces.CronTask{
+		Enabled:     true,
+		Name:        "Check sensor",
+		Description: "Проверка датчика: [" + strconv.Itoa(objectID) + "]" + req.Object.Name,
+		Period:      req.Object.Props["update_interval"].(string),
+		Actions: []*interfaces.CronAction{
+			{
+				Enabled:    true,
+				TargetType: interfaces.TargetTypeObject,
+				Type:       interfaces.ActionTypeMethod,
+				TargetID:   objectID,
+				Name:       "check",
+			},
+		},
+	}
+
+	if err := g.HttpServer.CreateCronTask(task); err != nil {
+		return errors.Wrap(err, "createSensorCronTask")
 	}
 
 	return nil

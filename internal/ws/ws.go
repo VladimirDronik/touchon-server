@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/token"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/http/server"
@@ -19,7 +19,7 @@ import (
 var I *Server
 
 func New() (*Server, error) {
-	baseServer, err := server.New("WS", context.Config, nil, context.Logger)
+	baseServer, err := server.New("WS", g.Config, g.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "http.New")
 	}
@@ -82,7 +82,6 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 
 		// Устанавливаем PongHandler
 		ws.SetPongHandler(func(appData string) error {
-			//o.GetLogger().Infof("ws.Server: received pong from client %d", clientID)
 			return nil
 		})
 
@@ -102,7 +101,6 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 					o.GetLogger().Error("Failed to send Ping: ", err)
 					return
 				}
-				//o.GetLogger().Debugf("ws.Server: sent ping to client %d", clientID)
 			}
 		}()
 
@@ -122,33 +120,20 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 
 			o.GetLogger().Debugf("ws.Server.Receive: %s", string(message))
 
-			go o.handleMessage(message)
-
-			//err = ws.WriteMessage(mt, message)
-			//if err != nil {
-			//	log.Println("write:", err)
-			//	break
-			//}
+			//go func(message []byte) {
+			//	// TODO
+			//}(message)
 		}
 	})
 
 	if err != nil {
 		o.GetLogger().Error(err)
-		//if _, ok := err.(websocket.HandshakeError); ok {
-		//	log.Println(err)
-		//}
 	}
 }
 
-func (o *Server) Send(message interface{}, clientIDs ...int) {
-	if len(clientIDs) > 0 {
-		for _, clientID := range clientIDs {
-			o.send(clientID, message)
-		}
-	} else {
-		for clientID := range o.clients {
-			o.send(clientID, message)
-		}
+func (o *Server) Send(message interface{}) {
+	for clientID := range o.clients {
+		o.send(clientID, message)
 	}
 }
 
@@ -163,8 +148,4 @@ func (o *Server) send(clientID int, message interface{}) {
 			o.GetLogger().Error(errors.Wrap(err, "send"))
 		}
 	}
-}
-
-func (o *Server) handleMessage(message []byte) {
-	// todo
 }

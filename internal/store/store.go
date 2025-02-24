@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -53,6 +53,8 @@ type ObjectRepository interface {
 
 	SetObjectStatus(objectID int, status string) error
 	GetObject(objectID int) (*model.StoreObject, error)
+	GetObjectByParent(parentID int, typeObject string) (*model.StoreObject, error)
+	GetObjectIDByProps(props map[string]string, parentID int) (int, error)
 	SetParent(objectID int, parentID *int) error //Установка родителя для объекта
 	SaveObject(object *model.StoreObject) error  // create, update
 	GetObjects(filters map[string]interface{}, tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
@@ -64,6 +66,7 @@ type ObjectRepository interface {
 	GetObjectChildren(childType model.ChildType, objectID ...int) ([]*model.StoreObject, error)
 	DelObject(objectID int) error
 	GetAllTags() (map[string]int, error)
+	SetEnabled(objectID int, enabled bool) error
 }
 
 type PortRepository interface {
@@ -88,31 +91,27 @@ type ScriptRepository interface {
 
 type EventsRepo interface {
 	// GetEvents возвращает события сущности.
-	GetEvents(targetType messages.TargetType, targetID int) ([]*model.Event, error)
+	GetEvents(targetType interfaces.TargetType, targetID int) ([]*interfaces.AREvent, error)
 
 	// GetEvent возвращает событие.
-	GetEvent(targetType messages.TargetType, targetID int, eventName string) (*model.Event, error)
+	GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*interfaces.AREvent, error)
 
 	// SaveEvent добавляет или обновляет событие.
-	SaveEvent(ev *model.Event) error
+	SaveEvent(ev *interfaces.AREvent) error
 
 	// DeleteEvent удаляет событие.
-	DeleteEvent(targetType messages.TargetType, targetID int, eventName string) error
-
-	// GetAllEventsName возвращает названия всех событий, используемых в таблице.
-	// Используется для проверки правильности указанных имен.
-	GetAllEventsName() ([]string, error)
+	DeleteEvent(targetType interfaces.TargetType, targetID int, eventName string) error
 }
 
 type EventActionsRepo interface {
 	// GetActions возвращает список действий для события.
-	GetActions(eventIDs ...int) (map[int][]*model.EventAction, error)
+	GetActions(eventIDs ...int) (map[int][]*interfaces.EventAction, error)
 
 	// GetActionsCount возвращает количество действий для событий.
 	GetActionsCount(eventIDs ...int) (map[int]int, error)
 
 	// SaveAction добавляет или обновляет действие.
-	SaveAction(act *model.EventAction) error
+	SaveAction(act *interfaces.EventAction) error
 
 	// DeleteAction удаляет действие.
 	DeleteAction(actID int) error
@@ -124,12 +123,12 @@ type EventActionsRepo interface {
 
 type CronRepo interface {
 	// GetEnabledTasks возвращает активные задачи.
-	GetEnabledTasks() ([]*model.CronTask, error)
-	CreateTask(task *model.CronTask) (int, error)
-	CreateTaskAction(action *model.CronAction) error
+	GetEnabledTasks() ([]*interfaces.CronTask, error)
+	CreateTask(task *interfaces.CronTask) error
+	CreateTaskAction(action *interfaces.CronAction) error
 	DeleteTask(objectID int, target string) error
-	UpdateTask(task *model.CronTask) error
-	GetCronAction(objectID int, targetType string) (*model.CronAction, error)
+	UpdateTask(task *interfaces.CronTask) error
+	GetCronAction(objectID int, targetType string) (*interfaces.CronAction, error)
 }
 
 // TR
@@ -148,17 +147,17 @@ type Users interface {
 }
 
 type Items interface {
-	SaveItem(item *model.ViewItem) (int, error)
+	SaveItem(item *model.ViewItem) error
 	GetItem(itemID int) (*model.ViewItem, error)
 	UpdateItem(viewItem *model.ViewItem) error
 	DeleteItem(itemID int) error
-	GetScenarios() ([]*model.Scenario, error) // Отдает элементы для кнопок без комнат
-	GetZoneItems() ([]*model.GroupRoom, error)
-	GetZoneSensors(zoneID int) ([]*model.Sensor, error)
+	GetScenarios(withDisabledItems bool) ([]*model.ViewItem, error) // Отдает элементы для кнопок без комнат
+	GetZoneItems(withEmptyRooms bool, withDisabledItems bool) ([]*model.GroupRoom, error)
+	GetZoneSensors(zoneID int, withDisabledItems bool) ([]*model.SensorItem, error)
 	GetGroupElements(groupID int) ([]*model.ViewItem, error)
-	ChangeItem(itemID int, status string) error                                                                   // Изменение элементов
-	GetItemsForChange(targetType messages.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) // Найти действия для элементов, которые соответствуют событию
-	GetZones() ([]*model.Zone, error)                                                                             // Отдает список помещений, где есть элементы
+	ChangeItem(itemID int, status string) error                                                                     // Изменение элементов
+	GetItemsForChange(targetType interfaces.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) // Найти действия для элементов, которые соответствуют событию
+	GetZones(withEmptyRooms bool) ([]*model.Zone, error)                                                            // Отдает список помещений, где есть элементы
 	GetCountersList() ([]*model.Counter, error)
 	GetCounter(counterID int) (*model.Counter, error)
 	GetZone(zoneID int) (*model.GroupRoom, error) // отдает помещение
@@ -228,12 +227,12 @@ type Lights interface {
 }
 
 type Zones interface {
-	CreateZone(zone *model.Zone) (int, error)                        // Создает новое помещение
-	GetZoneTrees(parentIDs ...int) ([]*model.Zone, error)            // Отдает список всех помещения
-	UpdateZones(zones []*model.Zone) error                           // Изменяет помещения, которые переданы как структура
-	SetOrder(zoneIDs []int) error                                    // Задает порядок сортировки
-	SetFieldValue(zoneID int, field string, value interface{}) error // Установить значение для поля помещения
-	DeleteZone(zoneID int) error                                     //Удаление помещения
+	CreateZone(zone *model.Zone) (int, error)                               // Создает новое помещение
+	GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone, error) // Отдает список всех помещения
+	UpdateZones(zones []*model.Zone) error                                  // Изменяет помещения, которые переданы как структура
+	SetOrder(zoneIDs []int) error                                           // Задает порядок сортировки
+	SetFieldValue(zoneID int, field string, value interface{}) error        // Установить значение для поля помещения
+	DeleteZone(zoneID int) error                                            //Удаление помещения
 }
 
 type Events interface {

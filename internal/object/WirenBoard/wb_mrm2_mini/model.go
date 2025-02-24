@@ -4,17 +4,15 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/object/Modbus"
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
-	"touchon-server/lib/event"
 	"touchon-server/lib/events/object/wiren_board/wb_mrm2_mini"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	mqttClient "touchon-server/lib/mqtt/client"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -42,15 +40,13 @@ func MakeModel() (objects.Object, error) {
 	obj.SetTags("wb_mrm2_mini")
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.wiren_board.wb_mrm2_mini.on_check"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
-		}
+	onCheck, err := wb_mrm2_mini.NewOnCheck(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
-		}
+	if err := obj.GetEvents().Add(onCheck); err != nil {
+		return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
 	}
 
 	getOutputsState, err := objects.NewMethod("get_outputs_state", "Получение состояния всех выходов", nil, obj.GetOutputsState)
@@ -124,7 +120,7 @@ func (o *DeviceModel) Start() error {
 	}
 	o.unitID = address
 
-	context.Logger.Debugf("WB-MRM2-mini(%d) started", o.GetID())
+	g.Logger.Debugf("WB-MRM2-mini(%d) started", o.GetID())
 
 	return nil
 }
@@ -134,25 +130,25 @@ func (o *DeviceModel) Shutdown() error {
 		return errors.Wrap(err, "wb_mrm2_mini.DeviceModel.Shutdown")
 	}
 
-	context.Logger.Debugf("WB-MRM2-mini(%d) stopped", o.GetID())
+	g.Logger.Debugf("WB-MRM2-mini(%d) stopped", o.GetID())
 
 	return nil
 }
 
-func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]messages.Message, error) {
+func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]interfaces.Message, error) {
 	action := func(client Modbus.Client) (interface{}, error) {
 		return client.ReadCoils(0x0000, uint16(o.outputCount))
 	}
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 			return
 		}
 
 		states, ok := r.([]bool)
 		if !ok {
-			context.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+			g.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 			return
 		}
 
@@ -161,14 +157,14 @@ func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]messages.Messag
 			args["k"+strconv.Itoa(i+1)] = v
 		}
 
-		msg, err := wb_mrm2_mini.NewOnCheckMessage("object_manager/object/event", o.GetID(), args)
+		msg, err := wb_mrm2_mini.NewOnCheck(o.GetID(), args)
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 			return
 		}
 
-		if err := mqttClient.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState"))
 		}
 	}
 
@@ -179,7 +175,7 @@ func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]messages.Messag
 	return nil, nil
 }
 
-func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]messages.Message, error) {
+func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]interfaces.Message, error) {
 	outputNumber, err := helpers.GetNumber(args["k"])
 	if err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState(k)")
@@ -196,13 +192,13 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]messages.Me
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 			return
 		}
 
 		state, ok := r.(bool)
 		if !ok {
-			context.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputState"))
+			g.Logger.Error(errors.Wrap(errors.Errorf("ModbusDeviceImpl.DoAction returned bad value"), "wb_mrm2_mini.DeviceModel.GetOutputState"))
 			return
 		}
 
@@ -210,14 +206,14 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]messages.Me
 			"k" + strconv.Itoa(outputNumber): state,
 		}
 
-		msg, err := wb_mrm2_mini.NewOnCheckMessage("object_manager/object/event", o.GetID(), payload)
+		msg, err := wb_mrm2_mini.NewOnCheck(o.GetID(), payload)
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 			return
 		}
 
-		if err := mqttClient.I.Send(msg); err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState"))
 		}
 	}
 
@@ -228,7 +224,7 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]messages.Me
 	return nil, nil
 }
 
-func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]messages.Message, error) {
+func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]interfaces.Message, error) {
 	outputNumber, err := helpers.GetNumber(args["k"])
 	if err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.DeviceModel.SetOutputState(k)")
@@ -250,7 +246,7 @@ func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]messages.Me
 
 	resultHandler := func(r interface{}, err error) {
 		if err != nil {
-			context.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.SetOutputState"))
+			g.Logger.Error(errors.Wrap(err, "wb_mrm2_mini.DeviceModel.SetOutputState"))
 			return
 		}
 	}

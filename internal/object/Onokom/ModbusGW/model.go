@@ -5,15 +5,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Modbus/ModbusDevice"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
-	"touchon-server/lib/event"
-	"touchon-server/lib/helpers"
+	"touchon-server/lib/events/object/onokom/gateway"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 // Шлюз напрямую не используем, только в виде кондиционера с поддержкой управления по modbus.
@@ -109,9 +107,9 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 				Values:       prop.Values,
 				DefaultValue: prop.DefaultValue,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied), // запрещаем редактировать
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.False(), // запрещаем редактировать
+			Visible:  objects.True(),
 		}
 
 		// Задаем списки значений для св-в с типов enum
@@ -136,15 +134,18 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 	}
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.onokom.gateway.on_check", "object.onokom.gateway.on_change"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "ModbusGW.MakeModel")
-		}
+	onCheck, err := gateway.NewOnCheck(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "ModbusGW.MakeModel")
-		}
+	onChange, err := gateway.NewOnChange(0, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onCheck, onChange); err != nil {
+		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
 	}
 
 	// Регистрируем методы
@@ -282,24 +283,14 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 
 type GatewayModel struct {
 	ModbusDevice.ModbusDevice
-	unitID     int
-	checkTimer *helpers.Timer
-	modelCode  string
-	settings   *Gateway
+	unitID    int
+	modelCode string
+	settings  *Gateway
 }
 
 func (o *GatewayModel) Start() error {
 	if err := o.ModbusDevice.Start(); err != nil {
 		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
-	}
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
-	}
-
-	if !enable {
-		return nil
 	}
 
 	address, err := o.GetProps().GetIntValue("address")
@@ -313,10 +304,10 @@ func (o *GatewayModel) Start() error {
 		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
 	}
 
-	o.checkTimer = helpers.NewTimer(time.Duration(updateInterval)*time.Second, o.check)
-	o.checkTimer.Start()
+	o.SetTimer(time.Duration(updateInterval)*time.Second, o.check)
+	o.GetTimer().Start()
 
-	context.Logger.Debugf("ModbusGW.GatewayModel(%d) started", o.GetID())
+	g.Logger.Debugf("ModbusGW.GatewayModel(%d) started", o.GetID())
 
 	return nil
 }
@@ -326,16 +317,7 @@ func (o *GatewayModel) Shutdown() error {
 		return errors.Wrap(err, "ModbusGW.GatewayModel.Shutdown")
 	}
 
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "ModbusGW.GatewayModel.Shutdown")
-	}
-
-	if !enable {
-		return nil
-	}
-
-	context.Logger.Debugf("ModbusGW.GatewayModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("ModbusGW.GatewayModel(%d) stopped", o.GetID())
 
 	return nil
 }

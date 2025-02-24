@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
+	"touchon-server/lib/interfaces"
 )
 
 type CronRepo struct {
@@ -13,10 +13,10 @@ type CronRepo struct {
 }
 
 // GetEnabledTasks получение периодических заданий
-func (o *CronRepo) GetEnabledTasks() ([]*model.CronTask, error) {
+func (o *CronRepo) GetEnabledTasks() ([]*interfaces.CronTask, error) {
 	type R struct {
-		model.CronTask
-		model.CronAction
+		interfaces.CronTask
+		interfaces.CronAction
 		Args string
 	}
 	rows := make([]*R, 0, 10)
@@ -32,11 +32,11 @@ order by t.id, a.sort, a.id`
 		return nil, errors.Wrap(err, "GetEnabledTasks")
 	}
 
-	m := make(map[int]*model.CronTask, len(rows))
+	m := make(map[int]*interfaces.CronTask, len(rows))
 	for _, row := range rows {
 		task, ok := m[row.CronTask.ID]
 		if !ok {
-			task = &model.CronTask{
+			task = &interfaces.CronTask{
 				ID:          row.CronTask.ID,
 				Name:        row.CronTask.Name,
 				Description: row.CronTask.Description,
@@ -50,21 +50,20 @@ order by t.id, a.sort, a.id`
 			return nil, errors.Wrap(err, "GetEnabledTasks")
 		}
 
-		task.Actions = append(task.Actions, &model.CronAction{
+		task.Actions = append(task.Actions, &interfaces.CronAction{
 			ID:         row.CronAction.ID,
 			TaskID:     row.CronAction.TaskID,
 			Name:       row.CronAction.Name,
 			Type:       row.CronAction.Type,
 			TargetID:   row.CronAction.TargetID,
 			TargetType: row.CronAction.TargetType,
-			QoS:        row.CronAction.QoS,
 			Args:       row.CronAction.Args,
 			Enabled:    row.CronAction.Enabled,
 			Comment:    row.CronAction.Comment,
 		})
 	}
 
-	r := make([]*model.CronTask, 0, len(m))
+	r := make([]*interfaces.CronTask, 0, len(m))
 	for _, task := range m {
 		r = append(r, task)
 	}
@@ -76,15 +75,16 @@ order by t.id, a.sort, a.id`
 	return r, nil
 }
 
-func (o *CronRepo) CreateTask(task *model.CronTask) (int, error) {
+func (o *CronRepo) CreateTask(task *interfaces.CronTask) error {
 	err := o.store.db.Create(task).Error
 	if err != nil {
-		return 0, errors.Wrap(err, "CreateTask")
+		return errors.Wrap(err, "CreateTask")
 	}
-	return task.ID, nil
+
+	return nil
 }
 
-func (o *CronRepo) UpdateTask(task *model.CronTask) error {
+func (o *CronRepo) UpdateTask(task *interfaces.CronTask) error {
 	var objectID int
 	var targetType string
 
@@ -126,8 +126,8 @@ func (o *CronRepo) DeleteTask(objectID int, targetType string) error {
 	return nil
 }
 
-func (o *CronRepo) GetCronAction(objectID int, targetType string) (*model.CronAction, error) {
-	var cronAction *model.CronAction
+func (o *CronRepo) GetCronAction(objectID int, targetType string) (*interfaces.CronAction, error) {
+	var cronAction *interfaces.CronAction
 
 	err := o.store.db.
 		Where("target_id = ?", objectID).
@@ -140,7 +140,7 @@ func (o *CronRepo) GetCronAction(objectID int, targetType string) (*model.CronAc
 	return cronAction, nil
 }
 
-func (o *CronRepo) CreateTaskAction(action *model.CronAction) error {
+func (o *CronRepo) CreateTaskAction(action *interfaces.CronAction) error {
 	err := o.store.db.Create(action).Error
 	if err != nil {
 		return errors.Wrap(err, "CreateTaskAction")

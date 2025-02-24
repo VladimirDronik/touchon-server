@@ -2,16 +2,15 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
-
 	"github.com/valyala/fasthttp"
+	"net/http"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
 )
 
 type getControlPanelResponse struct {
-	ScenarioItems []*model.Scenario  `json:"scenario_items"`
+	ScenarioItems []*model.ViewItem  `json:"scenario_items"`
 	ZoneItems     []*model.GroupRoom `json:"room_items"`
 }
 
@@ -22,17 +21,29 @@ type getControlPanelResponse struct {
 // @Description Получение элементов панели управления
 // @ID GetControlPanel
 // @Produce json
+// @Param with_empty_rooms query string false "Выводить в структуре пустые комнаты" Enums(true, false)
+// @Param with_disabled_items query string false "Выводить в комнатах отключенные итемы" Enums(true, false)
 // @Success      200 {object} Response[getControlPanelResponse]
 // @Failure      400 {object} Response[any]
 // @Failure      500 {object} Response[any]
 // @Router /private/cp [get]
 func (o *Server) getControlPanel(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zoneItems, err := o.outputZoneItems()
+	withEmptyRooms := false
+	if helpers.GetParam(ctx, "with_empty_rooms") == "true" {
+		withEmptyRooms = true
+	}
+
+	withDisabledItems := false
+	if helpers.GetParam(ctx, "with_disabled_items") == "true" {
+		withDisabledItems = true
+	}
+
+	zoneItems, err := o.outputZoneItems(withEmptyRooms, withDisabledItems)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
-	scenarios, err := store.I.Items().GetScenarios()
+	scenarios, err := store.I.Items().GetScenarios(withDisabledItems)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -107,7 +118,7 @@ func (o *Server) handleCreateZone(ctx *fasthttp.RequestCtx) (interface{}, int, e
 // @Failure      500 {object} Response[any]
 // @Router /private/rooms-list [get]
 func (o *Server) getZones(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zones, err := store.I.Items().GetZones()
+	zones, err := store.I.Items().GetZones(false)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -136,12 +147,14 @@ func setIsGroup(items []*model.Zone) {
 // @Description Получение списка всех помещений, независимо от того есть там итемы или нет
 // @ID GetAllZones
 // @Produce json
+// @Param type_zones query string false "Тип выводимых помещений (all - все, groups_only - только группы)" Enums(all, groups_only)
 // @Success      200 {object} Response[[]model.Zone]
 // @Failure      400 {object} Response[any]
 // @Failure      500 {object} Response[any]
 // @Router /private/rooms-list-all [get]
 func (o *Server) getAllZones(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	zones, err := store.I.Zones().GetZoneTrees(0)
+	typeZones := helpers.GetParam(ctx, "type_zones")
+	zones, err := store.I.Zones().GetZoneTrees(typeZones)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}

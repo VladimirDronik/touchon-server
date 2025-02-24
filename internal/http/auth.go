@@ -7,11 +7,30 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/internal/token"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/http/server"
+	"touchon-server/lib/interfaces"
 )
+
+const disabledAuthDeviceID = 10
+
+func (o *Server) disableAuth(ctx *fasthttp.RequestCtx) *model.Tokens {
+	if tokenSecret := o.GetConfig()["token_secret"]; tokenSecret == "disable_auth" {
+		tokens, err := o.createSession(disabledAuthDeviceID)
+		if err != nil {
+			return nil
+		}
+
+		o.setCookie(ctx, "refreshToken", tokens.RefreshToken, true)
+
+		return tokens
+	}
+
+	return nil
+}
 
 // Генерация нового токена
 // @Summary Генерация нового токена
@@ -27,6 +46,11 @@ import (
 // @Failure      500 {object} Response[any]
 // @Router /token [get]
 func (o *Server) getToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	// Disable auth
+	if tokens := o.disableAuth(ctx); tokens != nil {
+		return tokens, http.StatusOK, nil
+	}
+
 	// Сравниваем полученный server_key с тем, что лежит в конфиге
 	apiKey := string(ctx.Request.Header.Peek("api-key"))
 	if apiKey != o.GetConfig()["server_key"] {
@@ -76,6 +100,11 @@ func (o *Server) getToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 // @Failure      500 {object} Response[any]
 // @Router /token [post]
 func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	// Disable auth
+	if tokens := o.disableAuth(ctx); tokens != nil {
+		return tokens, http.StatusOK, nil
+	}
+
 	// Попытка получить refreshToken из httpOnly cookie
 	refreshToken := string(ctx.Request.Header.Cookie("refreshToken"))
 	if refreshToken == "" {
@@ -104,6 +133,10 @@ func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error
 		return nil, http.StatusUnauthorized, err
 	}
 
+	if user.DeviceID <= 0 {
+		return nil, http.StatusUnauthorized, err
+	}
+
 	tokens, err := o.createSession(user.DeviceID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -115,20 +148,20 @@ func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error
 	return tokens, http.StatusOK, nil
 }
 
-type Middleware func(ctx *fasthttp.RequestCtx, next server.RequestHandler) (interface{}, int, error)
+type Middleware func(ctx *fasthttp.RequestCtx, next interfaces.RequestHandler) (interface{}, int, error)
 
-func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next server.RequestHandler) (interface{}, int, error) {
+func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.RequestHandler) (interface{}, int, error) {
 	tokenSecret := o.GetConfig()["token_secret"]
 	if tokenSecret == "disable_auth" {
 		// Disable auth
-		ctx.SetUserValue("device_id", 10)
+		ctx.SetUserValue("device_id", disabledAuthDeviceID)
 		return next(ctx)
 	}
 
 	tkn := string(ctx.Request.Header.Peek("Token"))
 
 	if tkn == "" {
-		return nil, http.StatusBadRequest, errors.New("token not found")
+		return nil, http.StatusUnauthorized, errors.New("token not found")
 	}
 
 	o.GetLogger().Debugf("authMiddleware: Token header: %s", tkn)
@@ -139,61 +172,36 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next server.RequestHan
 		return nil, http.StatusUnauthorized, err
 	}
 
+	if deviceID <= 0 {
+		return nil, http.StatusUnauthorized, err
+	}
+
 	ctx.SetUserValue("device_id", deviceID)
 
 	return next(ctx)
 }
 
-func (o *Server) addMiddleware(pathPrefix string, middleware Middleware) func(method, path string, handler server.RequestHandler) {
-	return func(method, path string, handler server.RequestHandler) {
-		//o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), http.JsonHandlerWrapper(func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-		//	return middleware(ctx, handler)
-		//}))
-
-		// Backward compatibility (filepath.ToSlash() - for windows)
-		o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), JsonHandlerWrapper(func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+func (o *Server) addMiddleware(pathPrefix string, middleware Middleware) func(method, path string, handler interfaces.RequestHandler) {
+	return func(method, path string, handler interfaces.RequestHandler) {
+		// filepath.ToSlash() - for windows
+		o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), server.JsonHandlerWrapper(func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 			return middleware(ctx, handler)
 		}))
 	}
 }
 
-type MiddlewareRaw func(ctx *fasthttp.RequestCtx, next fasthttp.RequestHandler)
-
-func (o *Server) authMiddlewareRaw(ctx *fasthttp.RequestCtx, next fasthttp.RequestHandler) {
-	tokenSecret := o.GetConfig()["token_secret"]
-	if tokenSecret == "disable_auth" {
-		// Disable auth
-		ctx.SetUserValue("device_id", 10)
-		next(ctx)
-		return
-	}
-
-	tkn := string(ctx.Request.Header.Peek("Token"))
-
-	if tkn == "" {
-		ctx.Error("token not found", http.StatusBadRequest)
-		return
-	}
-
-	o.GetLogger().Debugf("authMiddlewareRaw: Token header: %s", tkn)
-
-	// Проверяем, не протух ли токен и извлекаем ID юзера
-	deviceID, err := token.KeysExtract(tkn, tokenSecret)
-	if err != nil {
-		ctx.Error(err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	ctx.SetUserValue("device_id", deviceID)
-
-	next(ctx)
-}
-
-func (o *Server) addMiddlewareRaw(pathPrefix string, middleware MiddlewareRaw) func(method, path string, handler fasthttp.RequestHandler) {
+func (o *Server) addRawMiddleware(pathPrefix string, middleware Middleware) func(method, path string, handler fasthttp.RequestHandler) {
 	return func(method, path string, handler fasthttp.RequestHandler) {
 		// filepath.ToSlash() - for windows
 		o.GetRouter().Handle(method, filepath.ToSlash(filepath.Join(pathPrefix, path)), func(ctx *fasthttp.RequestCtx) {
-			middleware(ctx, handler)
+			_, status, err := middleware(ctx, func(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+				handler(ctx)
+				return nil, 0, nil
+			})
+
+			if err != nil {
+				ctx.Error(err.Error(), status)
+			}
 		})
 	}
 }

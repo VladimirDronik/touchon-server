@@ -3,10 +3,10 @@ package objects
 import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/scripts"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
-type MethodFunc func(params map[string]interface{}) ([]messages.Message, error)
+type MethodFunc func(params map[string]interface{}) ([]interfaces.Message, error)
 
 func NewMethod(name, description string, params []*scripts.Param, f MethodFunc) (*Method, error) {
 	s := &Method{

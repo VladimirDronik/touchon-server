@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/simonvetter/modbus"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/models"
@@ -89,9 +89,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "speed",
@@ -113,9 +113,9 @@ func MakeModel() (objects.Object, error) {
 				},
 				DefaultValue: "19200",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "data_bits",
@@ -125,9 +125,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 8,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.Above(0),
 		},
 		{
@@ -143,9 +143,9 @@ func MakeModel() (objects.Object, error) {
 				},
 				DefaultValue: "0",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "stop_bits",
@@ -160,9 +160,9 @@ func MakeModel() (objects.Object, error) {
 				},
 				DefaultValue: "2",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "timeout",
@@ -172,9 +172,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 3,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.Between(1, 60),
 		},
 		{
@@ -185,9 +185,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 3,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.Between(1, 10),
 		},
 	}
@@ -256,7 +256,7 @@ func (o *ModbusImpl) Start() error {
 	o.wg.Add(1)
 	go o.actionsHandler()
 
-	context.Logger.Debugf("Modbus(%d) started", o.GetID())
+	g.Logger.Debugf("Modbus(%d) started", o.GetID())
 
 	return nil
 }
@@ -322,7 +322,7 @@ func (o *ModbusImpl) Shutdown() error {
 	// Ждем завершения дополнительных потоков
 	o.wg.Wait()
 
-	context.Logger.Debugf("Modbus(%d) stopped", o.GetID())
+	g.Logger.Debugf("Modbus(%d) stopped", o.GetID())
 
 	return nil
 }

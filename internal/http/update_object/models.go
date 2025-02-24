@@ -4,10 +4,11 @@ package update_object
 
 type Request struct {
 	ID       int                    `json:"id"`
-	ParentID int                    `json:"parent_id"`
-	ZoneID   int                    `json:"zone_id"`
+	ParentID *int                   `json:"parent_id"`
+	ZoneID   *int                   `json:"zone_id"`
 	Name     string                 `json:"name"`
 	Props    map[string]interface{} `json:"props"`
+	Enabled  bool                   `json:"enabled"`
 	Children []Child                `json:"children"`
 }
 

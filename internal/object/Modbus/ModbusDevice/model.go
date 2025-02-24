@@ -27,22 +27,10 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.Between(1, 0xFFFF),
-		},
-		{
-			Code:        "enable",
-			Name:        "Состояние",
-			Description: "вкл/выкл",
-			Item: &models.Item{
-				Type:         models.DataTypeBool,
-				DefaultValue: false,
-			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
 		},
 		{
 			Code:        "update_interval",
@@ -52,9 +40,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 60,
 			},
-			Required:   objects.NewRequired(true),
-			Editable:   objects.NewCondition(),
-			Visible:    objects.NewCondition(),
+			Required:   objects.True(),
+			Editable:   objects.True(),
+			Visible:    objects.True(),
 			CheckValue: objects.AboveOrEqual1(),
 		},
 	}
@@ -87,15 +75,6 @@ type ModbusDeviceImpl struct {
 func (o *ModbusDeviceImpl) Start() error {
 	if err := o.Object.Start(); err != nil {
 		return errors.Wrap(err, "ModbusDeviceImpl.Start")
-	}
-
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
-	}
-
-	if !enable {
-		return nil
 	}
 
 	parentID := o.GetParentID()

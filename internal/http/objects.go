@@ -13,6 +13,7 @@ import (
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 )
 
 type getObjectsTypesResponseItem struct {
@@ -91,7 +92,7 @@ func compareTags(inputsTags []string, objectTags []string) bool {
 // @Description Получение модели объекта
 // @ID GetObjectModel
 // @Produce json
-// @Param category query string true "Категория объекта" Enums(controller,sensor,regulator,generic_input,relay,modbus)
+// @Param category query string true "Категория объекта" Enums(controller,sensor,regulator,generic_input,relay,modbus,conditioner)
 // @Param type query string true "Тип объекта" example(mega_d,htu21d,regulator,generic_input,relay,wb_mrm2_mini)
 // @Success      200 {object} http.Response[objects.ObjectModel]
 // @Failure      400 {object} http.Response[any]
@@ -181,6 +182,9 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 		{"children", "int", "children"},
 		{"type_struct", "string", "type_struct"},
 		{"with_methods", "string", "with_methods"},
+		{"type_children", "string", "type_children"},
+		{"with_tags", "string", "with_tags"},
+		{"simple_tree", "string", "simple_tree"},
 	}
 
 	for _, p := range params {
@@ -207,6 +211,51 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 	return m, nil
 }
 
+// Получение объекта по его свойствам
+// @Summary Получение объекта по его свойствам
+// @Tags Objects
+// @Description Получение объекта по его свойствам
+// @ID GetObjectByProps
+// @Produce json
+// @Param props query string false "Массив свойств объекта" example(address=1, interface=I2C)
+// @Param parent_id query string false "ID родительского объекта"
+// @Success      200 {object} http.Response[int]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /objects/by_props [get]
+func (o *Server) handleGetObjectByProps(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	propsReq := helpers.GetParam(ctx, "props")
+	parentID, err := helpers.GetIntParam(ctx, "parent_id")
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.Wrap(err, "param object_id is not valid")
+	}
+
+	if propsReq == "" {
+		return nil, http.StatusBadRequest, errors.New("props is empty")
+	}
+
+	propsSlice := strings.Split(propsReq, ",")
+	if len(propsSlice) == 0 {
+		return nil, http.StatusBadRequest, errors.New("props string is bad")
+	}
+
+	propsMap := make(map[string]string, 10)
+	for _, p := range propsSlice {
+		prop := strings.Split(p, "=")
+		if len(prop) < 2 {
+			return nil, http.StatusBadRequest, errors.New("props string is bad")
+		}
+		propsMap[prop[0]] = prop[1]
+	}
+
+	objectID, err := store.I.ObjectRepository().GetObjectIDByProps(propsMap, parentID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Wrap(err, "GetObjectIDByProps")
+	}
+
+	return objectID, http.StatusOK, nil
+}
+
 type GetObjectsResponse struct {
 	Total int                  `json:"total"`
 	List  []*model.StoreObject `json:"list"`
@@ -221,22 +270,26 @@ type GetObjectsResponse struct {
 // @Param filter_by_id query string false "ID объекта"
 // @Param filter_by_parent_id query string false "ID родительского объекта"
 // @Param filter_by_zone_id query string false "ID зоны"
-// @Param filter_by_category query string false "Категория" Enums(controller,sensor,regulator,generic_input)
+// @Param filter_by_category query string false "Категория" Enums(controller,sensor,regulator,generic_input, sensor_value)
 // @Param filter_by_type query string false "Тип" example(mega_d, htu21d, regulator, generic_input)
 // @Param filter_by_name query string false "Название"
 // @Param filter_by_status query string false "Статус" Enums(ON,OFF,Enable,N/A)
-// @Param tags query string false "Тэги" default(controller,mega_d)
+// @Param tags query string false "Тэги"
 // @Param offset query string false "Смещение" default(0)
 // @Param limit query string false "Лимит" default(20)
 // @Param children query string false "Возвращать дочерние объекты (0-без детей, 1-дети, 2-дети+внуки и т.д.)" default(1)
+// @Param type_children query string false "Тип выводимых дочерних элементов (all - все, internal - только внутр., external - только внешние)" Enums(all, internal, external)
 // @Param type_struct query string false "Тип структуры в ответе" Enums(easy, full)
 // @Param with_methods query string false "Добавить методы в структуру" Enums(true, false)
+// @Param with_tags query string false "Добавлять тэги в структуру" Enums(true, false)
+// @Param simple_tree query string false "Дерево объектов будет строиться от отфильтрованного объекта вниз, но не вверх" Enums(true, false)
 // @Success      200 {object} http.Response[GetObjectsResponse]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /objects [get]
 func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	tags := helpers.PrepareTags(helpers.GetParam(ctx, "tags"))
+	withTagsFlag := true
 
 	params, err := parseGetObjectsParams(ctx)
 	if err != nil {
@@ -257,14 +310,32 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	childrenAge, _ := params["children"].(int)
 	typeStruct := params["type_struct"]
 	withMethods := params["with_methods"]
+	typeChildren := params["type_children"]
+	withTags := params["with_tags"]
+	simpleTree := params["simple_tree"]
 	delete(params, "offset")
 	delete(params, "limit")
 	delete(params, "children")
 	delete(params, "type_struct")
 	delete(params, "with_methods")
+	delete(params, "type_children")
+	delete(params, "with_tags")
+	delete(params, "simple_tree")
 
 	if limit == 0 {
 		limit = 20
+	}
+
+	var childType model.ChildType
+	switch typeChildren {
+	case "all":
+		childType = model.ChildTypeAll
+	case "external":
+		childType = model.ChildTypeExternal
+	case "internal":
+		childType = model.ChildTypeInternal
+	default:
+		childType = model.ChildTypeExternal
 	}
 
 	rows, err := store.I.ObjectRepository().GetObjects(params, tags, offset, limit, model.ChildTypeExternal)
@@ -297,6 +368,15 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 			}
 		}
 
+		if withTags == "false" {
+			row.Tags = nil
+			withTagsFlag = false
+		}
+
+		if simpleTree == "true" {
+			row.ParentID = nil
+		}
+
 		m[row.ID] = row
 
 		if typeStruct == "easy" { //если упрощенный вывод включен, то убираем всё лишнее
@@ -304,7 +384,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 			row.Status = ""
 			row.Category = ""
 			row.Children = nil
-			row.ZoneID = 0
+			row.ZoneID = nil
 			items = append(items, row)
 		}
 	}
@@ -317,7 +397,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	}
 
 	//Рекурсивно загружаем детей
-	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, model.ChildTypeExternal); err != nil {
+	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, childType, withTagsFlag); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -410,7 +490,7 @@ func (o *Server) handleGetObjectsByTags(ctx *fasthttp.RequestCtx) (interface{}, 
 	}
 
 	// Рекурсивно загружаем детей
-	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, model.ChildTypeAll); err != nil {
+	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, model.ChildTypeAll, true); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -511,7 +591,19 @@ func (o *Server) DeleteObject(objectID int) (interface{}, int, error) {
 	}
 
 	// Удаление действий в action-router
-	if err := deleteEvent(objectID); err != nil {
+
+	// Удаляем все возможные события объекта
+	if err := store.I.EventsRepo().DeleteEvent(interfaces.TargetTypeObject, objectID, "all"); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	// Удаляем все действия для сторонних событий, где может фигурировать объект
+	if err := store.I.EventActionsRepo().DeleteActionByObject(interfaces.TargetTypeObject, objectID); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	// Удаляем все действия крона для объекта
+	if err := store.I.CronRepo().DeleteTask(objectID, interfaces.TargetTypeObject); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
@@ -554,4 +646,34 @@ func (o *Server) handleGetAllObjectsTags(ctx *fasthttp.RequestCtx) (interface{},
 	}
 
 	return tags, http.StatusOK, nil
+}
+
+// Получение состояния объекта
+// @Summary Получение состояния объекта
+// @Tags Objects
+// @Description Получение состояния объекта
+// @ID GetState
+// @Produce json
+// @Param id path int true "ID объекта" default(391)
+// @Success      200 {object} http.Response[any]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /objects/{id}/state [get]
+func (o *Server) handleGetObjectState(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	objectID, err := helpers.GetUintPathParam(ctx, "id")
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	obj, err := memStore.I.GetObject(objectID)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	state, err := obj.GetState()
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	return state, http.StatusOK, nil
 }

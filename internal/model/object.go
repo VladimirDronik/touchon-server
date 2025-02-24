@@ -28,15 +28,16 @@ const (
 
 // StoreObject Объект
 type StoreObject struct {
-	ID       int             `json:"id"`                  // ID объекта
-	ParentID *int            `json:"parent_id,omitempty"` // ID родительского объекта
-	ZoneID   int             `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
-	Category Category        `json:"category"`            // Категория объекта
-	Type     string          `json:"type"`                // Тип объекта
-	Internal bool            `json:"internal"`            // Признак внутреннего объекта (port, sensor_value)
-	Name     string          `json:"name"`                // Название объекта
-	Status   ObjectStatus    `json:"status,omitempty"`    // Состояние объекта
-	Tags     map[string]bool `gorm:"serializer:json"`
+	ID       int             `json:"id"`                                    // ID объекта
+	ParentID *int            `json:"parent_id,omitempty"`                   // ID родительского объекта
+	ZoneID   *int            `json:"zone_id,omitempty"`                     // ID зоны, в которой размещен объект
+	Category Category        `json:"category"`                              // Категория объекта
+	Type     string          `json:"type"`                                  // Тип объекта
+	Internal bool            `json:"internal"`                              // Признак внутреннего объекта (port, sensor_value)
+	Name     string          `json:"name"`                                  // Название объекта
+	Status   ObjectStatus    `json:"status,omitempty"`                      // Состояние объекта
+	Tags     map[string]bool `json:"tags,omitempty" gorm:"serializer:json"` //
+	Enabled  bool            `json:"enabled"`                               // Включает методы Start/Shutdown
 	Methods  []Method        `gorm:"-"`
 
 	Children []*StoreObject `json:"children,omitempty" gorm:"-"` // Дочерние объекты
@@ -50,13 +51,14 @@ type Method struct {
 type JsonObject struct {
 	ID       int          `json:"id"`                  // ID объекта
 	ParentID *int         `json:"parent_id,omitempty"` // ID родительского объекта
-	ZoneID   int          `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
+	ZoneID   *int         `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
 	Category Category     `json:"category"`            // Категория объекта
 	Type     string       `json:"type"`                // Тип объекта
 	Internal bool         `json:"internal"`            // Признак внутреннего объекта (port, sensor_value)
 	Name     string       `json:"name"`                // Название объекта
 	Status   ObjectStatus `json:"status,omitempty"`    // Состояние объекта
-	Tags     []string     `json:"tags"`
+	Tags     []string     `json:"tags"`                //
+	Enabled  bool         `json:"enabled"`             // Включает методы Start/Shutdown
 	Methods  []Method     `json:"methods,omitempty"`
 
 	Children []*JsonObject `json:"children,omitempty" gorm:"-"` // Дочерние объекты
@@ -76,6 +78,7 @@ func StoreObjectToJsonObject(o *StoreObject) *JsonObject {
 		Internal: o.Internal,
 		Name:     o.Name,
 		Status:   o.Status,
+		Enabled:  o.Enabled,
 		Methods:  o.Methods,
 	}
 

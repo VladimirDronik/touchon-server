@@ -21,6 +21,10 @@ func (o *Params) Len() int {
 	return o.m.Len()
 }
 
+func (o *Params) GetAll() *orderedmap.OrderedMap[string, *Param] {
+	return o.m
+}
+
 func (o *Params) Get(code string) (*Param, error) {
 	v, err := o.m.Get(code)
 	if err != nil {

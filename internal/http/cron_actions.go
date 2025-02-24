@@ -6,10 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/lib/helpers"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // Создание действия по расписанию
@@ -19,33 +18,40 @@ import (
 // @ID CreateCronAction
 // @Accept json
 // @Produce json
-// @Param object body model.CronTask  true "Действия по расписанию"
-// @Success      200 {object} http.Response[model.CronTask]
+// @Param object body interfaces.CronTask  true "Действия по расписанию"
+// @Success      200 {object} http.Response[interfaces.CronTask]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /cron/task [post]
 func (o *Server) handleCreateTask(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	var req *model.CronTask
+	var req *interfaces.CronTask
 
 	err := json.Unmarshal(ctx.PostBody(), &req)
 	if err != nil {
 		return nil, fasthttp.StatusBadRequest, err
 	}
 
-	taskID, err := store.I.CronRepo().CreateTask(req)
-	if err != nil {
+	if err := o.CreateCronTask(req); err != nil {
 		return nil, fasthttp.StatusInternalServerError, err
 	}
 
-	for _, action := range req.Actions {
-		action.TaskID = taskID
+	return req.ID, http.StatusOK, nil
+}
+
+func (o *Server) CreateCronTask(task *interfaces.CronTask) error {
+	if err := store.I.CronRepo().CreateTask(task); err != nil {
+		return errors.Wrap(err, "CreateCronTask")
+	}
+
+	for _, action := range task.Actions {
+		action.TaskID = task.ID
 
 		if err := store.I.CronRepo().CreateTaskAction(action); err != nil {
-			return nil, fasthttp.StatusInternalServerError, err
+			return errors.Wrap(err, "CreateCronTask")
 		}
 	}
 
-	return taskID, http.StatusOK, nil
+	return nil
 }
 
 // Изменение задачи CRON
@@ -55,21 +61,20 @@ func (o *Server) handleCreateTask(ctx *fasthttp.RequestCtx) (interface{}, int, e
 // @ID UpdateCronTask
 // @Accept json
 // @Produce json
-// @Param object body model.CronTask  true "Действия по расписанию"
-// @Success      200 {object} http.Response[model.CronTask]
+// @Param object body interfaces.CronTask  true "Действия по расписанию"
+// @Success      200 {object} http.Response[interfaces.CronTask]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /cron/task [put]
 func (o *Server) handleUpdateTask(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	var req *model.CronTask
+	var req *interfaces.CronTask
 
 	err := json.Unmarshal(ctx.PostBody(), &req)
 	if err != nil {
 		return nil, fasthttp.StatusBadRequest, err
 	}
 
-	err = store.I.CronRepo().UpdateTask(req)
-	if err != nil {
+	if err := store.I.CronRepo().UpdateTask(req); err != nil {
 		return nil, fasthttp.StatusInternalServerError, err
 	}
 
@@ -82,17 +87,16 @@ func (o *Server) handleUpdateTask(ctx *fasthttp.RequestCtx) (interface{}, int, e
 // @Description Удаление задание расписания
 // @ID DeleteCronTask
 // @Produce json
-// @Param target_type query messages.TargetType true "Тип сущности" default(item)
+// @Param target_type query interfaces.TargetType true "Тип сущности" default(item)
 // @Param target_id query int true "ID сущности" default(1)
 // @Success      200 {object} http.Response[any]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /cron/task [delete]
 func (o *Server) handleDeleteTask(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	targetTypeString := helpers.GetParam(ctx, "target_type")
-	targetType := messages.TargetType(targetTypeString)
+	targetType := helpers.GetParam(ctx, "target_type")
 
-	if _, ok := messages.TargetTypes[targetType]; !ok {
+	if _, ok := interfaces.TargetTypes[targetType]; !ok {
 		return nil, http.StatusBadRequest, errors.Errorf("unknown target type %q", targetType)
 	}
 

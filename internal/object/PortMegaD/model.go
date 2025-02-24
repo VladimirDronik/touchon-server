@@ -12,6 +12,9 @@ import (
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
 	"touchon-server/internal/store"
+	"touchon-server/lib/events"
+	"touchon-server/lib/events/object/port"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
 )
 
@@ -29,9 +32,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.False(),
+			Visible:  objects.True(),
 			CheckValue: func(p *objects.Prop, allProps map[string]*objects.Prop) error {
 				if v, _ := p.GetIntValue(); v < 0 {
 					return errors.New("Port < 0")
@@ -48,9 +51,9 @@ func MakeModel() (objects.Object, error) {
 				Type: models.DataTypeInterface,
 				// Группа задается при добавлении порта в контроллере
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition().AccessLevel(model.AccessLevelDenied),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.False(),
+			Visible:  objects.True(),
 		}, {
 			Code:        "type",
 			Name:        "Тип",
@@ -59,9 +62,9 @@ func MakeModel() (objects.Object, error) {
 				Type: models.DataTypeInterface,
 				// Типы задаются при добавлении порта в контроллере
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "mode",
@@ -70,9 +73,9 @@ func MakeModel() (objects.Object, error) {
 			Item: &models.Item{
 				Type: models.DataTypeInterface,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "parent_port",
@@ -82,9 +85,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(false),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.False(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 			CheckValue: func(p *objects.Prop, allProps map[string]*objects.Prop) error {
 				if v, _ := p.GetIntValue(); v < 0 {
 					return errors.New("ParentPort < 0")
@@ -95,6 +98,36 @@ func MakeModel() (objects.Object, error) {
 		},
 	}
 
+	onPress, err := port.NewOnPress(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
+	}
+
+	onRelease, err := port.NewOnRelease(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
+	}
+
+	onDoubleClick, err := port.NewOnDoubleClick(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
+	}
+
+	onLongPress, err := port.NewOnLongPress(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
+	}
+
+	onCheck, err := port.NewOnCheck(0, "", "")
+	if err != nil {
+		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
+	}
+
+	onChangeState, err := events.NewOnChangeState(interfaces.TargetTypeObject, 0, "", "")
+	if err != nil {
+		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
+	}
+
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryPort,
 		"port_mega_d",
@@ -102,14 +135,7 @@ func MakeModel() (objects.Object, error) {
 		"Порт",
 		props,
 		nil,
-		[]string{
-			"object.port.on_press",
-			"object.port.on_release",
-			"object.port.on_double_click",
-			"object.port.on_long_press",
-			"object.port.on_check",
-			"on_change_state",
-		},
+		[]interfaces.Event{onPress, onRelease, onDoubleClick, onLongPress, onCheck, onChangeState},
 		nil,
 		[]string{"port", "port_mega_d"},
 	)

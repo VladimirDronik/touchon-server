@@ -2,12 +2,12 @@ package GenericInput
 
 import (
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/generic_input"
+	"touchon-server/lib/interfaces"
 	"touchon-server/lib/models"
-	"touchon-server/lib/mqtt/messages"
 )
 
 func init() {
@@ -24,9 +24,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeInt,
 				DefaultValue: 0,
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "interface",
@@ -36,9 +36,9 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 		{
 			Code:        "mode",
@@ -48,10 +48,25 @@ func MakeModel() (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "",
 			},
-			Required: objects.NewRequired(true),
-			Editable: objects.NewCondition(),
-			Visible:  objects.NewCondition(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
+	}
+
+	onClick, err := generic_input.NewOnClick(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "GenericInput.MakeModel")
+	}
+
+	onDoubleClick, err := generic_input.NewOnDoubleClick(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "GenericInput.MakeModel")
+	}
+
+	onLongPress, err := generic_input.NewOnLongPress(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "GenericInput.MakeModel")
 	}
 
 	impl, err := objects.NewObjectModelImpl(
@@ -61,11 +76,7 @@ func MakeModel() (objects.Object, error) {
 		"Универсальный вход",
 		props,
 		nil,
-		[]string{
-			"object.generic_input.on_click",
-			"object.generic_input.on_double_click",
-			"object.generic_input.on_long_press",
-		},
+		[]interfaces.Event{onClick, onDoubleClick, onLongPress},
 		nil,
 		[]string{"generic", "input"},
 	)
@@ -93,11 +104,9 @@ func (o *GenericInputModel) Start() error {
 	}
 
 	err = o.Subscribe(
+		interfaces.MessageTypeEvent,
 		"",
-		"",
-		messages.MessageTypeEvent,
-		"",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&portID,
 		o.handler,
 	)
@@ -105,36 +114,38 @@ func (o *GenericInputModel) Start() error {
 		return errors.Wrap(err, "GenericInputModel.Start")
 	}
 
-	context.Logger.Debugf("GenericInputModel(%d) started", o.GetID())
+	g.Logger.Debugf("GenericInputModel(%d) started", o.GetID())
 
 	return nil
 }
 
-func (o *GenericInputModel) handler(msg messages.Message) ([]messages.Message, error) {
-	context.Logger.Debugf("GenericInputModel(%d): handler()", o.GetID())
-
+func (o *GenericInputModel) handler(svc interfaces.MessageSender, msg interfaces.Message) {
 	var err error
 
 	switch msg.GetName() {
 	case "object.port.on_press":
-		msg, err = generic_input.NewOnClickMessage("object_manager/object/event", o.GetID())
+		msg, err = generic_input.NewOnClick(o.GetID())
 	case "object.port.on_double_click":
-		msg, err = generic_input.NewOnDoubleClickMessage("object_manager/object/event", o.GetID())
+		msg, err = generic_input.NewOnDoubleClick(o.GetID())
 	case "object.port.on_long_press":
-		msg, err = generic_input.NewOnLongPressMessage("object_manager/object/event", o.GetID())
+		msg, err = generic_input.NewOnLongPress(o.GetID())
 	default:
-		return nil, nil
+		return
 	}
 
 	if err != nil {
-		return nil, errors.Wrap(err, "GenericInputModel.handler")
+		g.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := svc.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "GenericInputModel.handler"))
+		return
+	}
 }
 
 func (o *GenericInputModel) Shutdown() error {
-	context.Logger.Debugf("GenericInputModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("GenericInputModel(%d) stopped", o.GetID())
 
 	return nil
 }

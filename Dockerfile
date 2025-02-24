@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.23.2 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24 AS builder
 
 RUN apt-get update && apt-get install -y gcc-aarch64-linux-gnu
 
@@ -6,16 +6,9 @@ WORKDIR /opt/service
 
 ENV GO111MODULE=on
 
-RUN go install github.com/swaggo/swag/cmd/swag@latest
-RUN go install github.com/vektra/mockery/v2@latest
-
 COPY . ./
-# RUN go mod tidy
-RUN swag init --dir=cmd,internal,lib --output=docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 
-# Запускаем тесты
-RUN mockery --dir=internal --all --inpackage --inpackage-suffix --with-expecter
-RUN mockery --dir=lib --all --inpackage --inpackage-suffix --with-expecter
+RUN go generate -C cmd
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go test -mod vendor ./...
 
 ARG TARGETOS TARGETARCH

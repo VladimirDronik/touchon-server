@@ -4,17 +4,17 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/port"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 // OnPress событие генерируется при замыкании порта
-func (o *PortModel) OnPress() messages.Message {
-	msg, err := port.NewOnPressMessage("object_manager/object/event", o.GetID())
+func (o *PortModel) OnPress() interfaces.Message {
+	msg, err := port.NewOnPress(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnPress"))
+		g.Logger.Error(errors.Wrap(err, "OnPress"))
 		return nil
 	}
 
@@ -22,10 +22,10 @@ func (o *PortModel) OnPress() messages.Message {
 }
 
 // OnRelease событие генерируется при отпускании порта
-func (o *PortModel) OnRelease() messages.Message {
-	msg, err := port.NewOnReleaseMessage("object_manager/object/event", o.GetID())
+func (o *PortModel) OnRelease() interfaces.Message {
+	msg, err := port.NewOnRelease(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnRelease"))
+		g.Logger.Error(errors.Wrap(err, "OnRelease"))
 		return nil
 	}
 
@@ -33,20 +33,20 @@ func (o *PortModel) OnRelease() messages.Message {
 }
 
 // OnLongPress событие генерируется при удержании
-func (o *PortModel) OnLongPress() messages.Message {
-	msg, err := port.NewOnLongPressMessage("object_manager/object/event", o.GetID())
+func (o *PortModel) OnLongPress() interfaces.Message {
+	msg, err := port.NewOnLongPress(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnLongPress"))
+		g.Logger.Error(errors.Wrap(err, "OnLongPress"))
 		return nil
 	}
 
 	return msg
 }
 
-func (o *PortModel) OnDoubleClick() messages.Message {
-	msg, err := port.NewOnDoubleClickMessage("object_manager/object/event", o.GetID())
+func (o *PortModel) OnDoubleClick() interfaces.Message {
+	msg, err := port.NewOnDoubleClick(o.GetID())
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnDoubleClick"))
+		g.Logger.Error(errors.Wrap(err, "OnDoubleClick"))
 		return nil
 	}
 
@@ -54,12 +54,12 @@ func (o *PortModel) OnDoubleClick() messages.Message {
 }
 
 // OnChangeState Событие, которое возникает при смене статуса объекта
-func (o *PortModel) OnChangeState(state string) messages.Message {
+func (o *PortModel) OnChangeState(state string) interfaces.Message {
 	var value string
 
 	mode, err := o.GetProps().GetStringValue("mode")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnChangeState"))
+		g.Logger.Error(errors.Wrap(err, "OnChangeState"))
 		return nil
 	}
 
@@ -68,9 +68,9 @@ func (o *PortModel) OnChangeState(state string) messages.Message {
 		state = ""
 	}
 
-	msg, err := events.NewOnChangeStateMessage("object_manager/object/event", messages.TargetTypeObject, o.GetID(), strings.ToLower(state), value)
+	msg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), value)
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnChangeState"))
+		g.Logger.Error(errors.Wrap(err, "OnChangeState"))
 		return nil
 	}
 
@@ -79,12 +79,12 @@ func (o *PortModel) OnChangeState(state string) messages.Message {
 
 // OnCheck событие, которое возникает, когда проверяем состояние порта, но при этом новое пришедшее состояние порта
 // не различается с тем, что хранится в БД
-func (o *PortModel) OnCheck(state string) messages.Message {
+func (o *PortModel) OnCheck(state string) interfaces.Message {
 	var value string
 
 	mode, err := o.GetProps().GetStringValue("mode")
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnCheck"))
+		g.Logger.Error(errors.Wrap(err, "OnCheck"))
 		return nil
 	}
 
@@ -93,9 +93,9 @@ func (o *PortModel) OnCheck(state string) messages.Message {
 		state = ""
 	}
 
-	msg, err := port.NewOnCheckMessage("object_manager/object/event", o.GetID(), state, value)
+	msg, err := port.NewOnCheck(o.GetID(), state, value)
 	if err != nil {
-		context.Logger.Error(errors.Wrap(err, "OnCheck"))
+		g.Logger.Error(errors.Wrap(err, "OnCheck"))
 	}
 
 	return msg

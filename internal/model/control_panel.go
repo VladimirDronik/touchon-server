@@ -3,8 +3,8 @@ package model
 // ViewItem Структура основных итемов (кнопок панели управления)
 type ViewItem struct {
 	ID            int    `json:"item_id"`                           //
-	ParentID      int    `json:"id_group,omitempty"`                //
-	ZoneID        int    `json:"zone_id,omitempty"`                 //
+	ParentID      *int   `json:"id_group,omitempty"`                //
+	ZoneID        *int   `json:"zone_id,omitempty"`                 //
 	Type          string `json:"type,omitempty"`                    //
 	Status        string `json:"status,omitempty"`                  //
 	Icon          string `json:"icon,omitempty"`                    //
@@ -17,7 +17,7 @@ type ViewItem struct {
 	PositionLeft  int    `json:"position_left"`                     //
 	PositionTop   int    `json:"position_top"`                      //
 	Scene         int    `json:"scene"`                             //
-	Enabled       bool   `json:"enabled,omitempty"`                 //
+	Enabled       bool   `json:"enabled"`                           //
 	ControlObject int    `json:"control_object,omitempty" gorm:"-"` // Объект, статус которого влияет на статус итема
 
 	Value        float32     `json:"value,omitempty" gorm:"-"`  //
@@ -52,8 +52,8 @@ type GroupRoom struct {
 	Style    string `json:"style"`
 	Sort     int    `json:"sort"`
 
-	Sensors []*Sensor   `json:"sensors,omitempty"`
-	Items   []*ViewItem `json:"items,omitempty"`
+	Sensors []*SensorItem `json:"sensors,omitempty"`
+	Items   []*ViewItem   `json:"items,omitempty"`
 }
 
 // Zone Структура для вывода в помещений
@@ -63,11 +63,9 @@ type Zone struct {
 	Name     string `json:"name"`
 	Style    string `json:"style"`
 	Sort     int    `json:"sort"`
+	IsGroup  bool   `json:"is_group"`
 
 	Children []*Zone `json:"rooms_in_group,omitempty" gorm:"-"`
-
-	// Backward compatibility
-	IsGroup bool `json:"is_group" gorm:"-"`
 }
 
 // Children Структура комнаты для вывода внутри группы

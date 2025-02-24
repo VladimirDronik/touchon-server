@@ -2,12 +2,15 @@ package objects
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
-	"touchon-server/lib/mqtt/messages"
-
 	"touchon-server/internal/model"
+	"touchon-server/lib/helpers"
+	"touchon-server/lib/interfaces"
 )
+
+var ErrObjectDisabled = errors.New("object disabled")
 
 // Object Абстрактный тип объекта
 type Object interface {
@@ -21,8 +24,8 @@ type Object interface {
 	GetParentID() *int
 	SetParentID(*int)
 
-	GetZoneID() int
-	SetZoneID(int)
+	GetZoneID() *int
+	SetZoneID(*int)
 
 	// GetCategory Возвращает категорию объекта (controller, sensor, module, ext,  etc)
 	GetCategory() model.Category
@@ -56,6 +59,15 @@ type Object interface {
 	GetTagsMap() map[string]bool
 	SetTagsMap(map[string]bool)
 
+	GetEnabled() bool
+	SetEnabled(bool)
+
+	// CheckEnabled метод проверяет, включен ли объект.
+	// Вызывается в методах Start и Shutdown.
+	// Присутствует в интерфейсе для того, чтобы можно было
+	// его вызвать "вручную" в производных типах.
+	CheckEnabled() error
+
 	// Start запускает логику объекта
 	Start() error
 
@@ -71,12 +83,16 @@ type Object interface {
 
 	// Unmarshaler Объект должен создаваться из json
 	json.Unmarshaler
+
+	SetTimer(time.Duration, func())
+	GetTimer() *helpers.Timer
+	GetState() (interfaces.Message, error)
 }
 
 type ObjectModel struct {
 	ID       int  `json:"id"`
 	ParentID *int `json:"parent_id"`
-	ZoneID   int  `json:"zone_id"`
+	ZoneID   *int `json:"zone_id"`
 
 	Category model.Category     `json:"category"`
 	Type     string             `json:"type"`
@@ -84,17 +100,10 @@ type ObjectModel struct {
 	Name     string             `json:"name"`
 	Status   model.ObjectStatus `json:"status"`
 	Tags     []string           `json:"tags,omitempty"`
+	Enabled  bool               `json:"enabled"`
 
 	Props    *Props    `json:"props,omitempty"`
 	Children *Children `json:"children,omitempty"`
 	Events   *Events   `json:"events,omitempty"`
 	Methods  *Methods  `json:"methods,omitempty"`
-}
-
-type Port interface {
-	GetPortState(command string, params map[string]string, timeout time.Duration) (string, error)
-	On(args map[string]interface{}) ([]messages.Message, error)
-	Off(args map[string]interface{}) ([]messages.Message, error)
-	Toggle(args map[string]interface{}) ([]messages.Message, error)
-	SetTypeMode(typePt string, modePt string, title string, params map[string]string) error
 }

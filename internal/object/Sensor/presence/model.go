@@ -5,14 +5,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor/motion"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
-	"touchon-server/lib/event"
 	"touchon-server/lib/events/object/sensor"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 func init() {
@@ -25,8 +24,8 @@ func MakeModel() (objects.Object, error) {
 		return nil, errors.Wrap(err, "presence.MakeModel")
 	}
 
-	obj := &SensorModel{}
-	obj.SensorModel = baseObj.(*motion.SensorModel)
+	obj := &PresenceSensorModel{}
+	obj.MotionSensorModel = baseObj.(*motion.MotionSensorModel)
 
 	obj.SetType("presence")
 	obj.SetName("Датчик присутствия")
@@ -48,9 +47,9 @@ func MakeModel() (objects.Object, error) {
 			return nil, errors.Wrap(err, "presence.MakeModel")
 		}
 
-		prop.Required = objects.NewRequired(false)
-		prop.Editable = objects.NewCondition().AccessLevel(model.AccessLevelDenied)
-		prop.Visible = objects.NewCondition().AccessLevel(model.AccessLevelDenied)
+		prop.Required = objects.False()
+		prop.Editable = objects.False()
+		prop.Visible = objects.False()
 		prop.CheckValue = nil
 	}
 
@@ -60,166 +59,162 @@ func MakeModel() (objects.Object, error) {
 	obj.GetChildren().Add(p)
 
 	// Добавляем свои события
-	for _, eventName := range []string{"object.sensor.on_presence_on", "object.sensor.on_presence_off"} {
-		ev, err := event.MakeEvent(eventName, messages.TargetTypeObject, 0, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "presence.MakeModel")
-		}
+	onPresenceOn, err := sensor.NewOnPresenceOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
 
-		if err := obj.GetEvents().Add(ev); err != nil {
-			return nil, errors.Wrap(err, "presence.MakeModel")
-		}
+	onPresenceOff, err := sensor.NewOnPresenceOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onPresenceOn, onPresenceOff); err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
 	}
 
 	return obj, nil
 }
 
-type SensorModel struct {
-	*motion.SensorModel
+type PresenceSensorModel struct {
+	*motion.MotionSensorModel
 }
 
-func (o *SensorModel) Start() error {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
-	}
-
-	if !enable {
-		return nil
+func (o *PresenceSensorModel) Start() error {
+	if err := o.SensorModel.Start(); err != nil {
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
 	address, err := o.GetProps().GetStringValue("address")
 	if err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
 	portIDs := strings.Split(address, ";")
 	if len(portIDs) != 2 {
-		return errors.Wrap(errors.New("address is bad"), "presence.SensorModel.Start")
+		return errors.Wrap(errors.New("address is bad"), "PresenceSensorModel.Start")
 	}
 
 	presencePortID, err := strconv.Atoi(portIDs[1])
 	if err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
 	// Заменяем "<motion port id>;<presence port id>" на "<motion port id>"
 	if err := o.GetProps().Set("address", portIDs[0]); err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
 	// Выполняем логику датчика движения
-	if err := o.SensorModel.Start(); err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
+	if err := o.MotionSensorModel.Start(); err != nil {
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
 	// Возвращаем оригинальное значение адреса
 	if err := o.GetProps().Set("address", address); err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_long_press",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&presencePortID,
 		o.onPresenceOnHandler,
 	)
 	if err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
 	err = o.Subscribe(
-		"",
-		"",
-		messages.MessageTypeEvent,
+		interfaces.MessageTypeEvent,
 		"object.port.on_release",
-		messages.TargetTypeObject,
+		interfaces.TargetTypeObject,
 		&presencePortID,
 		o.onPresenceOffHandler,
 	)
 	if err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Start")
+		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
-	context.Logger.Debugf("presence.SensorModel(%d) started", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d) started", o.GetID())
 
 	return nil
 }
 
-func (o *SensorModel) onPresenceOnHandler(messages.Message) ([]messages.Message, error) {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOnHandler")
+func (o *PresenceSensorModel) onPresenceOnHandler(svc interfaces.MessageSender, _ interfaces.Message) {
+	if err := o.CheckEnabled(); err != nil {
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
-	if !enable {
-		return nil, nil
-	}
-
-	context.Logger.Debugf("presence.SensorModel(%d): onPresenceOnHandler()", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d): onPresenceOnHandler()", o.GetID())
 
 	// получаем текущее значение движения
 	currState, err := o.getPresenceState()
 	if err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOnHandler")
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
 	// Если уже true, уходим
 	if currState {
-		return nil, nil
+		return
 	}
 
 	if err := o.setPresenceState(true); err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOnHandler")
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
-	msg, err := sensor.NewOnPresenceOnMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnPresenceOn(o.GetID())
 	if err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOnHandler")
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := svc.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOnHandler"))
+	}
 }
 
-func (o *SensorModel) onPresenceOffHandler(messages.Message) ([]messages.Message, error) {
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOffHandler")
+func (o *PresenceSensorModel) onPresenceOffHandler(svc interfaces.MessageSender, _ interfaces.Message) {
+	if err := o.CheckEnabled(); err != nil {
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
-	if !enable {
-		return nil, nil
-	}
-
-	context.Logger.Debugf("presence.SensorModel(%d): onPresenceOffHandler()", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d): onPresenceOffHandler()", o.GetID())
 
 	// получаем текущее значение движения
 	currState, err := o.getPresenceState()
 	if err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOffHandler")
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
 	// Если уже false, уходим
 	if !currState {
-		return nil, nil
+		return
 	}
 
 	if err := o.setPresenceState(false); err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOffHandler")
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
-	msg, err := sensor.NewOnPresenceOffMessage("object_manager/object/event", o.GetID())
+	msg, err := sensor.NewOnPresenceOff(o.GetID())
 	if err != nil {
-		return nil, errors.Wrap(err, "presence.SensorModel.onPresenceOffHandler")
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+		return
 	}
 
-	return []messages.Message{msg}, nil
+	if err := svc.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "PresenceSensorModel.onPresenceOffHandler"))
+	}
 }
 
-func (o *SensorModel) getPresenceState() (bool, error) {
+func (o *PresenceSensorModel) getPresenceState() (bool, error) {
 	for _, child := range o.GetChildren().GetAll() {
 		if child.GetCategory() == model.CategorySensorValue && child.GetType() == SensorValue.TypePresence {
 			v, err := child.GetProps().GetFloatValue("value")
@@ -241,7 +236,7 @@ func (o *SensorModel) getPresenceState() (bool, error) {
 	return false, errors.Wrap(errors.New("child SensorValue.Presence not found"), "getPresenceState")
 }
 
-func (o *SensorModel) setPresenceState(state bool) error {
+func (o *PresenceSensorModel) setPresenceState(state bool) error {
 	for _, child := range o.GetChildren().GetAll() {
 		if child.GetCategory() == model.CategorySensorValue && child.GetType() == SensorValue.TypePresence {
 			value := 0
@@ -264,21 +259,12 @@ func (o *SensorModel) setPresenceState(state bool) error {
 	return errors.Wrap(errors.New("child SensorValue.Presence not found"), "setPresenceState")
 }
 
-func (o *SensorModel) Shutdown() error {
+func (o *PresenceSensorModel) Shutdown() error {
 	if err := o.SensorModel.Shutdown(); err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Shutdown")
+		return errors.Wrap(err, "PresenceSensorModel.Shutdown")
 	}
 
-	enable, err := o.GetProps().GetBoolValue("enable")
-	if err != nil {
-		return errors.Wrap(err, "presence.SensorModel.Shutdown")
-	}
-
-	if !enable {
-		return nil
-	}
-
-	context.Logger.Debugf("presence.SensorModel(%d) stopped", o.GetID())
+	g.Logger.Debugf("PresenceSensorModel(%d) stopped", o.GetID())
 
 	return nil
 }

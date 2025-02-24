@@ -1,27 +1,21 @@
 package http
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	_ "touchon-server/docs"
-	"touchon-server/internal/context"
+	"touchon-server/internal/g"
 	"touchon-server/internal/http/create_object"
-	"touchon-server/internal/http/send_to_mqtt"
 	"touchon-server/internal/http/update_object"
 	"touchon-server/internal/model"
 	"touchon-server/internal/scripts"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	"touchon-server/internal/token"
-	httpClient "touchon-server/lib/http/client"
 	"touchon-server/lib/http/server"
 )
 
@@ -32,91 +26,95 @@ var (
 	errNoResult           = errors.New("no result")
 )
 
-// Global instance
-var I *Server
-
 func New(ringBuffer fmt.Stringer) (*Server, error) {
 	switch {
-	case context.Config == nil:
+	case g.Config == nil:
 		return nil, errors.Wrap(errors.New("cfg is nil"), "http.New")
 	case scripts.I == nil:
 		return nil, errors.Wrap(errors.New("scripts is nil"), "http.New")
 	case memStore.I == nil:
 		return nil, errors.Wrap(errors.New("memStore is nil"), "http.New")
-	case context.Logger == nil:
+	case g.Logger == nil:
 		return nil, errors.Wrap(errors.New("Logger is nil"), "http.New")
 	case store.I == nil:
 		return nil, errors.Wrap(errors.New("Store is nil"), "http.New")
 	}
 
-	baseServer, err := server.New("API", context.Config, ringBuffer, context.Logger)
+	baseServer, err := server.New("API", g.Config, g.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "http.New")
 	}
 
 	o := &Server{
-		Server: baseServer,
-		fasthttpClient: &fasthttp.Client{
-			Name:                     "touchon-server",
-			ReadTimeout:              5 * time.Second,
-			WriteTimeout:             5 * time.Second,
-			NoDefaultUserAgentHeader: false,
-		},
-		httpClient: httpClient.New(),
+		Server:     baseServer,
+		ringBuffer: ringBuffer,
 	}
-
-	// Служебные эндпоинты
-	o.AddHandler("GET", "/_/sensors", o.handleGetSensors)               // получение значение датчиков
-	o.AddHandler("GET", "/_/objects/example", create_object.GetExample) // получение примера json'а для создания объекта
-
-	o.AddHandler("GET", "/mega", o.handleGetMegaD)                             // прием команд с megad
-	o.AddHandler("GET", "/controllers/{id}/ports", o.handleGetControllerPorts) // получение портов контроллера
-
-	o.AddHandler("GET", "/objects/types", o.handleGetObjectsTypes)    // получение категорий и типов объектов
-	o.AddHandler("GET", "/objects/model", o.handleGetObjectModel)     // получение модели объекта
-	o.AddHandler("GET", "/objects", o.handleGetObjects)               // получение объектов
-	o.AddHandler("GET", "/objects/{id}", o.handleGetObject)           // получение объекта
-	o.AddHandler("POST", "/objects", create_object.Handler)           // добавление объекта с методами
-	o.AddHandler("PUT", "/objects", update_object.Handler)            // обновление объекта
-	o.AddHandler("DELETE", "/objects/{id}", o.handleDeleteObject)     // удаление объекта
-	o.AddHandler("GET", "/objects/tags", o.handleGetAllObjectsTags)   // получение всех тегов
-	o.AddHandler("GET", "/objects/by_tags", o.handleGetObjectsByTags) // получение объектов по тегам
-
-	o.AddHandler("GET", "/scripts/model", o.handleGetScriptModel)
-	o.AddHandler("GET", "/scripts", o.handleGetScripts)
-	o.AddHandler("GET", "/scripts/{id}", o.handleGetScript)
-	o.AddHandler("POST", "/scripts", o.handleCreateScript)
-	o.AddHandler("PUT", "/scripts", o.handleUpdateScript)
-	o.AddHandler("DELETE", "/scripts/{id}", o.handleDeleteScript)
-	o.AddHandler("POST", "/scripts/{id}/exec", o.handleExecScript)
-
-	// Метод для тестирования
-	o.AddHandler("POST", "/_/mqtt", send_to_mqtt.Handler)
-
-	//o.AddHandler("POST", "/wizard/create_object", o.handleWizardCreateObject)
-
-	// AR
-
-	o.AddHandler("GET", "/events/actions/count", o.handleGetEventsActionsCount)  // получение количества действий для событий
-	o.AddHandler("GET", "/events/actions", o.handleGetEventsActions)             // получение действий для событий
-	o.AddHandler("POST", "/events/actions", o.handleCreateEventAction)           // добавления действия для события
-	o.AddHandler("PUT", "/events/actions", o.handleUpdateEventAction)            // обновление действия для события
-	o.AddHandler("DELETE", "/events/actions/{id}", o.handleDeleteEventAction)    // удаление действия для события
-	o.AddHandler("DELETE", "/events/all-actions", o.handleDeleteAllEventActions) // удаление всех событий по фильтру
-	o.AddHandler("PUT", "/events/actions/order", o.handleOrderEventActions)      // смена порядка действий для события
-	o.AddHandler("DELETE", "/events", o.handleDeleteEvent)                       // удаление события с действиями
-
-	o.AddHandler("POST", "/cron/task", o.handleCreateTask)   // создание задания крона
-	o.AddHandler("DELETE", "/cron/task", o.handleDeleteTask) // удаления задания крона
-	o.AddHandler("PUT", "/cron/task", o.handleUpdateTask)    // изменение задания крона
-
-	// TR
 
 	o.AddHandler("GET", "/token", o.getToken)      // Запрос токена
 	o.AddHandler("POST", "/token", o.refreshToken) // Рефреш
 
 	// Вход в зону private
 	private := o.addMiddleware("/private", o.authMiddleware)
+
+	// Служебные эндпоинты
+	svc := o.addMiddleware("/_", o.authMiddleware)
+	svc("GET", "/info", o.handleGetInfo)
+	svc("GET", "/sensors", o.handleGetSensors)               // получение значение датчиков
+	svc("GET", "/objects/example", create_object.GetExample) // получение примера json'а для создания объекта
+
+	rawSvc := o.addRawMiddleware("/_", o.authMiddleware)
+	rawSvc("GET", "/log", o.handleGetLog)
+
+	o.AddHandler("GET", "/mega", o.handleGetMegaD) // прием команд с megad
+
+	ctrl := o.addMiddleware("/controllers", o.authMiddleware)
+	ctrl("GET", "/{id}/ports", o.handleGetControllerPorts) // получение портов контроллера
+
+	objects := o.addMiddleware("/objects", o.authMiddleware)
+	objects("GET", "/types", o.handleGetObjectsTypes)     // получение категорий и типов объектов
+	objects("GET", "/model", o.handleGetObjectModel)      // получение модели объекта
+	objects("GET", "/", o.handleGetObjects)               // получение объектов
+	objects("GET", "/{id}", o.handleGetObject)            // получение объекта
+	objects("POST", "/", create_object.Handler)           // добавление объекта с методами
+	objects("PUT", "/", update_object.Handler)            // обновление объекта
+	objects("DELETE", "/{id}", o.handleDeleteObject)      // удаление объекта
+	objects("GET", "/tags", o.handleGetAllObjectsTags)    // получение всех тегов
+	objects("GET", "/by_tags", o.handleGetObjectsByTags)  // получение объектов по тегам
+	objects("GET", "/{id}/state", o.handleGetObjectState) // Получение состояния объекта
+	objects("GET", "/by_props", o.handleGetObjectByProps) // получение объекта по его свойствам
+
+	scripts := o.addMiddleware("/scripts", o.authMiddleware)
+	scripts("GET", "/model", o.handleGetScriptModel)
+	scripts("GET", "/", o.handleGetScripts)
+	scripts("GET", "/{id}", o.handleGetScript)
+	scripts("POST", "/", o.handleCreateScript)
+	scripts("PUT", "/", o.handleUpdateScript)
+	scripts("DELETE", "/{id}", o.handleDeleteScript)
+	scripts("POST", "/{id}/exec", o.handleExecScript)
+
+	// NodeRed
+	//nodeRed := o.addRawMiddleware("/nodered", o.authMiddleware)
+	//nodeRed("*", "/", g.NodeRed.Handler)
+	o.AddRawHandler("*", "/nodered", g.NodeRed.Handler)
+
+	// AR
+
+	events := o.addMiddleware("/events", o.authMiddleware)
+	events("GET", "/actions/count", o.handleGetEventsActionsCount)  // получение количества действий для событий
+	events("GET", "/actions", o.handleGetEventsActions)             // получение действий для событий
+	events("POST", "/actions", o.handleCreateEventAction)           // добавления действия для события
+	events("PUT", "/actions", o.handleUpdateEventAction)            // обновление действия для события
+	events("DELETE", "/actions/{id}", o.handleDeleteEventAction)    // удаление действия для события
+	events("DELETE", "/all-actions", o.handleDeleteAllEventActions) // удаление всех событий по фильтру
+	events("PUT", "/actions/order", o.handleOrderEventActions)      // смена порядка действий для события
+	events("DELETE", "/", o.handleDeleteEvent)                      // удаление события с действиями
+
+	cron := o.addMiddleware("/cron", o.authMiddleware)
+	cron("POST", "/task", o.handleCreateTask)   // создание задания крона
+	cron("DELETE", "/task", o.handleDeleteTask) // удаления задания крона
+	cron("PUT", "/task", o.handleUpdateTask)    // изменение задания крона
+
+	// TR
 
 	// Users
 	private("PATCH", "/users/link-token", o.linkDeviceToken)
@@ -142,9 +140,6 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	// История значений
 	private("GET", "/history", o.getObjectHistory)
 	private("GET", "/generate-history", o.generateHistory)
-
-	// Получение данных сенсора
-	private("GET", "/sensor", o.getSensor)
 
 	// Свет
 	private("GET", "/light", o.getLight)
@@ -183,8 +178,8 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 
 	// Items
 	// Получение элементов, которые требуют дополнительных данных
-	private("GET", "/item/dimer", o.getDimmer)          // Получение димера
-	private("GET", "/item/thermostat", o.getThermostat) // Получение термостата
+	//private("GET", "/item/dimer", o.getDimmer)          // Получение димера, убрать
+	//private("GET", "/item/thermostat", o.getThermostat) // Получение термостата, убарть
 
 	private("POST", "/items", o.handleCreateItem)  // Создание элемента
 	private("PUT", "/items", o.handleUpdateItem)   // Обновление элемента
@@ -194,10 +189,12 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("POST", "/item-change", o.itemChange)
 	private("PATCH", "/items/order", o.setItemsOrder) // Изменение порядка элементов
 
-	// Датчики в помещении
+	// Итемы датчиков
+	private("GET", "/item/sensor", o.getSensor)           //получение данных датчика
 	private("POST", "/item/sensor", o.handleCreateSensor) // Создание датчика
-	//private("PATCH", "/item/sensor", o.handleUpdateSensor)
+	private("PATCH", "/item/sensor", o.handleUpdateSensor)
 	private("DELETE", "/item/sensor", o.handleDeleteSensor)
+	private("PATCH", "/item/sensor/value", o.handleSetTargetSensor) //Установка значение target для датчика
 
 	// Загрузка меню
 	private("GET", "/menu", o.getMenu)
@@ -205,17 +202,12 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	// Мастера
 	private("POST", "/wizard/create_item", o.handleWizardCreateItem)
 
-	// Прокси для сервисов
-	proxy := o.addMiddlewareRaw("/proxy", o.authMiddlewareRaw)
-	proxy("*", "/{service}/{filepath:*}", o.proxy)
-
 	return o, nil
 }
 
 type Server struct {
 	*server.Server
-	httpClient     *httpClient.Client
-	fasthttpClient *fasthttp.Client
+	ringBuffer fmt.Stringer
 }
 
 //func (o *Server) Start() error {
@@ -289,59 +281,4 @@ func (o *Server) checkServer(ctx *fasthttp.RequestCtx) (interface{}, int, error)
 	}
 
 	return &Server{Version: o.GetConfig()["version"]}, http.StatusOK, nil
-}
-
-// Backward compatibility
-
-// Заменяем в ответе поле data на response
-
-// Response Ответ сервиса
-type Response[T any] struct {
-	Meta    server.Meta `json:"meta"` // Метаинформация о запросе/ответе
-	Success bool        `json:"success"`
-	Data    T           `json:"response,omitempty"` // Полезная нагрузка, зависит от запроса
-	Error   string      `json:"error,omitempty"`    // Описание возвращенной ошибки
-}
-
-// JsonHandlerWrapper ответ в формате JSON оборачивает в единый формат и добавляет метаданные.
-func JsonHandlerWrapper(f server.RequestHandler) fasthttp.RequestHandler {
-	return func(ctx *fasthttp.RequestCtx) {
-		var r Response[any]
-		const magic = "CoNtEnTLeNgTh"
-
-		start := time.Now()
-		data, status, err := f(ctx)
-		r.Meta.Duration = float64(int(time.Since(start).Seconds()*1000)) / 1000
-		r.Meta.ContentLength = magic
-		ctx.Response.SetStatusCode(status)
-
-		switch {
-		case err != nil:
-			r.Error = err.Error()
-		case data != nil:
-			r.Data = data
-		}
-		r.Success = err == nil
-
-		var buf bytes.Buffer
-
-		enc := json.NewEncoder(&buf)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(r); err != nil {
-			buf.Reset()
-			r.Data = nil
-			r.Error = err.Error()
-			_ = enc.Encode(r)
-		}
-
-		// Выставляем размер ответа
-		contLength := buf.Len() - len(magic)
-		body := strings.Replace(buf.String(), magic, strconv.Itoa(contLength/1024)+"K", 1)
-		_, _ = ctx.WriteString(body)
-	}
-}
-
-// Override AddHandler
-func (o *Server) AddHandler(method, path string, handler server.RequestHandler) {
-	o.GetRouter().Handle(method, path, JsonHandlerWrapper(handler))
 }

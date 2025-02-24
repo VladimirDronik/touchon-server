@@ -2,9 +2,8 @@ package sqlstore
 
 import (
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
 	"touchon-server/internal/store"
-	"touchon-server/lib/mqtt/messages"
+	"touchon-server/lib/interfaces"
 )
 
 type EventsRepo struct {
@@ -12,8 +11,8 @@ type EventsRepo struct {
 }
 
 // GetEvents возвращает события сущности.
-func (o *EventsRepo) GetEvents(targetType messages.TargetType, targetID int) ([]*model.Event, error) {
-	rows := make([]*model.Event, 0, 10)
+func (o *EventsRepo) GetEvents(targetType interfaces.TargetType, targetID int) ([]*interfaces.AREvent, error) {
+	rows := make([]*interfaces.AREvent, 0, 10)
 
 	err := o.store.db.
 		Where("target_type = ?", targetType).
@@ -28,8 +27,8 @@ func (o *EventsRepo) GetEvents(targetType messages.TargetType, targetID int) ([]
 }
 
 // GetEvent возвращает событие.
-func (o *EventsRepo) GetEvent(targetType messages.TargetType, targetID int, eventName string) (*model.Event, error) {
-	row := &model.Event{}
+func (o *EventsRepo) GetEvent(targetType interfaces.TargetType, targetID int, eventName string) (*interfaces.AREvent, error) {
+	row := &interfaces.AREvent{}
 
 	err := o.store.db.
 		Where("target_type = ?", targetType).
@@ -49,7 +48,7 @@ func (o *EventsRepo) GetEvent(targetType messages.TargetType, targetID int, even
 }
 
 // SaveEvent добавляет или обновляет событие.
-func (o *EventsRepo) SaveEvent(event *model.Event) error {
+func (o *EventsRepo) SaveEvent(event *interfaces.AREvent) error {
 	if event == nil {
 		return errors.Wrap(errors.New("event is nil"), "SaveEvent")
 	}
@@ -74,7 +73,7 @@ func (o *EventsRepo) SaveEvent(event *model.Event) error {
 }
 
 // DeleteEvent удаляет событие.
-func (o *EventsRepo) DeleteEvent(targetType messages.TargetType, targetID int, eventName string) error {
+func (o *EventsRepo) DeleteEvent(targetType interfaces.TargetType, targetID int, eventName string) error {
 	var sqlString string
 	// foreign_keys - для каскадного удаления записей
 
@@ -93,30 +92,4 @@ func (o *EventsRepo) DeleteEvent(targetType messages.TargetType, targetID int, e
 	}
 
 	return nil
-}
-
-// GetAllEventsName возвращает названия всех событий, используемых в таблице.
-// Используется для проверки правильности указанных имен.
-func (o *EventsRepo) GetAllEventsName() ([]string, error) {
-	type Row struct {
-		EventName string
-	}
-	rows := make([]*Row, 0, 100)
-
-	err := o.store.db.
-		Table("ar_events").
-		Distinct("event_name").
-		Where("enabled").
-		Find(&rows).Error
-
-	if err != nil {
-		return nil, errors.Wrap(err, "GetAllEventsName")
-	}
-
-	r := make([]string, 0, len(rows))
-	for _, row := range rows {
-		r = append(r, row.EventName)
-	}
-
-	return r, nil
 }

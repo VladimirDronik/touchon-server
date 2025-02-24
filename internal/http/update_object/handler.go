@@ -7,11 +7,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/context"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
+	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	_ "touchon-server/lib/http/server"
+	"touchon-server/lib/interfaces"
 )
 
 // Обновление объекта
@@ -27,11 +29,6 @@ import (
 // @Failure      500 {object} server.Response[any]
 // @Router /objects [put]
 func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
-	accessLevel, err := context.GetAccessLevel(ctx)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
 	req := &Request{}
 	if err := json.Unmarshal(ctx.Request.Body(), req); err != nil {
 		return nil, http.StatusBadRequest, err
@@ -42,14 +39,14 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return nil, 0, err
 	}
 
-	if req.ParentID > 0 {
-		objModel.SetParentID(&req.ParentID)
-	} else {
-		objModel.SetStatus(model.StatusDisabled)
-	}
-
+	objModel.SetParentID(req.ParentID)
 	objModel.SetZoneID(req.ZoneID)
 	objModel.SetName(req.Name)
+	objModel.SetEnabled(req.Enabled)
+
+	if req.ParentID == nil || *req.ParentID <= 0 {
+		objModel.SetStatus(model.StatusDisabled)
+	}
 
 	for k, v := range req.Props {
 		dstProp, err := objModel.GetProps().Get(k)
@@ -57,51 +54,75 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 			return nil, http.StatusBadRequest, err
 		}
 
-		if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+		if !dstProp.Editable.Check(objModel.GetProps()) {
 			continue
 		}
 
 		//Если меняется период опроса у датчика
 		if dstProp.Code == "update_interval" {
-			updateSensorCronTask(req)
-		}
-
-		//Если меняем адрес размещения устройства, то проверяем возможность поменять настройки порта на контроллере
-		if dstProp.Code == "address" && objModel.GetCategory() != "controller" {
-			interfaceConnection, _ := objModel.GetProps().Get("interface") //req.Props["interface"].(string)
-			interfaceConnectionString, _ := interfaceConnection.GetStringValue()
-
-			newAddress, _ := req.Props["address"].(string)
-			title := "[" + strconv.Itoa(req.ID) + "] " + req.Name
-
-			//Получаем тип объекта
-			objectType := objModel.GetType()
-			objectID := objModel.GetID()
-
-			//Переводим старый порт в состояние дефолта (NC)
-			oldAddress, _ := dstProp.GetIntValue()
-			oldAddressString := strconv.Itoa(oldAddress)
-			if oldAddress == 0 {
-				oldAddressString, _ = dstProp.GetStringValue()
-			}
-			if newAddress != oldAddressString && newAddress != "" {
-				//Ищем все устройства, которые висят на данном порту
-				objectsToReset, relatedObjects, err := objects.FindRelatedObjects(newAddress, interfaceConnectionString, objectID, objectType)
-				if err != nil {
-					return nil, http.StatusInternalServerError, err
-				}
-
-				objects.ResetParentAndAddress(objectsToReset)
-				objects.ResetPortToDefault(objectsToReset, relatedObjects)
-
-			}
-
-			//Настраиваем новый порт
-			options, err := objects.FillOptions(objectType, req.Props)
-			if err != nil {
+			if err := updateSensorCronTask(req); err != nil {
 				return nil, http.StatusBadRequest, err
 			}
-			err = objects.ConfigureDevice(interfaceConnectionString, newAddress, options, title)
+		}
+
+		// TODO: убрал NPE, нужно провести рефакторинг данного блока
+		//Если меняем адрес размещения устройства, то проверяем возможность поменять настройки порта на контроллере
+		if dstProp.Code == "address" && objModel.GetCategory() != "controller" {
+			err := func() error {
+				interfaceConnection, err := objModel.GetProps().Get("interface") //req.Props["interface"].(string)
+				if err != nil {
+					return nil
+				}
+
+				interfaceConnectionString, err := interfaceConnection.GetStringValue()
+				if err != nil {
+					return nil
+				}
+
+				newAddress, _ := req.Props["address"].(string)
+				title := "[" + strconv.Itoa(req.ID) + "] " + req.Name
+
+				//Получаем тип объекта
+				objectType := objModel.GetType()
+				objectID := objModel.GetID()
+
+				//Переводим старый порт в состояние дефолта (NC)
+				oldAddress, _ := dstProp.GetIntValue()
+				oldAddressString := strconv.Itoa(oldAddress)
+				if oldAddress == 0 {
+					oldAddressString, err = dstProp.GetStringValue()
+					if err != nil {
+						return nil
+					}
+				}
+
+				if newAddress != oldAddressString && newAddress != "" {
+					//Ищем все устройства, которые висят на данном порту
+					objectsToReset, relatedObjects, err := objects.FindRelatedObjects(newAddress, interfaceConnectionString, objectID, objectType)
+					if err != nil {
+						return err
+					}
+
+					if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
+						return err
+					}
+
+					objects.ResetPortToDefault(objectsToReset, relatedObjects)
+				}
+
+				//Настраиваем новый порт
+				options, err := objects.FillOptions(objectType, req.Props)
+				if err != nil {
+					return err
+				}
+
+				if err = objects.ConfigureDevice(interfaceConnectionString, newAddress, options, title); err != nil {
+					return err
+				}
+
+				return nil
+			}()
+
 			if err != nil {
 				return nil, http.StatusBadRequest, err
 			}
@@ -112,12 +133,12 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		}
 	}
 
-	if err := objModel.GetProps().Check(accessLevel); err != nil {
+	if err := objModel.GetProps().Check(); err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
 	if len(req.Children) > 0 {
-		if err := setChildrenProps(objModel.GetChildren(), req.Children, accessLevel); err != nil {
+		if err := setChildrenProps(objModel.GetChildren(), req.Children); err != nil {
 			return nil, http.StatusBadRequest, err
 		}
 	}
@@ -133,7 +154,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	return nil, http.StatusOK, nil
 }
 
-func setChildrenProps(objModelChildren *objects.Children, children []Child, accessLevel model.AccessLevel) error {
+func setChildrenProps(objModelChildren *objects.Children, children []Child) error {
 	if objModelChildren.Len() != len(children) {
 		return errors.Wrap(errors.Errorf("objModelChildren.Len() != len(children), %d != %d", objModelChildren.Len(), len(children)), "setChildrenProps")
 	}
@@ -149,7 +170,7 @@ func setChildrenProps(objModelChildren *objects.Children, children []Child, acce
 				return errors.Wrap(err, "setChildrenProps")
 			}
 
-			if !dstProp.Editable.Check(accessLevel, objModel.GetProps()) {
+			if !dstProp.Editable.Check(objModel.GetProps()) {
 				continue
 			}
 
@@ -158,15 +179,42 @@ func setChildrenProps(objModelChildren *objects.Children, children []Child, acce
 			}
 		}
 
-		if err := objModel.GetProps().Check(accessLevel); err != nil {
+		if err := objModel.GetProps().Check(); err != nil {
 			return errors.Wrap(err, "setChildrenProps")
 		}
 
 		if len(child.Children) > 0 {
-			if err := setChildrenProps(objModel.GetChildren(), child.Children, accessLevel); err != nil {
+			if err := setChildrenProps(objModel.GetChildren(), child.Children); err != nil {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+// updateSensorCronTask отправляет в action-router запрос на добавление задачи и действия для крона
+func updateSensorCronTask(req *Request) error {
+	_, ok := req.Props["update_interval"].(string)
+	if !ok {
+		return nil
+	}
+
+	task := &interfaces.CronTask{
+		Period: req.Props["update_interval"].(string),
+		Actions: []*interfaces.CronAction{
+			{
+				Enabled:    true,
+				TargetType: interfaces.TargetTypeObject,
+				Type:       interfaces.ActionTypeMethod,
+				TargetID:   req.ID,
+				Name:       "check",
+			},
+		},
+	}
+
+	if err := store.I.CronRepo().UpdateTask(task); err != nil {
+		return errors.Wrap(err, "createSensorCronTask")
 	}
 
 	return nil
