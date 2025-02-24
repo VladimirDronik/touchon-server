@@ -166,11 +166,11 @@ func MakeModel() (objects.Object, error) {
 		},
 		{
 			Code:        "timeout",
-			Name:        "Таймаут",
-			Description: "Время ожидания в сек",
+			Name:        "Таймаут (10s, 1m etc)",
+			Description: "Время ожидания",
 			Item: &models.Item{
-				Type:         models.DataTypeInt,
-				DefaultValue: 3,
+				Type:         models.DataTypeString,
+				DefaultValue: "3s",
 			},
 			Required:   objects.True(),
 			Editable:   objects.True(),
@@ -291,14 +291,19 @@ func (o *ModbusImpl) initClient() error {
 		return errors.Wrap(err, "ModbusImpl.initClient")
 	}
 
-	timeout, err := o.GetProps().GetIntValue("timeout")
+	timeoutS, err := o.GetProps().GetStringValue("timeout")
+	if err != nil {
+		return errors.Wrap(err, "ModbusImpl.initClient")
+	}
+
+	timeout, err := time.ParseDuration(timeoutS)
 	if err != nil {
 		return errors.Wrap(err, "ModbusImpl.initClient")
 	}
 
 	cfg := &modbus.ClientConfiguration{
 		URL:      connString,
-		Timeout:  time.Duration(timeout) * time.Second,
+		Timeout:  timeout,
 		Speed:    uint(speed),
 		DataBits: uint(dataBits),
 		Parity:   uint(parity),

@@ -38,11 +38,11 @@ func MakeModel() (objects.Object, error) {
 
 	p := &objects.Prop{
 		Code:        "period",
-		Name:        "Период (с)",
+		Name:        "Период (10s, 1m etc)",
 		Description: "Время, в течение которого система будет считать, что есть движение",
 		Item: &models.Item{
-			Type:         models.DataTypeInt,
-			DefaultValue: 120,
+			Type:         models.DataTypeString,
+			DefaultValue: "2m",
 		},
 		Required:   objects.True(),
 		Editable:   objects.True(),

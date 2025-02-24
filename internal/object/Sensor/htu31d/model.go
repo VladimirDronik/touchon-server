@@ -126,12 +126,17 @@ func (o *SensorModel) Start() error {
 		return errors.Wrap(err, "htu31d.SensorModel.Start")
 	}
 
-	updateInterval, err := o.GetProps().GetIntValue("update_interval")
+	updateIntervalS, err := o.GetProps().GetStringValue("update_interval")
 	if err != nil {
 		return errors.Wrap(err, "htu31d.SensorModel.Start")
 	}
 
-	o.SetTimer(time.Duration(updateInterval)*time.Second, o.check)
+	updateInterval, err := time.ParseDuration(updateIntervalS)
+	if err != nil {
+		return errors.Wrap(err, "htu31d.SensorModel.Start")
+	}
+
+	o.SetTimer(updateInterval, o.check)
 	o.GetTimer().Start()
 
 	g.Logger.Debugf("htu31d(%d) started", o.GetID())

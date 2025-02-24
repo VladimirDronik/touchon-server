@@ -124,11 +124,11 @@ func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockM
 
 	p := &objects.Prop{
 		Code:        "update_interval",
-		Name:        "Интервал опроса (с)",
+		Name:        "Интервал опроса (10s, 1m etc)",
 		Description: "Интервал опроса устройства",
 		Item: &models.Item{
-			Type:         models.DataTypeInt,
-			DefaultValue: 1,
+			Type:         models.DataTypeString,
+			DefaultValue: "1s",
 		},
 	}
 	require.NoError(t, p.SetValue(p.DefaultValue))

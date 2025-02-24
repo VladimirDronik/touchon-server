@@ -60,11 +60,11 @@ func MakeModel() (objects.Object, error) {
 		},
 		{
 			Code:        "sensor_value_ttl",
-			Name:        "Время жизни показания датчика",
-			Description: "Время в секундах, в течение которого данные датчика будут считаться актуальными",
+			Name:        "Время жизни показания датчика (10s, 1m etc)",
+			Description: "Время, в течение которого данные датчика будут считаться актуальными",
 			Item: &models.Item{
-				Type:         models.DataTypeInt,
-				DefaultValue: 30,
+				Type:         models.DataTypeString,
+				DefaultValue: "30s",
 			},
 			Required:   objects.True(),
 			Editable:   objects.True(),
@@ -369,12 +369,17 @@ func (o *RegulatorModel) Start() error {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	sensorValueTTL, err := o.GetProps().GetIntValue("sensor_value_ttl")
+	sensorValueTTLs, err := o.GetProps().GetStringValue("sensor_value_ttl")
 	if err != nil {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	o.SetTimer(time.Duration(sensorValueTTL)*time.Second, o.timerHandler)
+	sensorValueTTL, err := time.ParseDuration(sensorValueTTLs)
+	if err != nil {
+		return errors.Wrap(err, "RegulatorModel.Start")
+	}
+
+	o.SetTimer(sensorValueTTL, o.timerHandler)
 	o.GetTimer().Start()
 
 	g.Logger.Debugf("Regulator(%d) started", o.GetID())
