@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
@@ -20,8 +21,6 @@ import (
 
 const ValueUpdateAtFormat = "02.01.2006 15:04:05"
 
-const tries = 3
-const delay = 100
 const timeout = 5
 
 func init() {
@@ -114,31 +113,6 @@ type SensorModel struct {
 	*objects.ObjectModelImpl
 }
 
-// SaveSensorValue добавление данных значения датчика в БД
-func (o *SensorModel) SaveSensorValue(valueObj objects.Object) error {
-	value, err := valueObj.GetProps().GetFloatValue("value")
-	if err != nil {
-		return errors.Wrap(err, "SaveSensorValue")
-	}
-
-	valueUpdatedAt, err := valueObj.GetProps().GetStringValue("value_updated_at")
-	if err != nil {
-		return errors.Wrap(err, "SaveSensorValue")
-	}
-
-	props := map[string]string{
-		"value":            fmt.Sprintf("%.2f", value),
-		"value_updated_at": valueUpdatedAt,
-	}
-
-	// Добавление значения датчика
-	if err := store.I.ObjectRepository().SetProps(valueObj.GetID(), props); err != nil {
-		return errors.Wrap(err, "SaveSensorValue")
-	}
-
-	return nil
-}
-
 func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _ error) {
 	sdaPortObjectID, sclPortObjectID = -1, -1
 
@@ -176,42 +150,22 @@ func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _
 	return
 }
 
-func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorValue.Type]float32, error)) (_ []interfaces.Message, e error) {
-	var values map[SensorValue.Type]float32
-	var err error
-	msgs := make([]interfaces.Message, 0, o.GetChildren().Len())
-
-	for i := 0; i < tries; i++ {
-		msgs = msgs[:0]
-
-		values, err = getValues(time.Duration(timeout) * time.Second)
-		if err != nil {
-			e = errors.Wrap(err, "Check")
-			continue
-		}
-
-		for _, child := range o.GetChildren().GetAll() {
-			msg, err := o.processChild(child, values)
-			if err != nil {
-				return nil, errors.Wrap(err, "Check")
-			}
-
-			if msg != nil {
-				msgs = append(msgs, msg)
-			}
-		}
-
-		if e == nil {
-			break
-		}
-
-		if delay > 0 {
-			time.Sleep(time.Duration(delay) * time.Millisecond)
-		}
+func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorValue.Type]float32, error)) error {
+	values, err := getValues(time.Duration(timeout) * time.Second)
+	if err != nil {
+		return errors.Wrap(err, "Check")
 	}
 
-	if e != nil {
-		return nil, e
+	msgs := make([]interfaces.Message, 0, o.GetChildren().Len())
+	for _, child := range o.GetChildren().GetAll() {
+		msg, err := o.processChild(child, values)
+		if err != nil {
+			return errors.Wrap(err, "Check")
+		}
+
+		if msg != nil {
+			msgs = append(msgs, msg)
+		}
 	}
 
 	vals := make(map[string]float32, len(values))
@@ -221,12 +175,16 @@ func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorVal
 
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {
-		return nil, errors.Wrap(err, "Check")
+		return errors.Wrap(err, "Check")
 	}
 
 	msgs = append(msgs, msg)
 
-	return msgs, nil
+	if err := g.Msgs.Send(msgs...); err != nil {
+		return errors.Wrap(err, "Check")
+	}
+
+	return nil
 }
 
 func (o *SensorModel) processChild(child objects.Object, values map[SensorValue.Type]float32) (interfaces.Message, error) {
@@ -278,6 +236,31 @@ func (o *SensorModel) processChild(child objects.Object, values map[SensorValue.
 	}
 
 	return nil, nil
+}
+
+// SaveSensorValue добавление данных значения датчика в БД
+func (o *SensorModel) SaveSensorValue(valueObj objects.Object) error {
+	value, err := valueObj.GetProps().GetFloatValue("value")
+	if err != nil {
+		return errors.Wrap(err, "SaveSensorValue")
+	}
+
+	valueUpdatedAt, err := valueObj.GetProps().GetStringValue("value_updated_at")
+	if err != nil {
+		return errors.Wrap(err, "SaveSensorValue")
+	}
+
+	props := map[string]string{
+		"value":            fmt.Sprintf("%.2f", value),
+		"value_updated_at": valueUpdatedAt,
+	}
+
+	// Добавление значения датчика
+	if err := store.I.ObjectRepository().SetProps(valueObj.GetID(), props); err != nil {
+		return errors.Wrap(err, "SaveSensorValue")
+	}
+
+	return nil
 }
 
 func (o *SensorModel) DeleteChildren() error {

@@ -214,6 +214,8 @@ func (o *ObjectModelImpl) UnmarshalJSON(data []byte) error {
 	// o.SetStatus(v.Status)     // Нельзя переопределять с фронта
 	o.SetTags(v.Tags...)
 	o.SetEnabled(v.Enabled)
+	// Копируем состояние объекта в методы, для их отключения при необходимости
+	o.methods.SetEnabled(o.enabled)
 
 	return nil
 }
@@ -446,6 +448,7 @@ func (o *ObjectModelImpl) GetEnabled() bool {
 
 func (o *ObjectModelImpl) SetEnabled(v bool) {
 	o.enabled = v
+	o.methods.SetEnabled(v)
 }
 
 func (o *ObjectModelImpl) DeleteChildren() error {
