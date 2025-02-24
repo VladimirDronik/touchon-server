@@ -154,6 +154,7 @@ func ConfigureDevice(interfaceConnection string, addressObject string, options m
 			typePt[1] = "in"
 		}
 		modePt[0] = options["mode"]
+		params[0]["mt"] = options["mute"]
 	case "DISCRETE":
 		port[0], _ = strconv.Atoi(addressObject)
 		typePt[0] = "adc"
@@ -231,10 +232,12 @@ func FillOptions(typeObject string, props map[string]interface{}) (map[string]st
 		if props["mode"] == nil {
 			return nil, errors.New("no input parameters found: mode")
 		}
-		return map[string]string{"mode": props["mode"].(string)}, nil
+		return map[string]string{"mode": props["mode"].(string), "mute": ""}, nil
 	case "presence":
 	case "motion":
-		return map[string]string{"mode": "P"}, nil
+		return map[string]string{"mode": "P", "mute": ""}, nil
+	case "impulse_counter":
+		return map[string]string{"mode": "P", "mute": "1"}, nil
 	}
 
 	return nil, nil

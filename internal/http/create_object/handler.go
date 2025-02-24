@@ -65,38 +65,6 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		}
 	}()
 
-	//Настройка портов контроллера, либо конфигурирование другого устройства, на котором располагается объект
-	interfaceConnection, _ := req.Object.Props["interface"].(string)
-	addressObject, _ := req.Object.Props["address"].(string)
-	typeObject := req.Object.Type
-
-	//Проверяем назначен ли адрес на какой-либо другой объект
-	objectsToReset, _, err := objects.FindRelatedObjects(addressObject, interfaceConnection, objectID, typeObject)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	//для найденных объектов на контроллере подчищаем порты
-	for _, addressReset := range objectsToReset {
-		resetPorts := strings.Split(addressReset, ";")
-		for _, resetPort := range resetPorts {
-			if resetPort == addressObject {
-				e = objects.ConfigureDevice("NC", resetPort, nil, "")
-			}
-		}
-	}
-
-	title := "[" + strconv.Itoa(objectID) + "]" + req.Object.Name
-	options, err := objects.FillOptions(typeObject, req.Object.Props)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-	e = objects.ConfigureDevice(interfaceConnection, addressObject, options, title)
-
-	if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
 	//Если объект является сенсором, то создаем в экшен-роутере действия для его проверки
 	if req.Object.Category == model.CategorySensor {
 		e = createSensorCronTask(objectID, req)
@@ -118,6 +86,11 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 			}
 		}
 	}()
+
+	status, err := deviceConfiguration(*req, objectID)
+	if err != nil {
+		return nil, status, err
+	}
 
 	for _, ev := range req.Events {
 		for _, act := range ev.Actions {
@@ -294,4 +267,40 @@ func createSensorCronTask(objectID int, req *Request) error {
 	}
 
 	return nil
+}
+
+func deviceConfiguration(req Request, objectID int) (_ int, e error) {
+	//Настройка портов контроллера, либо конфигурирование другого устройства, на котором располагается объект
+	interfaceConnection, _ := req.Object.Props["interface"].(string)
+	addressObject, _ := req.Object.Props["address"].(string)
+	typeObject := req.Object.Type
+
+	//Проверяем назначен ли адрес на какой-либо другой объект
+	objectsToReset, _, err := objects.FindRelatedObjects(addressObject, interfaceConnection, objectID, typeObject)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	//для найденных объектов на контроллере подчищаем порты
+	for _, addressReset := range objectsToReset {
+		resetPorts := strings.Split(addressReset, ";")
+		for _, resetPort := range resetPorts {
+			if resetPort == addressObject {
+				e = objects.ConfigureDevice("NC", resetPort, nil, "")
+			}
+		}
+	}
+
+	title := "[" + strconv.Itoa(objectID) + "]" + req.Object.Name
+	options, err := objects.FillOptions(typeObject, req.Object.Props)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
+	e = objects.ConfigureDevice(interfaceConnection, addressObject, options, title)
+
+	if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
+		return http.StatusBadRequest, err
+	}
+
+	return http.StatusOK, nil
 }

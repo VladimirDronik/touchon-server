@@ -65,64 +65,11 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 			}
 		}
 
-		// TODO: убрал NPE, нужно провести рефакторинг данного блока
 		//Если меняем адрес размещения устройства, то проверяем возможность поменять настройки порта на контроллере
 		if dstProp.Code == "address" && objModel.GetCategory() != "controller" {
 			err := func() error {
-				interfaceConnection, err := objModel.GetProps().Get("interface") //req.Props["interface"].(string)
-				if err != nil {
-					return nil
-				}
-
-				interfaceConnectionString, err := interfaceConnection.GetStringValue()
-				if err != nil {
-					return nil
-				}
-
-				newAddress, _ := req.Props["address"].(string)
-				title := "[" + strconv.Itoa(req.ID) + "] " + req.Name
-
-				//Получаем тип объекта
-				objectType := objModel.GetType()
-				objectID := objModel.GetID()
-
-				//Переводим старый порт в состояние дефолта (NC)
-				oldAddress, _ := dstProp.GetIntValue()
-				oldAddressString := strconv.Itoa(oldAddress)
-				if oldAddress == 0 {
-					oldAddressString, err = dstProp.GetStringValue()
-					if err != nil {
-						return nil
-					}
-				}
-
-				if newAddress != oldAddressString && newAddress != "" {
-					//Ищем все устройства, которые висят на данном порту
-					objectsToReset, relatedObjects, err := objects.FindRelatedObjects(newAddress, interfaceConnectionString, objectID, objectType)
-					if err != nil {
-						return err
-					}
-
-					if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
-						return err
-					}
-
-					objects.ResetPortToDefault(objectsToReset, relatedObjects)
-				}
-
-				//Настраиваем новый порт
-				options, err := objects.FillOptions(objectType, req.Props)
-				if err != nil {
-					return err
-				}
-
-				if err = objects.ConfigureDevice(interfaceConnectionString, newAddress, options, title); err != nil {
-					return err
-				}
-
-				return nil
+				return configureDevice(*req, objModel, *dstProp)
 			}()
-
 			if err != nil {
 				return nil, http.StatusBadRequest, err
 			}
@@ -215,6 +162,61 @@ func updateSensorCronTask(req *Request) error {
 
 	if err := store.I.CronRepo().UpdateTask(task); err != nil {
 		return errors.Wrap(err, "createSensorCronTask")
+	}
+
+	return nil
+}
+
+func configureDevice(req Request, objModel objects.Object, dstProp objects.Prop) error {
+	interfaceConnection, err := objModel.GetProps().Get("interface")
+	if err != nil {
+		return nil
+	}
+
+	interfaceConnectionString, err := interfaceConnection.GetStringValue()
+	if err != nil {
+		return nil
+	}
+
+	newAddress, _ := req.Props["address"].(string)
+	title := "[" + strconv.Itoa(req.ID) + "] " + req.Name
+
+	//Получаем тип объекта
+	objectType := objModel.GetType()
+	objectID := objModel.GetID()
+
+	//Переводим старый порт в состояние дефолта (NC)
+	oldAddress, _ := dstProp.GetIntValue()
+	oldAddressString := strconv.Itoa(oldAddress)
+	if oldAddress == 0 {
+		oldAddressString, err = dstProp.GetStringValue()
+		if err != nil {
+			return nil
+		}
+	}
+
+	if newAddress != oldAddressString && newAddress != "" {
+		//Ищем все устройства, которые висят на данном порту
+		objectsToReset, relatedObjects, err := objects.FindRelatedObjects(newAddress, interfaceConnectionString, objectID, objectType)
+		if err != nil {
+			return err
+		}
+
+		if err := helpers.ResetParentAndAddress(objectsToReset); err != nil {
+			return err
+		}
+
+		objects.ResetPortToDefault(objectsToReset, relatedObjects)
+	}
+
+	//Настраиваем новый порт
+	options, err := objects.FillOptions(objectType, req.Props)
+	if err != nil {
+		return err
+	}
+
+	if err = objects.ConfigureDevice(interfaceConnectionString, newAddress, options, title); err != nil {
+		return err
 	}
 
 	return nil
