@@ -138,7 +138,7 @@ func MakeModel() (objects.Object, error) {
 
 	regProps := map[string]interface{}{
 		"type":             string(regulator.TypeSimple),
-		"sensor_value_ttl": 30,
+		"sensor_value_ttl": "30s",
 	}
 
 	for k, v := range regProps {
