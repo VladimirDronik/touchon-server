@@ -169,12 +169,17 @@ func (o *MotionSensorModel) Start() error {
 
 	g.Logger.Debugf("MotionSensorModel(%d) started", o.GetID())
 
-	period, err := o.GetProps().GetIntValue("period")
+	periodS, err := o.GetProps().GetStringValue("period")
 	if err != nil {
 		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
-	o.SetTimer(time.Duration(period)*time.Second, o.periodTimerHandler)
+	period, err := time.ParseDuration(periodS)
+	if err != nil {
+		return errors.Wrap(err, "MotionSensorModel.Start")
+	}
+
+	o.SetTimer(period, o.periodTimerHandler)
 
 	// Получаем текущее состояние движения
 	state, err := o.getMotionState()
