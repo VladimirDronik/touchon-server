@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+	"touchon-server/internal/g"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -104,7 +105,7 @@ func (o *PortModel) sendCommand(contrAddr string, portNumber int, portOption boo
 	u := fmt.Sprintf("http://%s/sec/?%s", contrAddr, args.Encode())
 
 	status, body, err := fasthttp.GetTimeout(nil, u, timeout)
-	//g.Logger.Debugf("PortModel.sendCommand: GET %s Status=%d Body=%q Err=%v", u, status, body, err)
+	g.Logger.Debugf("PortModel.sendCommand: GET %s Status=%d Body=%q Err=%v", u, status, body, err)
 	if err != nil {
 		return 0, nil, errors.Wrap(err, "sendCommand")
 	}

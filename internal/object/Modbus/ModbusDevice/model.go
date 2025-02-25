@@ -34,11 +34,11 @@ func MakeModel() (objects.Object, error) {
 		},
 		{
 			Code:        "update_interval",
-			Name:        "Интервал опроса (с)",
+			Name:        "Интервал опроса (10s, 1m etc)",
 			Description: "Интервал опроса устройства",
 			Item: &models.Item{
-				Type:         models.DataTypeInt,
-				DefaultValue: 60,
+				Type:         models.DataTypeString,
+				DefaultValue: "1m",
 			},
 			Required:   objects.True(),
 			Editable:   objects.True(),

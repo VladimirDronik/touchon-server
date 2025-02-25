@@ -38,11 +38,11 @@ func MakeModel() (objects.Object, error) {
 
 	p := &objects.Prop{
 		Code:        "period",
-		Name:        "Период (с)",
+		Name:        "Период (10s, 1m etc)",
 		Description: "Время, в течение которого система будет считать, что есть движение",
 		Item: &models.Item{
-			Type:         models.DataTypeInt,
-			DefaultValue: 120,
+			Type:         models.DataTypeString,
+			DefaultValue: "2m",
 		},
 		Required:   objects.True(),
 		Editable:   objects.True(),
@@ -169,12 +169,17 @@ func (o *MotionSensorModel) Start() error {
 
 	g.Logger.Debugf("MotionSensorModel(%d) started", o.GetID())
 
-	period, err := o.GetProps().GetIntValue("period")
+	periodS, err := o.GetProps().GetStringValue("period")
 	if err != nil {
 		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
 
-	o.SetTimer(time.Duration(period)*time.Second, o.periodTimerHandler)
+	period, err := time.ParseDuration(periodS)
+	if err != nil {
+		return errors.Wrap(err, "MotionSensorModel.Start")
+	}
+
+	o.SetTimer(period, o.periodTimerHandler)
 
 	// Получаем текущее состояние движения
 	state, err := o.getMotionState()
