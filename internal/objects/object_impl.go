@@ -3,6 +3,7 @@ package objects
 import (
 	"encoding/json"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -17,6 +18,8 @@ import (
 // Implementation of Object interface
 
 func NewObjectModelImpl(category model.Category, objType string, internal bool, name string, props []*Prop, children []Object, events []interfaces.Event, methods []*Method, tags []string) (*ObjectModelImpl, error) {
+	mu := &sync.RWMutex{}
+
 	o := &ObjectModelImpl{
 		category: category,
 		objType:  objType,
@@ -26,9 +29,10 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 		props:    NewProps(),
 		children: NewChildren(),
 		events:   NewEvents(),
-		methods:  NewMethods(),
+		methods:  NewMethods(mu),
 		tags:     make(map[string]bool, len(tags)),
 		enabled:  true,
+		mu:       mu,
 	}
 
 	if err := o.GetProps().Add(props...); err != nil {
@@ -48,16 +52,15 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 }
 
 type ObjectModelImpl struct {
+	mu       *sync.RWMutex
 	id       int
 	parentID *int
 	zoneID   *int
-
 	category model.Category
 	objType  string
 	internal bool
 	name     string
 	status   model.ObjectStatus
-
 	props    *Props
 	children *Children
 	events   *Events
@@ -72,66 +75,144 @@ type ObjectModelImpl struct {
 }
 
 func (o *ObjectModelImpl) GetID() int {
+	o.RLock()
+	defer o.RUnlock()
+
 	return o.id
 }
 
 func (o *ObjectModelImpl) SetID(id int) {
+	o.Lock()
+	defer o.Unlock()
+
 	o.id = id
 }
 
 func (o *ObjectModelImpl) GetParentID() *int {
-	return o.parentID
+	o.RLock()
+	defer o.RUnlock()
+
+	if o.parentID == nil {
+		return nil
+	}
+
+	// copy value
+	v := *o.parentID
+
+	return &v
 }
 
 func (o *ObjectModelImpl) SetParentID(parentID *int) {
-	o.parentID = parentID
+	o.Lock()
+	defer o.Unlock()
+
+	if parentID == nil {
+		o.parentID = nil
+		return
+	}
+
+	// copy value
+	v := *parentID
+
+	o.parentID = &v
 }
 
 func (o *ObjectModelImpl) GetZoneID() *int {
-	return o.zoneID
+	o.RLock()
+	defer o.RUnlock()
+
+	if o.zoneID == nil {
+		return nil
+	}
+
+	// copy value
+	v := *o.zoneID
+
+	return &v
 }
 
 func (o *ObjectModelImpl) SetZoneID(zoneID *int) {
-	o.zoneID = zoneID
+	o.Lock()
+	defer o.Unlock()
+
+	if zoneID == nil {
+		o.zoneID = nil
+		return
+	}
+
+	// copy value
+	v := *zoneID
+
+	o.zoneID = &v
 }
 
 func (o *ObjectModelImpl) GetCategory() model.Category {
+	o.RLock()
+	defer o.RUnlock()
+
 	return o.category
 }
 
 func (o *ObjectModelImpl) SetCategory(v model.Category) {
+	o.Lock()
+	defer o.Unlock()
+
 	o.category = v
 }
 
 func (o *ObjectModelImpl) GetType() string {
+	o.RLock()
+	defer o.RUnlock()
+
 	return o.objType
 }
 
 func (o *ObjectModelImpl) SetType(v string) {
+	o.Lock()
+	defer o.Unlock()
+
 	o.objType = v
 }
 
 func (o *ObjectModelImpl) GetInternal() bool {
+	o.RLock()
+	defer o.RUnlock()
+
 	return o.internal
 }
 
 func (o *ObjectModelImpl) SetInternal(v bool) {
+	o.Lock()
+	defer o.Unlock()
+
 	o.internal = v
 }
 
 func (o *ObjectModelImpl) GetName() string {
+	o.RLock()
+	defer o.RUnlock()
+
 	return o.name
 }
 
 func (o *ObjectModelImpl) SetName(v string) {
+	o.Lock()
+	defer o.Unlock()
+
 	o.name = v
 }
 
 func (o *ObjectModelImpl) GetStatus() model.ObjectStatus {
+	o.RLock()
+	defer o.RUnlock()
+
 	return o.status
 }
 
 func (o *ObjectModelImpl) SetStatus(v model.ObjectStatus) {
+	o.Lock()
+	defer o.Unlock()
+
 	o.status = v
 }
 
@@ -144,6 +225,9 @@ func (o *ObjectModelImpl) GetChildren() *Children {
 }
 
 func (o *ObjectModelImpl) MarshalJSON() ([]byte, error) {
+	o.RLock()
+	defer o.RUnlock()
+
 	props := o.GetProps()
 	if props.Len() == 0 {
 		props = nil
@@ -237,7 +321,7 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 	o.SetInternal(storeObj.Internal)
 	o.SetName(storeObj.Name)
 	o.SetStatus(storeObj.Status)
-	o.SetTagsMap(storeObj.Tags)
+	o.setTagsMap(storeObj.Tags)
 	o.SetEnabled(storeObj.Enabled)
 
 	// Загружаем свойства объекта
@@ -279,7 +363,7 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 
 func (o *ObjectModelImpl) Save() error {
 	// Сохраняем поля объекта
-	storeObj := o.GetStoreObject()
+	storeObj := o.getStoreObject()
 
 	if err := store.I.ObjectRepository().SaveObject(storeObj); err != nil {
 		return errors.Wrapf(err, "ObjectModelImpl.Save(%s/%s)", o.category, o.objType)
@@ -385,7 +469,7 @@ func (o *ObjectModelImpl) Shutdown() error {
 	return nil
 }
 
-func (o *ObjectModelImpl) GetStoreObject() *model.StoreObject {
+func (o *ObjectModelImpl) getStoreObject() *model.StoreObject {
 	return &model.StoreObject{
 		ID:       o.id,
 		ParentID: o.parentID,
@@ -395,7 +479,7 @@ func (o *ObjectModelImpl) GetStoreObject() *model.StoreObject {
 		Internal: o.internal,
 		Name:     o.name,
 		Status:   o.status,
-		Tags:     o.GetTagsMap(),
+		Tags:     o.getTagsMap(),
 		Enabled:  o.enabled,
 	}
 }
@@ -412,34 +496,34 @@ func (o *ObjectModelImpl) GetTags() []string {
 	return r
 }
 
-func (o *ObjectModelImpl) ReplaceTags(tags ...string) {
-	for tag := range o.tags {
-		delete(o.tags, tag)
-	}
-
-	o.SetTags(tags...)
-}
-
 func (o *ObjectModelImpl) SetTags(tags ...string) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	for _, tag := range tags {
 		o.tags[helpers.PrepareTag(tag)] = true
 	}
 }
 
 func (o *ObjectModelImpl) DeleteTags(tags ...string) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	for _, tag := range tags {
 		delete(o.tags, helpers.PrepareTag(tag))
 	}
 }
 
-func (o *ObjectModelImpl) GetTagsMap() map[string]bool {
+func (o *ObjectModelImpl) getTagsMap() map[string]bool {
 	return o.tags
 }
 
-func (o *ObjectModelImpl) SetTagsMap(tags map[string]bool) {
+func (o *ObjectModelImpl) setTagsMap(tags map[string]bool) {
+	o.Lock()
 	for tag := range o.tags {
 		delete(o.tags, tag)
 	}
+	o.Unlock()
 
 	for tag := range tags {
 		o.SetTags(tag)
@@ -447,11 +531,17 @@ func (o *ObjectModelImpl) SetTagsMap(tags map[string]bool) {
 }
 
 func (o *ObjectModelImpl) GetEnabled() bool {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return o.enabled
 }
 
 func (o *ObjectModelImpl) SetEnabled(v bool) {
+	o.mu.Lock()
 	o.enabled = v
+	o.mu.Unlock()
+
 	o.methods.SetEnabled(v)
 }
 
@@ -466,6 +556,9 @@ func (o *ObjectModelImpl) DeleteChildren() error {
 }
 
 func (o *ObjectModelImpl) SetTimer(interval time.Duration, handler func()) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	if o.intervalTimer != nil {
 		o.intervalTimer.Stop()
 	}
@@ -474,10 +567,16 @@ func (o *ObjectModelImpl) SetTimer(interval time.Duration, handler func()) {
 }
 
 func (o *ObjectModelImpl) GetTimer() *helpers.Timer {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return o.intervalTimer
 }
 
 func (o *ObjectModelImpl) GetState() (interfaces.Message, error) {
+	o.RLock()
+	defer o.RUnlock()
+
 	msg, err := messages.NewEvent("on_get_state", interfaces.TargetTypeObject, o.GetID())
 	if err != nil {
 		return nil, errors.Wrap(err, "ObjectModelImpl.GetState")
@@ -490,4 +589,20 @@ func (o *ObjectModelImpl) GetState() (interfaces.Message, error) {
 	}
 
 	return msg, nil
+}
+
+func (o *ObjectModelImpl) RLock() {
+	o.mu.RLock()
+}
+
+func (o *ObjectModelImpl) RUnlock() {
+	o.mu.RUnlock()
+}
+
+func (o *ObjectModelImpl) Lock() {
+	o.mu.Lock()
+}
+
+func (o *ObjectModelImpl) Unlock() {
+	o.mu.Unlock()
 }

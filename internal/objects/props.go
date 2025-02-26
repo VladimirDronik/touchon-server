@@ -2,6 +2,7 @@ package objects
 
 import (
 	"encoding/json"
+	"sync"
 
 	"github.com/pkg/errors"
 	"touchon-server/lib/helpers/orderedmap"
@@ -10,23 +11,32 @@ import (
 
 func NewProps() *Props {
 	return &Props{
-		m: orderedmap.New[string, *Prop](10),
+		mu: sync.RWMutex{},
+		m:  orderedmap.New[string, *Prop](10),
 	}
 }
 
 type Props struct {
-	m *orderedmap.OrderedMap[string, *Prop]
+	mu sync.RWMutex
+	m  *orderedmap.OrderedMap[string, *Prop]
 }
 
 func (o *Props) Len() int {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return o.m.Len()
 }
 
+// TODO избавиться от этой функции!!!
 func (o *Props) GetAll() *orderedmap.OrderedMap[string, *Prop] {
 	return o.m
 }
 
 func (o *Props) Get(code string) (*Prop, error) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	v, err := o.m.Get(code)
 	if err != nil {
 		return nil, errors.Wrap(err, "Get")
@@ -36,6 +46,9 @@ func (o *Props) Get(code string) (*Prop, error) {
 }
 
 func (o *Props) Delete(code string) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	o.m.Delete(code)
 }
 
@@ -44,6 +57,9 @@ func (o *Props) Set(code string, value interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "Set")
 	}
+
+	o.mu.Lock()
+	defer o.mu.Unlock()
 
 	if err := p.SetValue(value); err != nil {
 		return errors.Wrapf(err, "Set(%s)", code)
@@ -58,6 +74,9 @@ func (o *Props) GetStringValue(code string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "GetStringValue(%s)", code)
 	}
+
+	o.mu.RLock()
+	defer o.mu.RUnlock()
 
 	v, err := p.GetStringValue()
 	if err != nil {
@@ -74,6 +93,9 @@ func (o *Props) GetBoolValue(code string) (bool, error) {
 		return false, errors.Wrap(err, "GetBoolValue")
 	}
 
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	v, err := p.GetBoolValue()
 	if err != nil {
 		return false, errors.Wrap(err, "GetBoolValue")
@@ -89,6 +111,9 @@ func (o *Props) GetEnumValue(code string) (string, error) {
 		return "", errors.Wrap(err, "GetEnumValue")
 	}
 
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	v, err := p.GetEnumValue()
 	if err != nil {
 		return "", errors.Wrap(err, "GetEnumValue")
@@ -102,6 +127,9 @@ func (o *Props) GetIntValue(code string) (int, error) {
 	if err != nil {
 		return 0, errors.Wrap(err, "GetIntValue")
 	}
+
+	o.mu.RLock()
+	defer o.mu.RUnlock()
 
 	v, err := p.GetIntValue()
 	if err != nil {
@@ -117,6 +145,9 @@ func (o *Props) GetFloatValue(code string) (float32, error) {
 		return 0, errors.Wrap(err, "GetFloatValue")
 	}
 
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	v, err := p.GetFloatValue()
 	if err != nil {
 		return 0, errors.Wrap(err, "GetFloatValue")
@@ -126,6 +157,9 @@ func (o *Props) GetFloatValue(code string) (float32, error) {
 }
 
 func (o *Props) Add(items ...*Prop) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	for _, item := range items {
 		if item == nil {
 			return errors.Wrap(errors.New("prop is nil"), "Add")
@@ -141,6 +175,9 @@ func (o *Props) Add(items ...*Prop) error {
 
 // Check Проверяет значения параметров в отдельности
 func (o *Props) Check() error {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	for _, p := range o.m.GetValueList() {
 		switch p.Type {
 		case models.DataTypeString:
@@ -216,6 +253,9 @@ func (o *Props) Check() error {
 }
 
 func (o *Props) MarshalJSON() ([]byte, error) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return json.Marshal(o.m)
 }
 
@@ -246,6 +286,9 @@ func (o *Props) UnmarshalJSON(data []byte) error {
 }
 
 func (o *Props) CheckDefinition() error {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	for _, p := range o.m.GetValueList() {
 		// Проверяем определение свойства
 		if err := p.CheckDefinition(); err != nil {

@@ -53,11 +53,8 @@ type Object interface {
 	GetMethods() *Methods
 
 	GetTags() []string
-	ReplaceTags(tags ...string)
 	SetTags(tags ...string)
 	DeleteTags(tags ...string)
-	GetTagsMap() map[string]bool
-	SetTagsMap(map[string]bool)
 
 	GetEnabled() bool
 	SetEnabled(bool)
@@ -74,8 +71,6 @@ type Object interface {
 	// Shutdown завершает логику объекта
 	Shutdown() error
 
-	GetStoreObject() *model.StoreObject
-
 	DeleteChildren() error
 
 	// Marshaler Объект должен уметь генерировать json-модель.
@@ -87,6 +82,12 @@ type Object interface {
 	SetTimer(time.Duration, func())
 	GetTimer() *helpers.Timer
 	GetState() (interfaces.Message, error)
+
+	// Необходимо использовать для предотвращения гонки данных
+	RLock()
+	RUnlock()
+	Lock()
+	Unlock()
 }
 
 type ObjectModel struct {
