@@ -2,7 +2,6 @@ package objects
 
 import (
 	"encoding/json"
-	"sync"
 
 	"github.com/pkg/errors"
 	"touchon-server/lib/helpers/orderedmap"
@@ -11,43 +10,29 @@ import (
 
 func NewEvents() *Events {
 	return &Events{
-		mu: sync.RWMutex{},
-		m:  orderedmap.New[string, interfaces.Event](10),
+		m: orderedmap.New[string, interfaces.Event](10),
 	}
 }
 
 type Events struct {
-	mu sync.RWMutex
-	m  *orderedmap.OrderedMap[string, interfaces.Event]
+	m *orderedmap.OrderedMap[string, interfaces.Event]
 }
 
 func (o *Events) Len() int {
-	o.mu.RLock()
-	defer o.mu.RUnlock()
-
 	return o.m.Len()
 }
 
 func (o *Events) Delete(eventNames ...string) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
 	for _, eventName := range eventNames {
 		o.m.Delete(eventName)
 	}
 }
 
 func (o *Events) DeleteAll() {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
 	o.m.Clear()
 }
 
 func (o *Events) Add(items ...interfaces.Event) error {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
 	items = ToApiEvents(items...)
 
 	for _, item := range items {
@@ -60,9 +45,6 @@ func (o *Events) Add(items ...interfaces.Event) error {
 }
 
 func (o *Events) MarshalJSON() ([]byte, error) {
-	o.mu.RLock()
-	defer o.mu.RUnlock()
-
 	return json.Marshal(o.m)
 }
 

@@ -82,12 +82,6 @@ type Object interface {
 	SetTimer(time.Duration, func())
 	GetTimer() *helpers.Timer
 	GetState() (interfaces.Message, error)
-
-	// Необходимо использовать для предотвращения гонки данных
-	RLock()
-	RUnlock()
-	Lock()
-	Unlock()
 }
 
 type ObjectModel struct {
