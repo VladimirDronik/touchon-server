@@ -1,8 +1,9 @@
 package model
 
-type Category string
+type Category = string
 
 const (
+	CategoryServer        Category = "server"         // Сервер
 	CategoryController    Category = "controller"     // Контроллер
 	CategoryModule        Category = "module"         // Модуль расширения
 	CategorySensor        Category = "sensor"         // Датчик

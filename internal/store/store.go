@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 	"touchon-server/internal/model"
 	"touchon-server/lib/interfaces"
 )
@@ -14,6 +15,8 @@ var ErrNotFound = errors.New("not found")
 var I Store
 
 type Store interface {
+	GetDB() *gorm.DB
+
 	ObjectRepository() ObjectRepository
 	PortRepository() PortRepository
 	DeviceRepository() DeviceRepository

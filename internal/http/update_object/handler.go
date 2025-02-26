@@ -10,10 +10,8 @@ import (
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
-	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	_ "touchon-server/lib/http/server"
-	"touchon-server/lib/interfaces"
 )
 
 // Обновление объекта
@@ -56,13 +54,6 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 
 		if !dstProp.Editable.Check(objModel.GetProps()) {
 			continue
-		}
-
-		//Если меняется период опроса у датчика
-		if dstProp.Code == "update_interval" {
-			if err := updateSensorCronTask(req); err != nil {
-				return nil, http.StatusBadRequest, err
-			}
 		}
 
 		// TODO: убрал NPE, нужно провести рефакторинг данного блока
@@ -188,33 +179,6 @@ func setChildrenProps(objModelChildren *objects.Children, children []Child) erro
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-// updateSensorCronTask отправляет в action-router запрос на добавление задачи и действия для крона
-func updateSensorCronTask(req *Request) error {
-	_, ok := req.Props["update_interval"].(string)
-	if !ok {
-		return nil
-	}
-
-	task := &interfaces.CronTask{
-		Period: req.Props["update_interval"].(string),
-		Actions: []*interfaces.CronAction{
-			{
-				Enabled:    true,
-				TargetType: interfaces.TargetTypeObject,
-				Type:       interfaces.ActionTypeMethod,
-				TargetID:   req.ID,
-				Name:       "check",
-			},
-		},
-	}
-
-	if err := store.I.CronRepo().UpdateTask(task); err != nil {
-		return errors.Wrap(err, "createSensorCronTask")
 	}
 
 	return nil

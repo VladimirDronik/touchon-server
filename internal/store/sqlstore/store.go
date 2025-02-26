@@ -64,43 +64,40 @@ func New(db *gorm.DB) *Store {
 
 }
 
+func (o *Store) GetDB() *gorm.DB {
+	return o.db
+}
+
 // OM
 
-// ObjectRepository Инициализация
-func (s *Store) ObjectRepository() store.ObjectRepository {
-	return s.objectRepo
+func (o *Store) ObjectRepository() store.ObjectRepository {
+	return o.objectRepo
 }
 
-// PortRepository Инициализация
-func (s *Store) PortRepository() store.PortRepository {
-	return s.portRepo
+func (o *Store) PortRepository() store.PortRepository {
+	return o.portRepo
 }
 
-// DeviceRepository Инициализация
-func (s *Store) DeviceRepository() store.DeviceRepository {
-	return s.deviceRepo
+func (o *Store) DeviceRepository() store.DeviceRepository {
+	return o.deviceRepo
 }
 
-// ScriptRepository Инициализация
-func (s *Store) ScriptRepository() store.ScriptRepository {
-	return s.scriptRepo
+func (o *Store) ScriptRepository() store.ScriptRepository {
+	return o.scriptRepo
 }
 
 // AR
 
-// EventsRepo Инициализация
-func (s *Store) EventsRepo() store.EventsRepo {
-	return s.eventsRepo
+func (o *Store) EventsRepo() store.EventsRepo {
+	return o.eventsRepo
 }
 
-// EventActionsRepo Инициализация
-func (s *Store) EventActionsRepo() store.EventActionsRepo {
-	return s.eventActionsRepo
+func (o *Store) EventActionsRepo() store.EventActionsRepo {
+	return o.eventActionsRepo
 }
 
-// CronRepo Инициализация
-func (s *Store) CronRepo() store.CronRepo {
-	return s.cronRepo
+func (o *Store) CronRepo() store.CronRepo {
+	return o.cronRepo
 }
 
 // TR

@@ -48,6 +48,7 @@ import (
 	_ "touchon-server/internal/object/Sensor/presence"
 	_ "touchon-server/internal/object/Sensor/scd4x"
 	_ "touchon-server/internal/object/SensorValue"
+	_ "touchon-server/internal/object/Server"
 	_ "touchon-server/internal/object/WirenBoard/wb_mrm2_mini"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
@@ -112,13 +113,17 @@ func main() {
 	g.Logger = logger
 	g.Config = cfg
 
+	// Создаем хранилище
 	store.I = sqlstore.New(db)
+	check(prepareDB())
 
+	// Создаем экземпляр вебсокет сервера для мобильных приложений
 	ws.I, err = ws.New()
 	check(err)
 
 	check(ws.I.Start(cfg["ws_addr"]))
 
+	// Создаем шину сообщений
 	g.Msgs, err = messages.NewService(runtime.NumCPU(), 2000)
 	check(err)
 
@@ -129,6 +134,7 @@ func main() {
 	memStore.I, err = memStore.New()
 	check(err)
 
+	// Создаем штатные обработчики сообщений
 	action_router.I = action_router.New()
 
 	check(memStore.I.Start())
@@ -139,8 +145,10 @@ func main() {
 
 	check(action_router.I.Start())
 
+	// Создаем вебсокет-мост между NodeRed и шиной сообщений
 	g.NodeRed = nodered.New()
 
+	// Создаем основной API-сервер
 	g.HttpServer, err = httpServer.New(rb)
 	check(err)
 
@@ -149,11 +157,13 @@ func main() {
 
 	check(g.NodeRed.Start())
 
+	// Создаем планировщик задач
 	sch, err := cron.New()
 	check(err)
 
 	check(sch.Start())
 
+	// Ждем от ОС сигнала на завершение работы сервиса
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-sig
