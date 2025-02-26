@@ -334,6 +334,8 @@ func (o *ObjectModelImpl) Start() error {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
 
+	g.Logger.Debugf("%s/%s (%d, %q) starting..", o.GetCategory(), o.GetType(), o.GetID(), o.GetName())
+
 	// Подписываем объект на обработку команд (вызов методов)
 	err := o.Subscribe(interfaces.MessageTypeCommand, "", interfaces.TargetTypeObject, &o.id, o.commandHandler)
 	if err != nil {
@@ -371,6 +373,8 @@ func (o *ObjectModelImpl) Shutdown() error {
 	if err := o.CheckEnabled(); err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Shutdown")
 	}
+
+	g.Logger.Debugf("%s/%s (%d, %q) stopping..", o.GetCategory(), o.GetType(), o.GetID(), o.GetName())
 
 	g.Msgs.Unsubscribe(o.msgHandlerIDs...)
 

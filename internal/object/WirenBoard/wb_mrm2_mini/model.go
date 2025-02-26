@@ -120,8 +120,6 @@ func (o *DeviceModel) Start() error {
 	}
 	o.unitID = address
 
-	g.Logger.Debugf("WB-MRM2-mini(%d) started", o.GetID())
-
 	return nil
 }
 
@@ -129,8 +127,6 @@ func (o *DeviceModel) Shutdown() error {
 	if err := o.ModbusDevice.Shutdown(); err != nil {
 		return errors.Wrap(err, "wb_mrm2_mini.DeviceModel.Shutdown")
 	}
-
-	g.Logger.Debugf("WB-MRM2-mini(%d) stopped", o.GetID())
 
 	return nil
 }

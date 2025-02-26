@@ -19,6 +19,8 @@ import (
 	"touchon-server/lib/models"
 )
 
+type GetValuesFunc func(timeout time.Duration) (map[SensorValue.Type]float32, error)
+
 const ValueUpdateAtFormat = "02.01.2006 15:04:05"
 
 const timeout = 5
@@ -111,6 +113,11 @@ func MakeModel() (objects.Object, error) {
 
 type SensorModel struct {
 	*objects.ObjectModelImpl
+	getValues GetValuesFunc
+}
+
+func (o *SensorModel) SetGetValuesFunc(f GetValuesFunc) {
+	o.getValues = f
 }
 
 func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _ error) {
@@ -150,17 +157,27 @@ func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _
 	return
 }
 
-func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorValue.Type]float32, error)) error {
-	values, err := getValues(time.Duration(timeout) * time.Second)
+func (o *SensorModel) check() {
+	defer o.GetTimer().Reset()
+
+	if o.getValues == nil {
+		return
+	}
+
+	g.Logger.Debugf("Sensor %s (%d) check", o.GetType(), o.GetID())
+
+	values, err := o.getValues(time.Duration(timeout) * time.Second)
 	if err != nil {
-		return errors.Wrap(err, "Check")
+		g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
+		return
 	}
 
 	msgs := make([]interfaces.Message, 0, o.GetChildren().Len())
 	for _, child := range o.GetChildren().GetAll() {
 		msg, err := o.processChild(child, values)
 		if err != nil {
-			return errors.Wrap(err, "Check")
+			g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
+			return
 		}
 
 		if msg != nil {
@@ -175,20 +192,49 @@ func (o *SensorModel) Check(getValues func(timeout time.Duration) (map[SensorVal
 
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {
-		return errors.Wrap(err, "Check")
+		g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
+		return
 	}
 
 	msgs = append(msgs, msg)
 
 	if err := g.Msgs.Send(msgs...); err != nil {
-		return errors.Wrap(err, "Check")
+		g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
+		return
+	}
+}
+
+func (o *SensorModel) Start() error {
+	if err := o.ObjectModelImpl.Start(); err != nil {
+		return errors.Wrap(err, "SensorModel.Start")
+	}
+
+	updateIntervalS, err := o.GetProps().GetStringValue("update_interval")
+	if err != nil {
+		return errors.Wrap(err, "SensorModel.Start")
+	}
+
+	updateInterval, err := time.ParseDuration(updateIntervalS)
+	if err != nil {
+		return errors.Wrap(err, "SensorModel.Start")
+	}
+
+	o.SetTimer(updateInterval, o.check)
+	o.GetTimer().Start()
+
+	return nil
+}
+
+func (o *SensorModel) Shutdown() error {
+	if err := o.ObjectModelImpl.Shutdown(); err != nil {
+		return errors.Wrap(err, "SensorModel.Shutdown")
 	}
 
 	return nil
 }
 
 func (o *SensorModel) processChild(child objects.Object, values map[SensorValue.Type]float32) (interfaces.Message, error) {
-	v, ok := values[SensorValue.Type(child.GetType())]
+	v, ok := values[child.GetType()]
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("value for child object %q not found", child.GetName()), "processChild")
 	}

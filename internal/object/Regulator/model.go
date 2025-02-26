@@ -382,8 +382,6 @@ func (o *RegulatorModel) Start() error {
 	o.SetTimer(sensorValueTTL, o.timerHandler)
 	o.GetTimer().Start()
 
-	g.Logger.Debugf("Regulator(%d) started", o.GetID())
-
 	return nil
 }
 
@@ -421,8 +419,6 @@ func (o *RegulatorModel) Shutdown() error {
 	}
 
 	o.GetTimer().Stop()
-
-	g.Logger.Debugf("Regulator(%d) stopped", o.GetID())
 
 	return nil
 }

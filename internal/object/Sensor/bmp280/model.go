@@ -11,7 +11,6 @@ import (
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
-	"touchon-server/lib/interfaces"
 )
 
 func init() {
@@ -46,13 +45,7 @@ func MakeModel() (objects.Object, error) {
 	}
 
 	obj.GetChildren().Add(temp, hum)
-
-	check, err := objects.NewMethod("check", "Опрашивает датчик, обновляет показания датчика в БД", nil, obj.Check)
-	if err != nil {
-		return nil, errors.Wrap(err, "bmp280.MakeModel")
-	}
-
-	obj.GetMethods().Add(check)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }
@@ -117,13 +110,4 @@ func (o *SensorModel) getValues(timeout time.Duration) (map[SensorValue.Type]flo
 	}
 
 	return r, nil
-}
-
-func (o *SensorModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
-	msgs, err := o.SensorModel.Check(o.getValues)
-	if err != nil {
-		return nil, errors.Wrap(err, "Check")
-	}
-
-	return msgs, nil
 }
