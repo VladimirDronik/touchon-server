@@ -323,14 +323,14 @@ func (o *Items) GetZone(roomID int) (*model.GroupRoom, error) {
 		Style: row.Style,
 	}
 
-	zone.Sensors, err = o.GetZoneSensors(zone.ID, false)
+	zone.Sensors, err = o.getSensors(false, roomID)
 	if err != nil {
-		return nil, errors.Wrap(err, "GetZone")
+		return nil, errors.Wrap(err, "GetZoneSensors")
 	}
 
-	zone.Items, err = o.GetItems(zone.ID, false)
+	zone.Items, err = o.getItems(false, roomID)
 	if err != nil {
-		return nil, errors.Wrap(err, "GetZone")
+		return nil, errors.Wrap(err, "GetItems")
 	}
 
 	return zone, nil

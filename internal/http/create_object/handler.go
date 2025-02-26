@@ -36,6 +36,8 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return nil, http.StatusBadRequest, err
 	}
 
+	req.Object.Enabled = true
+
 	// Проверяем названия событий на валидность
 	for _, item := range req.Events {
 		// TODO

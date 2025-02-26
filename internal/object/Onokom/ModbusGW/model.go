@@ -299,12 +299,17 @@ func (o *GatewayModel) Start() error {
 	}
 	o.unitID = address
 
-	updateInterval, err := o.GetProps().GetIntValue("update_interval")
+	updateIntervalS, err := o.GetProps().GetStringValue("update_interval")
 	if err != nil {
 		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
 	}
 
-	o.SetTimer(time.Duration(updateInterval)*time.Second, o.check)
+	updateInterval, err := time.ParseDuration(updateIntervalS)
+	if err != nil {
+		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
+	}
+
+	o.SetTimer(updateInterval, o.check)
 	o.GetTimer().Start()
 
 	g.Logger.Debugf("ModbusGW.GatewayModel(%d) started", o.GetID())
