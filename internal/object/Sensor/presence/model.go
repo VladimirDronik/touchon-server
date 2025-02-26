@@ -137,8 +137,6 @@ func (o *PresenceSensorModel) Start() error {
 		return errors.Wrap(err, "PresenceSensorModel.Start")
 	}
 
-	g.Logger.Debugf("PresenceSensorModel(%d) started", o.GetID())
-
 	return nil
 }
 
@@ -263,8 +261,6 @@ func (o *PresenceSensorModel) Shutdown() error {
 	if err := o.SensorModel.Shutdown(); err != nil {
 		return errors.Wrap(err, "PresenceSensorModel.Shutdown")
 	}
-
-	g.Logger.Debugf("PresenceSensorModel(%d) stopped", o.GetID())
 
 	return nil
 }

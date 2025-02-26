@@ -214,6 +214,8 @@ func (o *ObjectModelImpl) UnmarshalJSON(data []byte) error {
 	// o.SaveAndSendStatus(v.Status)     // Нельзя переопределять с фронта
 	o.SetTags(v.Tags...)
 	o.SetEnabled(v.Enabled)
+	// Копируем состояние объекта в методы, для их отключения при необходимости
+	o.methods.SetEnabled(o.enabled)
 
 	return nil
 }
@@ -332,6 +334,8 @@ func (o *ObjectModelImpl) Start() error {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
 
+	g.Logger.Debugf("%s/%s (%d, %q) starting..", o.GetCategory(), o.GetType(), o.GetID(), o.GetName())
+
 	// Подписываем объект на обработку команд (вызов методов)
 	err := o.Subscribe(interfaces.MessageTypeCommand, "", interfaces.TargetTypeObject, &o.id, o.commandHandler)
 	if err != nil {
@@ -369,6 +373,8 @@ func (o *ObjectModelImpl) Shutdown() error {
 	if err := o.CheckEnabled(); err != nil {
 		return errors.Wrap(err, "ObjectModelImpl.Shutdown")
 	}
+
+	g.Logger.Debugf("%s/%s (%d, %q) stopping..", o.GetCategory(), o.GetType(), o.GetID(), o.GetName())
 
 	g.Msgs.Unsubscribe(o.msgHandlerIDs...)
 
@@ -446,6 +452,7 @@ func (o *ObjectModelImpl) GetEnabled() bool {
 
 func (o *ObjectModelImpl) SetEnabled(v bool) {
 	o.enabled = v
+	o.methods.SetEnabled(v)
 }
 
 func (o *ObjectModelImpl) DeleteChildren() error {
