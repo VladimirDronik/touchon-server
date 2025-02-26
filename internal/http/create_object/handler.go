@@ -250,7 +250,7 @@ func createSensorCronTask(objectID int, req *Request) error {
 
 	task := &interfaces.CronTask{
 		Enabled:     true,
-		Name:        "Check sensor",
+		Name:        "check sensor",
 		Description: "Проверка датчика: [" + strconv.Itoa(objectID) + "]" + req.Object.Name,
 		Period:      req.Object.Props["update_interval"].(string),
 		Actions: []*interfaces.CronAction{

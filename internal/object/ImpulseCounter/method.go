@@ -5,14 +5,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"touchon-server/internal/g"
 	helpersObj "touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/impulse_counter"
+	"touchon-server/lib/events/object/onokom/gateway"
 	"touchon-server/lib/interfaces"
 )
 
-func (o *ImpulseCounter) Check(args map[string]interface{}) ([]interfaces.Message, error) {
+func (o *ImpulseCounter) Check(params map[string]interface{}) ([]interfaces.Message, error) {
 	count, err := o.megaRelease()
 	if err != nil {
 		return []interfaces.Message{}, nil
@@ -31,6 +33,38 @@ func (o *ImpulseCounter) Check(args map[string]interface{}) ([]interfaces.Messag
 	}
 
 	return []interfaces.Message{impulseCntMsg}, nil
+}
+
+func (o *ImpulseCounter) check() {
+	defer o.GetTimer().Reset()
+	_, err := o.Check(nil)
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
+		return
+	}
+
+	payload := make(map[string]interface{}, o.GetProps().Len())
+
+	payload["current_count"], err = o.GetProps().GetIntValue("value")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
+		return
+	}
+
+	// Отправляем сообщение с измененными полями
+	msg, err := gateway.NewOnChange(o.GetID(), payload)
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
+		return
+	}
+
+	// Отправляем сообщение об изменении св-ва объекта
+	if err := g.Msgs.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
+		return
+	}
+
+	return
 }
 
 func (o *ImpulseCounter) megaRelease() (int, error) {

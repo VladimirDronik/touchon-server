@@ -102,7 +102,7 @@ func (o *baseCondition) Check(props *Props) bool {
 		case OpIn:
 			values, ok := item.Value.([]interface{})
 			if !ok {
-				log.Println(errors.Wrap(errors.New("item value is not array"), "baseCondition.Check"))
+				log.Println(errors.Wrap(errors.New("item value is not array"), "baseCondition.check"))
 				return false
 			}
 
@@ -118,7 +118,7 @@ func (o *baseCondition) Check(props *Props) bool {
 			}
 
 		default:
-			log.Println(errors.Wrap(errors.Errorf("unknown operator %q", item.Operator), "baseCondition.Check"))
+			log.Println(errors.Wrap(errors.Errorf("unknown operator %q", item.Operator), "baseCondition.check"))
 			return false
 		}
 	}

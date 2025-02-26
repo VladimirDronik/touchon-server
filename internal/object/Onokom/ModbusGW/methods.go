@@ -29,11 +29,11 @@ func (o *GatewayModel) Check(map[string]interface{}) ([]interfaces.Message, erro
 
 	msg, err := gateway.NewOnCheck(o.GetID(), payload)
 	if err != nil {
-		return nil, errors.Wrap(err, "Check")
+		return nil, errors.Wrap(err, "check")
 	}
 
 	if err := g.Msgs.Send(msg); err != nil {
-		return nil, errors.Wrap(err, "Check")
+		return nil, errors.Wrap(err, "check")
 	}
 
 	return nil, nil

@@ -184,7 +184,7 @@ func (o *PortModel) Check(args map[string]interface{}) ([]interfaces.Message, er
 	newState, err := o.GetPortState("get", nil, time.Duration(5)*time.Second)
 	if err != nil {
 		// сообщаем, что порт не поменял свой статус и отдаем текущее состояние порта
-		return nil, errors.Wrap(err, "Check")
+		return nil, errors.Wrap(err, "check")
 	}
 
 	if string(o.GetStatus()) == newState { // если статус порта пришел такой же, как был уже в БД
@@ -202,7 +202,7 @@ func (o *PortModel) Check(args map[string]interface{}) ([]interfaces.Message, er
 	// заносим статус порта в БД
 	go func() {
 		if err := store.I.ObjectRepository().SetObjectStatus(o.GetID(), newState); err != nil {
-			g.Logger.Error(errors.Wrap(err, "PortModel.Check"))
+			g.Logger.Error(errors.Wrap(err, "PortModel.check"))
 		}
 	}()
 

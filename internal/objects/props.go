@@ -146,27 +146,27 @@ func (o *Props) Check() error {
 		case models.DataTypeString:
 			_, err := p.GetStringValue()
 			if p.Required.Check(o) && err != nil {
-				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
+				return errors.Wrapf(errors.New("value is not set"), "check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {
 				if err := p.CheckValue(p, o.m.GetUnorderedMap()); err != nil {
-					return errors.Wrapf(err, "Check(%s)", p.Code)
+					return errors.Wrapf(err, "check(%s)", p.Code)
 				}
 			}
 
 		case models.DataTypeEnum:
 			v, err := p.GetEnumValue()
 			if p.Required.Check(o) && err != nil {
-				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
+				return errors.Wrapf(errors.New("value is not set"), "check(%s)", p.Code)
 			}
 			if err == nil {
 				if _, ok := p.Values[v]; !ok {
-					return errors.Wrapf(errors.New("value is bad"), "Check(%s)", p.Code)
+					return errors.Wrapf(errors.New("value is bad"), "check(%s)", p.Code)
 				}
 
 				if p.CheckValue != nil {
 					if err := p.CheckValue(p, o.m.GetUnorderedMap()); err != nil {
-						return errors.Wrapf(err, "Check(%s)", p.Code)
+						return errors.Wrapf(err, "check(%s)", p.Code)
 					}
 				}
 			}
@@ -174,33 +174,33 @@ func (o *Props) Check() error {
 		case models.DataTypeBool:
 			_, err := p.GetBoolValue()
 			if p.Required.Check(o) && err != nil {
-				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
+				return errors.Wrapf(errors.New("value is not set"), "check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {
 				if err := p.CheckValue(p, o.m.GetUnorderedMap()); err != nil {
-					return errors.Wrapf(err, "Check(%s)", p.Code)
+					return errors.Wrapf(err, "check(%s)", p.Code)
 				}
 			}
 
 		case models.DataTypeInt:
 			_, err := p.GetIntValue()
 			if p.Required.Check(o) && err != nil {
-				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
+				return errors.Wrapf(errors.New("value is not set"), "check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {
 				if err := p.CheckValue(p, o.m.GetUnorderedMap()); err != nil {
-					return errors.Wrapf(err, "Check(%s)", p.Code)
+					return errors.Wrapf(err, "check(%s)", p.Code)
 				}
 			}
 
 		case models.DataTypeFloat:
 			_, err := p.GetFloatValue()
 			if p.Required.Check(o) && err != nil {
-				return errors.Wrapf(errors.New("value is not set"), "Check(%s)", p.Code)
+				return errors.Wrapf(errors.New("value is not set"), "check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {
 				if err := p.CheckValue(p, o.m.GetUnorderedMap()); err != nil {
-					return errors.Wrapf(err, "Check(%s)", p.Code)
+					return errors.Wrapf(err, "check(%s)", p.Code)
 				}
 			}
 
@@ -208,7 +208,7 @@ func (o *Props) Check() error {
 			// do nothing
 
 		default:
-			return errors.Wrapf(errors.Errorf("unexpected prop data type %q", p.Type), "Check(%s)", p.Code)
+			return errors.Wrapf(errors.Errorf("unexpected prop data type %q", p.Type), "check(%s)", p.Code)
 		}
 	}
 

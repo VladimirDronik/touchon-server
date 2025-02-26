@@ -172,7 +172,7 @@ func (o *Params) Check() error {
 	for _, p := range o.m.GetValueList() {
 		// Проверяем определение свойства
 		if err := p.Check(); err != nil {
-			return errors.Wrap(err, "Check")
+			return errors.Wrap(err, "check")
 		}
 	}
 

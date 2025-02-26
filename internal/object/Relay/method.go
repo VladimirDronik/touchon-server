@@ -102,22 +102,22 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Check")
+		return nil, errors.Wrap(err, "RelayModel.check")
 	}
 
 	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Check")
+		return nil, errors.Wrap(err, "RelayModel.check")
 	}
 
 	stateRelay, err := portObj.GetPortState("get", nil, time.Duration(1)*time.Second)
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Check")
+		return nil, errors.Wrap(err, "RelayModel.check")
 	}
 
 	relayMsg, err := relay.NewOnCheck(o.GetID(), strings.ToLower(stateRelay), "")
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Check")
+		return nil, errors.Wrap(err, "RelayModel.check")
 	}
 
 	return []interfaces.Message{relayMsg}, nil

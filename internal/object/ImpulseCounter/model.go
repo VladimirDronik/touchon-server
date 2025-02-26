@@ -2,6 +2,7 @@ package ImpulseCounter
 
 import (
 	"github.com/pkg/errors"
+	"time"
 	"touchon-server/internal/g"
 	helpersObj "touchon-server/internal/helpers"
 	"touchon-server/internal/model"
@@ -78,7 +79,7 @@ func MakeModel() (objects.Object, error) {
 			Visible:  objects.True(),
 		},
 		{
-			Code:        "polling_interval",
+			Code:        "update_interval",
 			Name:        "Интервал опроса счетчика сервером, с",
 			Description: "",
 			Item: &models.Item{
@@ -181,7 +182,7 @@ func MakeModel() (objects.Object, error) {
 	o := &ImpulseCounter{ObjectModelImpl: impl}
 
 	//methods
-	check, err := objects.NewMethod("check", "Получение количества импульсов", nil, o.Check)
+	check, err := objects.NewMethod("Check", "Получение количества импульсов", nil, o.Check)
 	if err != nil {
 		return nil, errors.Wrap(err, "PortMegaD.MakeModel")
 	}
@@ -212,6 +213,20 @@ func (o *ImpulseCounter) Start() error {
 		&portID,
 		o.handler,
 	)
+
+	updateIntervalS, err := o.GetProps().GetStringValue("update_interval")
+	if err != nil {
+		return errors.Wrapf(err, "ImpulseCounterModel(%d) started", o.GetID())
+	}
+
+	updateInterval, err := time.ParseDuration(updateIntervalS)
+	if err != nil {
+		return errors.Wrapf(err, "ImpulseCounterModel(%d) started", o.GetID())
+	}
+
+	o.SetTimer(updateInterval, o.check)
+	o.GetTimer().Start()
+
 	if err != nil {
 		return errors.Wrap(err, "ImpulseCounterModel.Start")
 	}
