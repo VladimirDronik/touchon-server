@@ -19,6 +19,8 @@ import (
 	"touchon-server/lib/models"
 )
 
+var ErrGetValuesFuncNotSet = errors.New("getValues() not set")
+
 type GetValuesFunc func(timeout time.Duration) (map[SensorValue.Type]float32, error)
 
 const ValueUpdateAtFormat = "02.01.2006 15:04:05"
@@ -106,9 +108,18 @@ func MakeModel() (objects.Object, error) {
 		return nil, errors.Wrap(err, "Sensor.MakeModel")
 	}
 
-	return &SensorModel{
+	obj := &SensorModel{
 		ObjectModelImpl: impl,
-	}, nil
+	}
+
+	check, err := objects.NewMethod("check", "Опрашивает датчик, обновляет показания датчика в БД", nil, obj.Check)
+	if err != nil {
+		return nil, errors.Wrap(err, "Sensor.MakeModel")
+	}
+
+	obj.GetMethods().Add(check)
+
+	return obj, nil
 }
 
 type SensorModel struct {
@@ -157,27 +168,25 @@ func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _
 	return
 }
 
-func (o *SensorModel) check() {
+func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error) {
 	defer o.GetTimer().Reset()
 
 	if o.getValues == nil {
-		return
+		return nil, errors.Wrap(ErrGetValuesFuncNotSet, "SensorModel.Check")
 	}
 
 	g.Logger.Debugf("Sensor %s (%d) check", o.GetType(), o.GetID())
 
 	values, err := o.getValues(time.Duration(timeout) * time.Second)
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
-		return
+		return nil, errors.Wrap(err, "SensorModel.Check")
 	}
 
 	msgs := make([]interfaces.Message, 0, o.GetChildren().Len())
 	for _, child := range o.GetChildren().GetAll() {
 		msg, err := o.processChild(child, values)
 		if err != nil {
-			g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
-			return
+			return nil, errors.Wrap(err, "SensorModel.Check")
 		}
 
 		if msg != nil {
@@ -192,16 +201,16 @@ func (o *SensorModel) check() {
 
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
-		return
+		return nil, errors.Wrap(err, "SensorModel.Check")
 	}
 
 	msgs = append(msgs, msg)
 
 	if err := g.Msgs.Send(msgs...); err != nil {
-		g.Logger.Error(errors.Wrap(err, "SensorModel.check"))
-		return
+		return nil, errors.Wrap(err, "SensorModel.Check")
 	}
+
+	return nil, nil
 }
 
 func (o *SensorModel) Start() error {
@@ -219,7 +228,12 @@ func (o *SensorModel) Start() error {
 		return errors.Wrap(err, "SensorModel.Start")
 	}
 
-	o.SetTimer(updateInterval, o.check)
+	o.SetTimer(updateInterval, func() {
+		// Игнорируем ошибку ErrGetValuesFuncNotSet при автоматическом обновлении датчика
+		if _, err := o.Check(nil); err != nil && !errors.Is(err, ErrGetValuesFuncNotSet) {
+			g.Logger.Error(errors.Wrap(err, "SensorModel.Start"))
+		}
+	})
 	o.GetTimer().Start()
 
 	return nil
