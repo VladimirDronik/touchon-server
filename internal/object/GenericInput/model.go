@@ -72,7 +72,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryGenericInput,
 		"generic_input",
-		false,
+		0,
 		"Универсальный вход",
 		props,
 		nil,

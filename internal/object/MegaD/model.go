@@ -227,7 +227,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryController,
 		"mega_d",
-		false,
+		0,
 		"MegaD",
 		props,
 		children,

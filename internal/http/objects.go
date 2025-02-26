@@ -40,8 +40,8 @@ func (o *Server) handleGetObjectsTypes(ctx *fasthttp.RequestCtx) (interface{}, i
 	tagsSlice := strings.Split(tags, ";")
 
 	// Эти объекты отдельно через API не создаются
-	delete(m, string(model.CategoryPort))
-	delete(m, string(model.CategorySensorValue))
+	delete(m, model.CategoryPort)
+	delete(m, model.CategorySensorValue)
 
 	r := make([]*getObjectsTypesResponseItem, 0, len(m))
 	for objCat, cat := range m {
@@ -115,8 +115,8 @@ func (o *Server) handleGetObjectModel(ctx *fasthttp.RequestCtx) (interface{}, in
 	}
 
 	// Внутренние объекты не создаем через API
-	if obj.GetInternal() {
-		return nil, http.StatusBadRequest, errors.New("category is bad")
+	if obj.GetFlags().Has(objects.CreationForbidden) {
+		return nil, http.StatusBadRequest, objects.CreationForbidden.Err()
 	}
 
 	return obj, http.StatusOK, nil
@@ -542,6 +542,15 @@ func (o *Server) handleDeleteObject(ctx *fasthttp.RequestCtx) (interface{}, int,
 	objectID, err := helpers.GetUintPathParam(ctx, "id")
 	if err != nil {
 		return nil, http.StatusBadRequest, err
+	}
+
+	objModel, err := objects.LoadObject(objectID, "", "", model.ChildTypeNobody)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	if objModel.GetFlags().Has(objects.DeletionForbidden) {
+		return nil, http.StatusBadRequest, objects.DeletionForbidden.Err()
 	}
 
 	return o.DeleteObject(objectID)

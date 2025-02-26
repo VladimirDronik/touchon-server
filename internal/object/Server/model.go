@@ -159,7 +159,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryServer,
 		"server",
-		false,
+		objects.CreationForbidden|objects.DeletionForbidden,
 		"Сервер",
 		props,
 		nil,

@@ -194,7 +194,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryModbus,
 		"modbus",
-		false,
+		0,
 		"Шина Modbus",
 		props,
 		nil,

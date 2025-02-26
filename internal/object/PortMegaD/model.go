@@ -131,7 +131,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryPort,
 		"port_mega_d",
-		true,
+		objects.Internal,
 		"Порт",
 		props,
 		nil,

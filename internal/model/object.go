@@ -33,7 +33,6 @@ type StoreObject struct {
 	ZoneID   *int            `json:"zone_id,omitempty"`                     // ID зоны, в которой размещен объект
 	Category Category        `json:"category"`                              // Категория объекта
 	Type     string          `json:"type"`                                  // Тип объекта
-	Internal bool            `json:"internal"`                              // Признак внутреннего объекта (port, sensor_value)
 	Name     string          `json:"name"`                                  // Название объекта
 	Status   ObjectStatus    `json:"status,omitempty"`                      // Состояние объекта
 	Tags     map[string]bool `json:"tags,omitempty" gorm:"serializer:json"` //
@@ -54,7 +53,6 @@ type JsonObject struct {
 	ZoneID   *int         `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
 	Category Category     `json:"category"`            // Категория объекта
 	Type     string       `json:"type"`                // Тип объекта
-	Internal bool         `json:"internal"`            // Признак внутреннего объекта (port, sensor_value)
 	Name     string       `json:"name"`                // Название объекта
 	Status   ObjectStatus `json:"status,omitempty"`    // Состояние объекта
 	Tags     []string     `json:"tags"`                //
@@ -75,7 +73,6 @@ func StoreObjectToJsonObject(o *StoreObject) *JsonObject {
 		ZoneID:   o.ZoneID,
 		Category: o.Category,
 		Type:     o.Type,
-		Internal: o.Internal,
 		Name:     o.Name,
 		Status:   o.Status,
 		Enabled:  o.Enabled,

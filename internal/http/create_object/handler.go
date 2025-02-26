@@ -133,6 +133,10 @@ func createObject(req *Request) (int, error) {
 		return 0, errors.Wrap(err, "createObject")
 	}
 
+	if objModel.GetFlags().Has(objects.CreationForbidden) {
+		return 0, errors.Wrap(objects.CreationForbidden.Err(), "createObject")
+	}
+
 	objModel.SetParentID(req.Object.ParentID)
 	objModel.SetZoneID(req.Object.ZoneID)
 	objModel.SetName(req.Object.Name)

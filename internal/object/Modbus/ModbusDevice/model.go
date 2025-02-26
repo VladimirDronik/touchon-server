@@ -50,7 +50,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryModbus,
 		"modbus_device",
-		false,
+		0,
 		"Устройство Modbus",
 		props,
 		nil,

@@ -96,7 +96,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategorySensor,
 		"",
-		false,
+		0,
 		"",
 		props,
 		nil,

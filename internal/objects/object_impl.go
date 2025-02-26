@@ -16,11 +16,10 @@ import (
 
 // Implementation of Object interface
 
-func NewObjectModelImpl(category model.Category, objType string, internal bool, name string, props []*Prop, children []Object, events []interfaces.Event, methods []*Method, tags []string) (*ObjectModelImpl, error) {
+func NewObjectModelImpl(category model.Category, objType string, flags Flags, name string, props []*Prop, children []Object, events []interfaces.Event, methods []*Method, tags []string) (*ObjectModelImpl, error) {
 	o := &ObjectModelImpl{
 		category: category,
 		objType:  objType,
-		internal: internal,
 		name:     name,
 		status:   model.StatusNA,
 		props:    NewProps(),
@@ -29,6 +28,7 @@ func NewObjectModelImpl(category model.Category, objType string, internal bool, 
 		methods:  NewMethods(),
 		tags:     make(map[string]bool, len(tags)),
 		enabled:  true,
+		flags:    flags,
 	}
 
 	if err := o.GetProps().Add(props...); err != nil {
@@ -53,7 +53,6 @@ type ObjectModelImpl struct {
 	zoneID   *int
 	category model.Category
 	objType  string
-	internal bool
 	name     string
 	status   model.ObjectStatus
 	props    *Props
@@ -62,6 +61,7 @@ type ObjectModelImpl struct {
 	methods  *Methods
 	tags     map[string]bool
 	enabled  bool
+	flags    Flags
 
 	msgHandlerIDs []int
 
@@ -139,14 +139,6 @@ func (o *ObjectModelImpl) SetType(v string) {
 	o.objType = v
 }
 
-func (o *ObjectModelImpl) GetInternal() bool {
-	return o.internal
-}
-
-func (o *ObjectModelImpl) SetInternal(v bool) {
-	o.internal = v
-}
-
 func (o *ObjectModelImpl) GetName() string {
 	return o.name
 }
@@ -198,7 +190,6 @@ func (o *ObjectModelImpl) MarshalJSON() ([]byte, error) {
 		ZoneID:   o.GetZoneID(),
 		Category: o.GetCategory(),
 		Type:     o.GetType(),
-		Internal: o.GetInternal(),
 		Name:     o.GetName(),
 		Status:   o.GetStatus(),
 		Props:    props,
@@ -262,7 +253,6 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 	o.SetZoneID(storeObj.ZoneID)
 	o.SetCategory(storeObj.Category)
 	o.SetType(storeObj.Type)
-	o.SetInternal(storeObj.Internal)
 	o.SetName(storeObj.Name)
 	o.SetStatus(storeObj.Status)
 	o.setTagsMap(storeObj.Tags)
@@ -420,7 +410,6 @@ func (o *ObjectModelImpl) getStoreObject() *model.StoreObject {
 		ZoneID:   o.zoneID,
 		Category: o.category,
 		Type:     o.objType,
-		Internal: o.internal,
 		Name:     o.name,
 		Status:   o.status,
 		Tags:     o.getTagsMap(),
@@ -510,4 +499,12 @@ func (o *ObjectModelImpl) GetState() (interfaces.Message, error) {
 	}
 
 	return msg, nil
+}
+
+func (o *ObjectModelImpl) GetFlags() Flags {
+	return o.flags
+}
+
+func (o *ObjectModelImpl) SetFlags(v Flags) {
+	o.flags = v
 }

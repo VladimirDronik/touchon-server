@@ -119,7 +119,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategorySensorValue,
 		"",
-		true,
+		objects.Internal,
 		"",
 		props,
 		nil,
