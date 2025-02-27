@@ -36,7 +36,7 @@ func MakeModel() (objects.Object, error) {
 			Description: "",
 			Item: &models.Item{
 				Type:         models.DataTypeString,
-				DefaultValue: "",
+				DefaultValue: "MEGA-IN",
 			},
 			Required: objects.True(),
 			Editable: objects.True(),
@@ -83,8 +83,8 @@ func MakeModel() (objects.Object, error) {
 			Name:        "Интервал опроса счетчика сервером, с",
 			Description: "",
 			Item: &models.Item{
-				Type:         models.DataTypeInt,
-				DefaultValue: 5,
+				Type:         models.DataTypeString,
+				DefaultValue: "5s",
 			},
 			Required: objects.True(),
 			Editable: objects.True(),
