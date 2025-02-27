@@ -211,7 +211,7 @@ func (o *ObjectRepository) SaveObject(object *model.StoreObject) error {
 	return nil
 }
 
-func (o *ObjectRepository) prepareQuery(filters map[string]interface{}, tags []string, objectType model.ChildType) (*gorm.DB, error) {
+func (o *ObjectRepository) prepareQuery(filters map[string]interface{}, tags []string) (*gorm.DB, error) {
 	q := o.store.db.Model(&model.StoreObject{})
 
 	for k, v := range filters {
@@ -237,19 +237,12 @@ func (o *ObjectRepository) prepareQuery(filters map[string]interface{}, tags []s
 		}
 	}
 
-	switch objectType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
-	}
-
 	return q, nil
 }
 
 // GetObjects получение объектов с учетом фильтров
-func (o *ObjectRepository) GetObjects(filters map[string]interface{}, tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error) {
-	q, err := o.prepareQuery(filters, tags, objectType)
+func (o *ObjectRepository) GetObjects(filters map[string]interface{}, tags []string, offset, limit int) ([]*model.StoreObject, error) {
+	q, err := o.prepareQuery(filters, tags)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetObjects")
 	}
@@ -266,7 +259,7 @@ func (o *ObjectRepository) GetObjects(filters map[string]interface{}, tags []str
 
 // GetTotal получение общего кол-ва объектов с учетом фильтров
 func (o *ObjectRepository) GetTotal(filters map[string]interface{}, tags []string, objectType model.ChildType) (int, error) {
-	q, err := o.prepareQuery(filters, tags, objectType)
+	q, err := o.prepareQuery(filters, tags)
 	if err != nil {
 		return 0, errors.Wrap(err, "GetTotal")
 	}
@@ -287,13 +280,6 @@ func (o *ObjectRepository) GetObjectsByTags(tags []string, offset, limit int, ob
 		q = q.Where(fmt.Sprintf("json_extract(tags, '$.%s')", tag))
 	}
 
-	switch objectType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
-	}
-
 	rows := make([]*model.StoreObject, 0)
 	if err := q.Find(&rows).Error; err != nil {
 		return nil, errors.Wrap(err, "GetObjectsByTags")
@@ -308,13 +294,6 @@ func (o *ObjectRepository) GetTotalByTags(tags []string, objectType model.ChildT
 
 	for _, tag := range tags {
 		q = q.Where(fmt.Sprintf("json_extract(tags, '$.%s')", tag))
-	}
-
-	switch objectType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
 	}
 
 	r := int64(0)
@@ -341,13 +320,6 @@ func (o *ObjectRepository) GetObjectChildren(childType model.ChildType, objectID
 	rows := make([]*model.StoreObject, 0)
 
 	q := o.store.db.Where("parent_id in ?", objectIDs)
-
-	switch childType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
-	}
 
 	if err := q.Find(&rows).Error; err != nil {
 		return nil, errors.Wrap(err, "GetObjectChildren")

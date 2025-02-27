@@ -5,16 +5,6 @@ import (
 	"sort"
 )
 
-// ChildType используется для работы с дочерними объектами
-type ChildType int
-
-const (
-	ChildTypeInternal ChildType = iota // Внутренние объекты (port, sensor_value etc)
-	ChildTypeExternal                  // Все, кроме внутренних
-	ChildTypeAll                       // Все дочерние объекты
-	ChildTypeNobody                    // Ни какие дочерние объекты
-)
-
 type ObjectStatus string
 
 const (

@@ -338,12 +338,14 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		childType = model.ChildTypeExternal
 	}
 
-	rows, err := store.I.ObjectRepository().GetObjects(params, tags, offset, limit, model.ChildTypeExternal)
+	rows, err := store.I.ObjectRepository().GetObjects(params, tags, offset, limit)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
+	// TODO фильтруем внутренние объекты
 
-	total, err := store.I.ObjectRepository().GetTotal(params, tags, model.ChildTypeExternal)
+	// TODO нужно подсчитывать кол-во за вычетом внутренних объектов
+	total, err := store.I.ObjectRepository().GetTotal(params, tags)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}

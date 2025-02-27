@@ -60,7 +60,7 @@ type ObjectRepository interface {
 	GetObjectIDByProps(props map[string]string, parentID int) (int, error)
 	SetParent(objectID int, parentID *int) error //Установка родителя для объекта
 	SaveObject(object *model.StoreObject) error  // create, update
-	GetObjects(filters map[string]interface{}, tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
+	GetObjects(filters map[string]interface{}, tags []string, offset, limit int) ([]*model.StoreObject, error)
 	GetObjectsByAddress(address []string) ([]*model.StoreObject, error) // Выводит объекты, у которых адрес совпадает с искомым
 	GetTotal(filters map[string]interface{}, tags []string, objectType model.ChildType) (int, error)
 	GetObjectsByTags(tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
