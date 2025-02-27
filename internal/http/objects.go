@@ -218,8 +218,8 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 // @Description Получение объекта по его свойствам
 // @ID GetObjectByProps
 // @Produce json
-// @Param props query string true "Массив свойств объекта" example(address=1,interface=I2C)
-// @Param parent_id query string false "ID родительского объекта"
+// @Param props query string true "Массив свойств объекта" default(type=i2c,number=0)
+// @Param parent_id query string false "ID родительского объекта" default(2)
 // @Success      200 {object} http.Response[int]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
