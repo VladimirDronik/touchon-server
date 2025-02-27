@@ -51,13 +51,11 @@ type ObjectModelImpl struct {
 	id       int
 	parentID *int
 	zoneID   *int
-
 	category model.Category
 	objType  string
 	internal bool
 	name     string
 	status   model.ObjectStatus
-
 	props    *Props
 	children *Children
 	events   *Events
@@ -80,19 +78,49 @@ func (o *ObjectModelImpl) SetID(id int) {
 }
 
 func (o *ObjectModelImpl) GetParentID() *int {
-	return o.parentID
+	if o.parentID == nil {
+		return nil
+	}
+
+	// copy value
+	v := *o.parentID
+
+	return &v
 }
 
 func (o *ObjectModelImpl) SetParentID(parentID *int) {
-	o.parentID = parentID
+	if parentID == nil {
+		o.parentID = nil
+		return
+	}
+
+	// copy value
+	v := *parentID
+
+	o.parentID = &v
 }
 
 func (o *ObjectModelImpl) GetZoneID() *int {
-	return o.zoneID
+	if o.zoneID == nil {
+		return nil
+	}
+
+	// copy value
+	v := *o.zoneID
+
+	return &v
 }
 
 func (o *ObjectModelImpl) SetZoneID(zoneID *int) {
-	o.zoneID = zoneID
+	if zoneID == nil {
+		o.zoneID = nil
+		return
+	}
+
+	// copy value
+	v := *zoneID
+
+	o.zoneID = &v
 }
 
 func (o *ObjectModelImpl) GetCategory() model.Category {
@@ -214,6 +242,8 @@ func (o *ObjectModelImpl) UnmarshalJSON(data []byte) error {
 	// o.SetStatus(v.Status)     // Нельзя переопределять с фронта
 	o.SetTags(v.Tags...)
 	o.SetEnabled(v.Enabled)
+	// Копируем состояние объекта в методы, для их отключения при необходимости
+	o.methods.SetEnabled(o.enabled)
 
 	return nil
 }
@@ -235,7 +265,7 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 	o.SetInternal(storeObj.Internal)
 	o.SetName(storeObj.Name)
 	o.SetStatus(storeObj.Status)
-	o.SetTagsMap(storeObj.Tags)
+	o.setTagsMap(storeObj.Tags)
 	o.SetEnabled(storeObj.Enabled)
 
 	// Загружаем свойства объекта
@@ -277,7 +307,7 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 
 func (o *ObjectModelImpl) Save() error {
 	// Сохраняем поля объекта
-	storeObj := o.GetStoreObject()
+	storeObj := o.getStoreObject()
 
 	if err := store.I.ObjectRepository().SaveObject(storeObj); err != nil {
 		return errors.Wrapf(err, "ObjectModelImpl.Save(%s/%s)", o.category, o.objType)
@@ -332,6 +362,8 @@ func (o *ObjectModelImpl) Start() error {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
 
+	g.Logger.Debugf("%s/%s (%d, %q) starting..", o.GetCategory(), o.GetType(), o.GetID(), o.GetName())
+
 	// Подписываем объект на обработку команд (вызов методов)
 	err := o.Subscribe(interfaces.MessageTypeCommand, "", interfaces.TargetTypeObject, &o.id, o.commandHandler)
 	if err != nil {
@@ -370,6 +402,8 @@ func (o *ObjectModelImpl) Shutdown() error {
 		return errors.Wrap(err, "ObjectModelImpl.Shutdown")
 	}
 
+	g.Logger.Debugf("%s/%s (%d, %q) stopping..", o.GetCategory(), o.GetType(), o.GetID(), o.GetName())
+
 	g.Msgs.Unsubscribe(o.msgHandlerIDs...)
 
 	if o.intervalTimer != nil {
@@ -379,7 +413,7 @@ func (o *ObjectModelImpl) Shutdown() error {
 	return nil
 }
 
-func (o *ObjectModelImpl) GetStoreObject() *model.StoreObject {
+func (o *ObjectModelImpl) getStoreObject() *model.StoreObject {
 	return &model.StoreObject{
 		ID:       o.id,
 		ParentID: o.parentID,
@@ -389,7 +423,7 @@ func (o *ObjectModelImpl) GetStoreObject() *model.StoreObject {
 		Internal: o.internal,
 		Name:     o.name,
 		Status:   o.status,
-		Tags:     o.GetTagsMap(),
+		Tags:     o.getTagsMap(),
 		Enabled:  o.enabled,
 	}
 }
@@ -406,14 +440,6 @@ func (o *ObjectModelImpl) GetTags() []string {
 	return r
 }
 
-func (o *ObjectModelImpl) ReplaceTags(tags ...string) {
-	for tag := range o.tags {
-		delete(o.tags, tag)
-	}
-
-	o.SetTags(tags...)
-}
-
 func (o *ObjectModelImpl) SetTags(tags ...string) {
 	for _, tag := range tags {
 		o.tags[helpers.PrepareTag(tag)] = true
@@ -426,11 +452,11 @@ func (o *ObjectModelImpl) DeleteTags(tags ...string) {
 	}
 }
 
-func (o *ObjectModelImpl) GetTagsMap() map[string]bool {
+func (o *ObjectModelImpl) getTagsMap() map[string]bool {
 	return o.tags
 }
 
-func (o *ObjectModelImpl) SetTagsMap(tags map[string]bool) {
+func (o *ObjectModelImpl) setTagsMap(tags map[string]bool) {
 	for tag := range o.tags {
 		delete(o.tags, tag)
 	}
@@ -446,6 +472,7 @@ func (o *ObjectModelImpl) GetEnabled() bool {
 
 func (o *ObjectModelImpl) SetEnabled(v bool) {
 	o.enabled = v
+	o.methods.SetEnabled(v)
 }
 
 func (o *ObjectModelImpl) DeleteChildren() error {

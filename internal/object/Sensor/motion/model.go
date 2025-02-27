@@ -124,12 +124,6 @@ type MotionSensorModel struct {
 	*Sensor.SensorModel
 }
 
-func (o *MotionSensorModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
-	// Данный датчик сам не проверяет значения, а получает значения от порта
-	//TODO:: реализовать метод check всё равно, т.к. пользователь может запросить состояние датчика
-	return nil, errors.Wrap(errors.New("method 'check' not supported"), "MotionSensorModel.Check")
-}
-
 func (o *MotionSensorModel) Start() error {
 	if err := o.SensorModel.Start(); err != nil {
 		return errors.Wrap(err, "MotionSensorModel.Start")
@@ -166,8 +160,6 @@ func (o *MotionSensorModel) Start() error {
 	if err != nil {
 		return errors.Wrap(err, "MotionSensorModel.Start")
 	}
-
-	g.Logger.Debugf("MotionSensorModel(%d) started", o.GetID())
 
 	periodS, err := o.GetProps().GetStringValue("period")
 	if err != nil {
@@ -347,8 +339,6 @@ func (o *MotionSensorModel) Shutdown() error {
 	if err := o.SensorModel.Shutdown(); err != nil {
 		return errors.Wrap(err, "MotionSensorModel.Shutdown")
 	}
-
-	g.Logger.Debugf("MotionSensorModel(%d) stopped", o.GetID())
 
 	return nil
 }

@@ -132,8 +132,6 @@ func (o *RelayModel) Start() error {
 		return errors.Wrap(err, "Relay.Start")
 	}
 
-	g.Logger.Debugf("Relay(%d) started", o.GetID())
-
 	return nil
 }
 
@@ -162,7 +160,9 @@ func (o *RelayModel) handler(svc interfaces.MessageSender, msg interfaces.Messag
 }
 
 func (o *RelayModel) Shutdown() error {
-	g.Logger.Debugf("RelayModel(%d) stopped", o.GetID())
+	if err := o.ObjectModelImpl.Shutdown(); err != nil {
+		return errors.Wrap(err, "RelayModel.Shutdown")
+	}
 
 	return nil
 }

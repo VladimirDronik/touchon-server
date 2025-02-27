@@ -5,16 +5,19 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"touchon-server/lib/interfaces"
 )
 
 func NewMethods() *Methods {
 	return &Methods{
-		m: make(map[string]*Method, 20),
+		m:       make(map[string]*Method, 20),
+		enabled: true,
 	}
 }
 
 type Methods struct {
-	m map[string]*Method
+	m       map[string]*Method
+	enabled bool
 }
 
 func (o *Methods) Len() int {
@@ -27,11 +30,33 @@ func (o *Methods) Get(name string) (*Method, error) {
 		return nil, errors.Wrap(errors.Errorf("method %q not found", name), "Get")
 	}
 
+	// Если объект отключен, заменяет тело метода заглушкой
+	if !o.enabled {
+		m = &Method{
+			Name:        m.Name,
+			Description: m.Description,
+			Params:      m.Params,
+			Func: func(params map[string]interface{}) ([]interfaces.Message, error) {
+				return nil, ErrObjectDisabled
+			},
+		}
+	}
+
 	return m, nil
 }
 
 func (o *Methods) GetAll() map[string]*Method {
-	return o.m
+	if o.enabled {
+		return o.m
+	}
+
+	// Если объект отключен, заменяет тело метода заглушкой
+	m := make(map[string]*Method, len(o.m))
+	for k := range o.m {
+		m[k], _ = o.Get(k)
+	}
+
+	return m
 }
 
 func (o *Methods) Add(items ...*Method) {
@@ -56,4 +81,8 @@ func (o *Methods) MarshalJSON() ([]byte, error) {
 func (o *Methods) UnmarshalJSON([]byte) error {
 	// Методы нельзя переопределять с фронта
 	return nil
+}
+
+func (o *Methods) SetEnabled(v bool) {
+	o.enabled = v
 }

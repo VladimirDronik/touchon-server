@@ -114,8 +114,6 @@ func (o *GenericInputModel) Start() error {
 		return errors.Wrap(err, "GenericInputModel.Start")
 	}
 
-	g.Logger.Debugf("GenericInputModel(%d) started", o.GetID())
-
 	return nil
 }
 
@@ -145,7 +143,9 @@ func (o *GenericInputModel) handler(svc interfaces.MessageSender, msg interfaces
 }
 
 func (o *GenericInputModel) Shutdown() error {
-	g.Logger.Debugf("GenericInputModel(%d) stopped", o.GetID())
+	if err := o.ObjectModelImpl.Shutdown(); err != nil {
+		return errors.Wrap(err, "GenericInputModel.Shutdown")
+	}
 
 	return nil
 }

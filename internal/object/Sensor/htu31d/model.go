@@ -5,13 +5,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
-	"touchon-server/lib/interfaces"
 )
 
 func init() {
@@ -46,13 +44,7 @@ func MakeModel() (objects.Object, error) {
 	}
 
 	obj.GetChildren().Add(temp, hum)
-
-	check, err := objects.NewMethod("check", "Опрашивает датчик, обновляет показания датчика в БД", nil, obj.Check)
-	if err != nil {
-		return nil, errors.Wrap(err, "htu31d.MakeModel")
-	}
-
-	obj.GetMethods().Add(check)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }
@@ -110,54 +102,4 @@ func (o *SensorModel) getValues(timeout time.Duration) (map[SensorValue.Type]flo
 	}
 
 	return r, nil
-}
-
-func (o *SensorModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
-	msgs, err := o.SensorModel.Check(o.getValues)
-	if err != nil {
-		return nil, errors.Wrap(err, "Check")
-	}
-
-	return msgs, nil
-}
-
-func (o *SensorModel) Start() error {
-	if err := o.SensorModel.Start(); err != nil {
-		return errors.Wrap(err, "htu31d.SensorModel.Start")
-	}
-
-	updateIntervalS, err := o.GetProps().GetStringValue("update_interval")
-	if err != nil {
-		return errors.Wrap(err, "htu31d.SensorModel.Start")
-	}
-
-	updateInterval, err := time.ParseDuration(updateIntervalS)
-	if err != nil {
-		return errors.Wrap(err, "htu31d.SensorModel.Start")
-	}
-
-	o.SetTimer(updateInterval, o.check)
-	o.GetTimer().Start()
-
-	g.Logger.Debugf("htu31d(%d) started", o.GetID())
-
-	return nil
-}
-
-func (o *SensorModel) Shutdown() error {
-	if err := o.SensorModel.Shutdown(); err != nil {
-		return errors.Wrap(err, "htu31d.SensorModel.Shutdown")
-	}
-
-	g.Logger.Debugf("htu31d(%d) stopped", o.GetID())
-
-	return nil
-}
-
-func (o *SensorModel) check() {
-	g.Logger.Debugf("htu31d(%d) check", o.GetID())
-
-	// TODO....
-
-	o.GetTimer().Reset()
 }
