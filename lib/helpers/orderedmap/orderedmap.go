@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"slices"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -15,7 +16,8 @@ type KeyType interface {
 
 func New[K KeyType, V any](cap int) *OrderedMap[K, V] {
 	return &OrderedMap[K, V]{
-		m: make(map[K]V, cap),
+		mu: sync.RWMutex{},
+		m:  make(map[K]V, cap),
 	}
 }
 
@@ -25,11 +27,15 @@ type Item[K KeyType, V any] struct {
 }
 
 type OrderedMap[K KeyType, V any] struct {
+	mu    sync.RWMutex
 	m     map[K]V
 	order []K
 }
 
 func (o *OrderedMap[K, V]) Add(k K, v V) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	if _, ok := o.m[k]; ok {
 		return errors.Wrap(errors.Errorf("value with key %v is exists", k), "Add")
 	}
@@ -41,15 +47,24 @@ func (o *OrderedMap[K, V]) Add(k K, v V) error {
 }
 
 func (o *OrderedMap[K, V]) Set(k K, v V) {
-	if _, ok := o.m[k]; !ok {
+	o.mu.RLock()
+	_, ok := o.m[k]
+	o.mu.RUnlock()
+
+	if !ok {
 		_ = o.Add(k, v)
 		return
 	}
 
+	o.mu.Lock()
 	o.m[k] = v
+	o.mu.Unlock()
 }
 
 func (o *OrderedMap[K, V]) Get(k K) (V, error) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	var null V
 
 	v, ok := o.m[k]
@@ -61,6 +76,9 @@ func (o *OrderedMap[K, V]) Get(k K) (V, error) {
 }
 
 func (o *OrderedMap[K, V]) GetKeyValueList() []*Item[K, V] {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	r := make([]*Item[K, V], 0, len(o.m))
 
 	for _, k := range o.order {
@@ -71,6 +89,9 @@ func (o *OrderedMap[K, V]) GetKeyValueList() []*Item[K, V] {
 }
 
 func (o *OrderedMap[K, V]) GetValueList() []V {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	r := make([]V, 0, len(o.m))
 
 	for _, k := range o.order {
@@ -81,6 +102,9 @@ func (o *OrderedMap[K, V]) GetValueList() []V {
 }
 
 func (o *OrderedMap[K, V]) GetUnorderedMap() map[K]V {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	r := make(map[K]V, len(o.m))
 
 	// copy map
@@ -92,10 +116,16 @@ func (o *OrderedMap[K, V]) GetUnorderedMap() map[K]V {
 }
 
 func (o *OrderedMap[K, V]) Len() int {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	return len(o.m)
 }
 
 func (o *OrderedMap[K, V]) Delete(k K) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	delete(o.m, k)
 
 	for i, item := range o.order {
@@ -106,6 +136,9 @@ func (o *OrderedMap[K, V]) Delete(k K) {
 }
 
 func (o *OrderedMap[K, V]) Clear() {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	for k := range o.m {
 		delete(o.m, k)
 	}
@@ -113,6 +146,9 @@ func (o *OrderedMap[K, V]) Clear() {
 }
 
 func (o *OrderedMap[K, V]) MarshalJSON() ([]byte, error) {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+
 	keys := make([]json.RawMessage, 0, len(o.m))
 	values := make([]json.RawMessage, 0, len(o.m))
 

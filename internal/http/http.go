@@ -61,6 +61,10 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	svc("GET", "/info", o.handleGetInfo)
 	svc("GET", "/sensors", o.handleGetSensors)               // получение значение датчиков
 	svc("GET", "/objects/example", create_object.GetExample) // получение примера json'а для создания объекта
+	svc("POST", "/kill", func(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
+		panic("kill by /_/kill endpoint")
+		return 0, 0, nil
+	})
 
 	rawSvc := o.addRawMiddleware("/_", o.authMiddleware)
 	rawSvc("GET", "/log", o.handleGetLog)

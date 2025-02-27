@@ -53,11 +53,8 @@ type Object interface {
 	GetMethods() *Methods
 
 	GetTags() []string
-	ReplaceTags(tags ...string)
 	SetTags(tags ...string)
 	DeleteTags(tags ...string)
-	GetTagsMap() map[string]bool
-	SetTagsMap(map[string]bool)
 
 	GetEnabled() bool
 	SetEnabled(bool)
@@ -73,8 +70,6 @@ type Object interface {
 
 	// Shutdown завершает логику объекта
 	Shutdown() error
-
-	GetStoreObject() *model.StoreObject
 
 	DeleteChildren() error
 
