@@ -217,38 +217,28 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (map[string]interface{}, er
 // @Description Получение объекта по его свойствам
 // @ID GetObjectByProps
 // @Produce json
-// @Param props query string false "Массив свойств объекта" example(address=1, interface=I2C)
+// @Param props query string true "Массив свойств объекта" example(address=1,interface=I2C)
 // @Param parent_id query string false "ID родительского объекта"
 // @Success      200 {object} http.Response[int]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /objects/by_props [get]
 func (o *Server) handleGetObjectByProps(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	propsReq := helpers.GetParam(ctx, "props")
+	props, err := helpers.GetMapParam(ctx, "props")
+	if err != nil {
+		return nil, http.StatusBadRequest, errors.Wrap(err, "param object_id is not valid")
+	}
+
+	if len(props) == 0 {
+		return nil, http.StatusBadRequest, errors.New("param props is empty")
+	}
+
 	parentID, err := helpers.GetIntParam(ctx, "parent_id")
 	if err != nil {
 		return nil, http.StatusBadRequest, errors.Wrap(err, "param object_id is not valid")
 	}
 
-	if propsReq == "" {
-		return nil, http.StatusBadRequest, errors.New("props is empty")
-	}
-
-	propsSlice := strings.Split(propsReq, ",")
-	if len(propsSlice) == 0 {
-		return nil, http.StatusBadRequest, errors.New("props string is bad")
-	}
-
-	propsMap := make(map[string]string, 10)
-	for _, p := range propsSlice {
-		prop := strings.Split(p, "=")
-		if len(prop) < 2 {
-			return nil, http.StatusBadRequest, errors.New("props string is bad")
-		}
-		propsMap[prop[0]] = prop[1]
-	}
-
-	objectID, err := store.I.ObjectRepository().GetObjectIDByProps(propsMap, parentID)
+	objectID, err := store.I.ObjectRepository().GetObjectIDByProps(props, parentID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.Wrap(err, "GetObjectIDByProps")
 	}
@@ -626,7 +616,7 @@ func (o *Server) DeleteObject(objectID int) (interface{}, int, error) {
 // @Description Получение всех тегов
 // @ID GetAllObjectsTags
 // @Produce json
-// @Param related query bool true "Только те тэги, которые привязаны к созданным объектам" default(true)
+// @Param related query bool true "Только те тэги, которые привязаны к созданным объектам" enums(true, false)
 // @Success      200 {object} http.Response[[]string]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]

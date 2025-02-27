@@ -410,28 +410,43 @@ func (o *ObjectRepository) SetEnabled(objectID int, enabled bool) error {
 }
 
 func (o *ObjectRepository) GetObjectIDByProps(props map[string]string, parentID int) (int, error) {
-	var objectID int
+	// select object_id, count(object_id) as count from om_props
+	// where code = 'type' and value = 'i2c' or code = 'number' and value = '0'
+	// group by object_id
+	// having count = 2;
 
-	q := o.store.db.Table("om_props").Select("object_ID")
+	q := `select object_id, count(object_id) as count from om_props where code = 'type' and value = 'i2c' or code = 'number' and value = '0'
+	group by object_id
+	having count = 2;
+`
+
+	q := o.store.db.
+		Model(&model.StoreProp{}).
+		Select("object_id, count(object_id) as cnt")
 
 	for code, value := range props {
-		q = q.Where("code = ?", code)
-		q = q.Where("value = ?", value)
+		q = q.Or(o.store.db.Where("code = ?", code).Where("value = ?", value))
 	}
 
-	if objectID != 0 {
-		q.Where("om_props.object_id = ?", objectID)
-	}
+	q = q.Group("object_id").
+		Having("having cnt = ?", len(props))
 
-	if parentID != 0 {
-		q.InnerJoins("JOIN om_objects ON om_objects.id = om_props.object_id")
-		q.Where("om_objects.parent_id = ?", parentID)
-	}
+	//if parentID != 0 {
+	//	q.InnerJoins("JOIN om_objects ON om_objects.id = om_props.object_id")
+	//	q.Where("om_objects.parent_id = ?", parentID)
+	//}
 
-	err := q.Find(&objectID).Error
-	if err != nil {
+	rows := make([]int, 0, 10)
+	if err := q.Find(&rows).Error; err != nil {
 		return 0, errors.Wrap(err, "GetObjectIDByProps")
 	}
 
-	return objectID, nil
+	switch len(rows) {
+	case 0:
+		return 0, nil
+	case 1:
+		return rows[0], nil
+	default:
+		return 0, errors.Wrap(errors.New("multiple records found"), "GetObjectIDByProps")
+	}
 }

@@ -61,6 +61,46 @@ func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string) (bool, error) {
 	return false, nil
 }
 
+func GetSliceParam(ctx *fasthttp.RequestCtx, paramName string) []string {
+	v := GetParam(ctx, paramName)
+	slice := strings.Split(v, ",")
+
+	items := make([]string, 0, len(slice))
+	for _, item := range slice {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			items = append(items, item)
+		}
+	}
+
+	return items
+}
+
+func GetMapParam(ctx *fasthttp.RequestCtx, paramName string) (map[string]string, error) {
+	s := GetSliceParam(ctx, paramName)
+
+	m := make(map[string]string, len(s))
+	for _, item := range s {
+		kv := strings.Split(item, "=")
+		if len(kv) != 2 {
+			return nil, errors.Wrap(errors.New("bad map param"), "GetMapParam")
+		}
+		for i, item := range kv {
+			kv[i] = strings.TrimSpace(item)
+		}
+
+		k, v := kv[0], kv[1]
+
+		if k == "" {
+			return nil, errors.Wrap(errors.New("bad map param"), "GetMapParam")
+		}
+
+		m[k] = v
+	}
+
+	return m, nil
+}
+
 func GetPathParam(ctx *fasthttp.RequestCtx, paramName string) string {
 	s, _ := ctx.UserValue(paramName).(string)
 	return s
