@@ -218,9 +218,11 @@ func (o *SensorModel) Start() error {
 		return errors.Wrap(err, "SensorModel.Start")
 	}
 
+	// Если update_interval отсутствует (motion, presence etc), не запускаем таймер
 	updateIntervalS, err := o.GetProps().GetStringValue("update_interval")
 	if err != nil {
-		return errors.Wrap(err, "SensorModel.Start")
+		g.Logger.Warn(errors.Wrap(err, "SensorModel.Start"))
+		return nil
 	}
 
 	updateInterval, err := time.ParseDuration(updateIntervalS)
