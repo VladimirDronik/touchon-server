@@ -46,8 +46,8 @@ var modePort = map[string]string{
 }
 
 // Init инициализация объекта
-func (o *PortModel) Init(storeObj *model.StoreObject, childType model.ChildType) error {
-	if err := o.ObjectModelImpl.Init(storeObj, childType); err != nil {
+func (o *PortModel) Init(storeObj *model.StoreObject, withChildren bool) error {
+	if err := o.ObjectModelImpl.Init(storeObj, withChildren); err != nil {
 		return errors.Wrap(err, "PortModel.Init")
 	}
 

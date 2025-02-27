@@ -15,7 +15,7 @@ var ErrObjectDisabled = errors.New("object disabled")
 // Object Абстрактный тип объекта
 type Object interface {
 	// Init заполняет модель данными из БД
-	Init(storeObj *model.StoreObject, childType model.ChildType) error
+	Init(storeObj *model.StoreObject, withChildren bool) error
 	Save() error
 
 	GetID() int

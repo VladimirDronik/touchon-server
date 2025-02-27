@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
@@ -73,7 +72,7 @@ func (o *SensorModel) getValues(timeout time.Duration) (map[SensorValue.Type]flo
 		return nil, errors.Wrap(err, "getValues")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "getValues")
 	}

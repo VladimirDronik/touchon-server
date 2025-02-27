@@ -6,8 +6,8 @@ import (
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/model"
-	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
+	"touchon-server/internal/store/memstore"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/info"
 )
@@ -46,10 +46,10 @@ func (o *Server) handleGetLog(ctx *fasthttp.RequestCtx) {
 }
 
 type SensorValues struct {
-	ID     int                `json:"id"`
-	Type   string             `json:"type"`
-	Values map[string]float32 `json:"values,omitempty"`
-	Error  string             `json:"error,omitempty"`
+	ID     int                    `json:"id"`
+	Type   string                 `json:"type"`
+	Values map[string]interface{} `json:"values,omitempty"`
+	Error  string                 `json:"error,omitempty"`
 }
 
 // Получение значений датчиков
@@ -58,12 +58,13 @@ type SensorValues struct {
 // @Description Получение значений датчиков
 // @ID ServiceSensors
 // @Produce json
+// @Param tags query string false "Тэги"
 // @Success      200 {object} http.Response[[]SensorValues]
 // @Failure      400 {object} http.Response[any]
 // @Failure      500 {object} http.Response[any]
 // @Router /_/sensors [get]
 func (o *Server) handleGetSensors(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	filters := map[string]interface{}{"category": string(model.CategorySensor)}
+	filters := map[string]interface{}{"category": model.CategorySensor}
 	tags := strings.Split(helpers.GetParam(ctx, "tags"), ",")
 
 	tagsMap := make(map[string]bool, len(tags))
@@ -79,7 +80,7 @@ func (o *Server) handleGetSensors(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		tags = append(tags, tag)
 	}
 
-	rows, err := store.I.ObjectRepository().GetObjects(filters, tags, 0, 1000, model.ChildTypeNobody)
+	rows, err := store.I.ObjectRepository().GetObjects(filters, tags, 0, 1000)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -87,48 +88,35 @@ func (o *Server) handleGetSensors(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	r := make([]*SensorValues, 0, len(rows))
 
 	for _, row := range rows {
-		objModel, err := objects.LoadObject(row.ID, "", "", model.ChildTypeInternal)
+		objModel, err := memstore.I.GetObject(row.ID)
 		if err != nil {
 			return nil, http.StatusInternalServerError, err
 		}
 
 		rItem := &SensorValues{
-			ID:     objModel.GetID(),
-			Type:   objModel.GetType(),
-			Values: make(map[string]float32, 5),
+			ID:   objModel.GetID(),
+			Type: objModel.GetType(),
 		}
+		r = append(r, rItem)
 
 		m, err := objModel.GetMethods().Get("check")
 		if err != nil {
 			rItem.Error = err.Error()
-			r = append(r, rItem)
 			continue
 		}
 
 		if _, err = m.Func(nil); err != nil {
-			rItem.Values = nil
 			rItem.Error = err.Error()
-			r = append(r, rItem)
 			continue
 		}
 
-		for _, valueObj := range objModel.GetChildren().GetAll() {
-			if valueObj.GetCategory() != model.CategorySensorValue {
-				continue
-			}
-
-			v, err := valueObj.GetProps().GetFloatValue("value")
-			if err != nil {
-				rItem.Values = nil
-				rItem.Error = err.Error()
-				r = append(r, rItem)
-				break
-			}
-
-			rItem.Values[valueObj.GetType()] = v
+		state, err := objModel.GetState()
+		if err != nil {
+			rItem.Error = err.Error()
+			continue
 		}
 
-		r = append(r, rItem)
+		rItem.Values = state.GetPayload()
 	}
 
 	return r, http.StatusOK, nil

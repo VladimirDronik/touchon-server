@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/relay"
@@ -18,7 +17,7 @@ func (o *RelayModel) On(args map[string]interface{}) ([]interfaces.Message, erro
 		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.On")
 	}
@@ -44,7 +43,7 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]interfaces.Message, err
 		return nil, err
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Off")
 	}
@@ -70,7 +69,7 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
@@ -105,7 +104,7 @@ func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, e
 		return nil, errors.Wrap(err, "RelayModel.Check")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Check")
 	}

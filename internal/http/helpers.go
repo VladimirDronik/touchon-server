@@ -8,7 +8,7 @@ import (
 	"touchon-server/internal/store"
 )
 
-func loadChildren(m map[int]*model.StoreObject, rows []*model.StoreObject, db store.ObjectRepository, age int, childType model.ChildType, withTags bool) error {
+func loadChildren(m map[int]*model.StoreObject, rows []*model.StoreObject, db store.ObjectRepository, age int, withTags bool) error {
 	if len(rows) == 0 || age < 1 {
 		return nil
 	}
@@ -19,7 +19,7 @@ func loadChildren(m map[int]*model.StoreObject, rows []*model.StoreObject, db st
 	}
 
 	// Получаем всех детей
-	children, err := db.GetObjectChildren(childType, ids...)
+	children, err := db.GetObjectChildren(ids...)
 	if err != nil {
 		return errors.Wrap(err, "loadChildren")
 	}
@@ -33,7 +33,7 @@ func loadChildren(m map[int]*model.StoreObject, rows []*model.StoreObject, db st
 	}
 
 	// Пытаемся загрузить следующее поколение детей
-	return loadChildren(m, children, db, age-1, childType, withTags)
+	return loadChildren(m, children, db, age-1, withTags)
 }
 
 func loadParents(m map[int]*model.StoreObject, rows []*model.StoreObject, db store.ObjectRepository) error {

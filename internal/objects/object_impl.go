@@ -247,7 +247,7 @@ func (o *ObjectModelImpl) GetMethods() *Methods {
 	return o.methods
 }
 
-func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.ChildType) error {
+func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, withChildren bool) error {
 	o.SetID(storeObj.ID)
 	o.SetParentID(storeObj.ParentID)
 	o.SetZoneID(storeObj.ZoneID)
@@ -273,18 +273,18 @@ func (o *ObjectModelImpl) Init(storeObj *model.StoreObject, childType model.Chil
 	// Очищаем список детей перед загрузкой из базы
 	o.GetChildren().DeleteAll()
 
-	if childType == model.ChildTypeNobody {
+	if !withChildren {
 		return nil
 	}
 
 	// Загружаем дочерние объекты
-	children, err := store.I.ObjectRepository().GetObjectChildren(childType, storeObj.ID)
+	children, err := store.I.ObjectRepository().GetObjectChildren(storeObj.ID)
 	if err != nil {
 		return errors.Wrapf(err, "ObjectModelImpl.Init (%d)", storeObj.ID)
 	}
 
 	for _, childStoreObj := range children {
-		childObjModel, err := LoadObject(childStoreObj.ID, "", "", childType)
+		childObjModel, err := LoadObject(childStoreObj.ID, "", "", withChildren)
 		if err != nil {
 			return errors.Wrapf(err, "ObjectModelImpl.Init (%d)", storeObj.ID)
 		}

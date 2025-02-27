@@ -32,7 +32,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	objModel, err := objects.LoadObject(req.ID, "", "", model.ChildTypeAll)
+	objModel, err := objects.LoadObject(req.ID, "", "", true)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
-	"touchon-server/internal/model"
 	"touchon-server/internal/object/PortMegaD"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
@@ -72,7 +71,7 @@ func (o *Server) handleGetMegaD(ctx *fasthttp.RequestCtx) (interface{}, int, err
 			return nil, http.StatusInternalServerError, err
 		}
 
-		obj, err := objects.LoadPort(objectID, model.ChildTypeNobody)
+		obj, err := objects.LoadPort(objectID, false)
 		if err != nil {
 			return nil, http.StatusInternalServerError, err
 		}

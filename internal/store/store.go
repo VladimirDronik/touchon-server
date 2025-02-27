@@ -62,11 +62,11 @@ type ObjectRepository interface {
 	SaveObject(object *model.StoreObject) error  // create, update
 	GetObjects(filters map[string]interface{}, tags []string, offset, limit int) ([]*model.StoreObject, error)
 	GetObjectsByAddress(address []string) ([]*model.StoreObject, error) // Выводит объекты, у которых адрес совпадает с искомым
-	GetTotal(filters map[string]interface{}, tags []string, objectType model.ChildType) (int, error)
-	GetObjectsByTags(tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
-	GetTotalByTags(tags []string, objectType model.ChildType) (int, error)
+	GetTotal(filters map[string]interface{}, tags []string) (int, error)
+	GetObjectsByTags(tags []string, offset, limit int) ([]*model.StoreObject, error)
+	GetTotalByTags(tags []string) (int, error)
 	GetObjectsByIDs(ids []int) ([]*model.StoreObject, error)
-	GetObjectChildren(childType model.ChildType, objectID ...int) ([]*model.StoreObject, error)
+	GetObjectChildren(objectID ...int) ([]*model.StoreObject, error)
 	DelObject(objectID int) error
 	GetAllTags() (map[string]int, error)
 	SetEnabled(objectID int, enabled bool) error

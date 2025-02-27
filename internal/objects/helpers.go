@@ -11,7 +11,7 @@ import (
 )
 
 // LoadObject создает модель объекта и заполняет его данными из БД
-func LoadObject(objectID int, objCat model.Category, objType string, childType model.ChildType) (Object, error) {
+func LoadObject(objectID int, objCat model.Category, objType string, withChildren bool) (Object, error) {
 	// Если создаем новый объект, то создаем модель и возвращаем ее сразу
 	if objectID <= 0 {
 		objModel, err := GetObjectModel(objCat, objType)
@@ -33,15 +33,15 @@ func LoadObject(objectID int, objCat model.Category, objType string, childType m
 		return nil, errors.Wrap(err, "LoadObject")
 	}
 
-	if err := objModel.Init(storeObj, childType); err != nil {
+	if err := objModel.Init(storeObj, withChildren); err != nil {
 		return nil, errors.Wrap(err, "LoadObject")
 	}
 
 	return objModel, nil
 }
 
-func LoadPort(objectID int, childType model.ChildType) (interfaces.Port, error) {
-	portObj, err := LoadObject(objectID, model.CategoryPort, "port_mega_d", childType)
+func LoadPort(objectID int, withChildren bool) (interfaces.Port, error) {
+	portObj, err := LoadObject(objectID, model.CategoryPort, "port_mega_d", withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "LoadPort")
 	}
@@ -195,7 +195,7 @@ func ConfigureDevice(interfaceConnection string, addressObject string, options m
 	//Конфигурим порт контроллера
 	for k, p := range port {
 		if p != 0 {
-			portObj, err := LoadPort(p, model.ChildTypeNobody)
+			portObj, err := LoadPort(p, false)
 			if err != nil {
 				return errors.Wrap(err, "getValues")
 			}

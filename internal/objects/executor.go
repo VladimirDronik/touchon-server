@@ -51,7 +51,7 @@ func NewExecutor() scripts.ObjectMethodExecutor {
 // getObjects возвращает либо один объект по его ID, либо список объектов по категории и типу
 func getObjects(objectID int, objCat model.Category, objType string) ([]Object, error) {
 	if objectID > 0 {
-		objModel, err := LoadObject(objectID, objCat, objType, model.ChildTypeNobody)
+		objModel, err := LoadObject(objectID, objCat, objType, false)
 		if err != nil {
 			return nil, errors.Wrap(err, "getObjects")
 		}
@@ -64,14 +64,14 @@ func getObjects(objectID int, objCat model.Category, objType string) ([]Object, 
 		"type":     objType,
 	}
 
-	objects, err := store.I.ObjectRepository().GetObjects(filters, nil, 0, 1000, model.ChildTypeNobody)
+	objects, err := store.I.ObjectRepository().GetObjects(filters, nil, 0, 1000)
 	if err != nil {
 		return nil, errors.Wrap(err, "getObjects")
 	}
 
 	objModels := make([]Object, 0, len(objects))
 	for _, obj := range objects {
-		objModel, err := LoadObject(obj.ID, "", "", model.ChildTypeNobody)
+		objModel, err := LoadObject(obj.ID, "", "", false)
 		if err != nil {
 			return nil, errors.Wrap(err, "getObjects")
 		}

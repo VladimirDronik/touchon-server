@@ -48,7 +48,7 @@ func (o *Server) handleGetControllerPorts(ctx *fasthttp.RequestCtx) (interface{}
 	typePort := helpers.GetParam(ctx, "type")
 	groupPort := strings.Split(strings.TrimSpace(helpers.GetParam(ctx, "group")), ",")
 
-	children, err := store.I.ObjectRepository().GetObjectChildren(model.ChildTypeAll, objectID)
+	children, err := store.I.ObjectRepository().GetObjectChildren(objectID)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}

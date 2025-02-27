@@ -258,7 +258,7 @@ func (o *ObjectRepository) GetObjects(filters map[string]interface{}, tags []str
 }
 
 // GetTotal получение общего кол-ва объектов с учетом фильтров
-func (o *ObjectRepository) GetTotal(filters map[string]interface{}, tags []string, objectType model.ChildType) (int, error) {
+func (o *ObjectRepository) GetTotal(filters map[string]interface{}, tags []string) (int, error) {
 	q, err := o.prepareQuery(filters, tags)
 	if err != nil {
 		return 0, errors.Wrap(err, "GetTotal")
@@ -273,7 +273,7 @@ func (o *ObjectRepository) GetTotal(filters map[string]interface{}, tags []strin
 }
 
 // GetObjectsByTags получение объектов по тегам
-func (o *ObjectRepository) GetObjectsByTags(tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error) {
+func (o *ObjectRepository) GetObjectsByTags(tags []string, offset, limit int) ([]*model.StoreObject, error) {
 	q := o.store.db.Model(&model.StoreObject{}).Offset(offset).Limit(limit)
 
 	for _, tag := range tags {
@@ -289,7 +289,7 @@ func (o *ObjectRepository) GetObjectsByTags(tags []string, offset, limit int, ob
 }
 
 // GetTotalByTags получение общего кол-ва объектов по тегам
-func (o *ObjectRepository) GetTotalByTags(tags []string, objectType model.ChildType) (int, error) {
+func (o *ObjectRepository) GetTotalByTags(tags []string) (int, error) {
 	q := o.store.db.Model(&model.StoreObject{})
 
 	for _, tag := range tags {
@@ -316,7 +316,7 @@ func (o *ObjectRepository) GetObjectsByIDs(ids []int) ([]*model.StoreObject, err
 }
 
 // GetObjectChildren получение дочерних объектов
-func (o *ObjectRepository) GetObjectChildren(childType model.ChildType, objectIDs ...int) ([]*model.StoreObject, error) {
+func (o *ObjectRepository) GetObjectChildren(objectIDs ...int) ([]*model.StoreObject, error) {
 	rows := make([]*model.StoreObject, 0)
 
 	q := o.store.db.Where("parent_id in ?", objectIDs)
