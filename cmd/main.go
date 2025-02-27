@@ -9,6 +9,8 @@
 
 package main
 
+//go:generate find ../internal -name '*_mock.go' -delete
+//go:generate find ../lib -name '*_mock.go' -delete
 //go:generate go tool swag init --dir=../cmd,../internal,../lib --output=../docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 //go:generate go tool mockery --dir=../internal --all --inpackage --inpackage-suffix --with-expecter
 //go:generate go tool mockery --dir=../lib --all --inpackage --inpackage-suffix --with-expecter

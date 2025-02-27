@@ -3,6 +3,7 @@ package sqlstore
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -410,35 +411,36 @@ func (o *ObjectRepository) SetEnabled(objectID int, enabled bool) error {
 }
 
 func (o *ObjectRepository) GetObjectIDByProps(props map[string]string, parentID int) (int, error) {
-	// select object_id, count(object_id) as count from om_props
-	// where code = 'type' and value = 'i2c' or code = 'number' and value = '0'
-	// group by object_id
-	// having count = 2;
-
-	q := `select object_id, count(object_id) as count from om_props where code = 'type' and value = 'i2c' or code = 'number' and value = '0'
-	group by object_id
-	having count = 2;
-`
-
-	q := o.store.db.
-		Model(&model.StoreProp{}).
-		Select("object_id, count(object_id) as cnt")
+	args := make([]interface{}, 0, len(props)*2)
+	qq := make([]string, 0, len(props))
 
 	for code, value := range props {
-		q = q.Or(o.store.db.Where("code = ?", code).Where("value = ?", value))
+		qq = append(qq, `code = ? and value = ?`)
+		args = append(args, code, value)
 	}
+	args = append(args, len(props))
 
-	q = q.Group("object_id").
-		Having("having cnt = ?", len(props))
-
-	//if parentID != 0 {
-	//	q.InnerJoins("JOIN om_objects ON om_objects.id = om_props.object_id")
-	//	q.Where("om_objects.parent_id = ?", parentID)
-	//}
+	q := `select object_id from om_props where ` + strings.Join(qq, " or ") + ` group by object_id having count(object_id) = ?;`
 
 	rows := make([]int, 0, 10)
-	if err := q.Find(&rows).Error; err != nil {
-		return 0, errors.Wrap(err, "GetObjectIDByProps")
+
+	r := o.store.db.Raw(q, args...).Scan(&rows)
+	if r.Error != nil {
+		return 0, errors.Wrap(r.Error, "GetObjectIDByProps")
+	}
+
+	if parentID != 0 {
+		err := o.store.db.
+			Model(&model.StoreObject{}).
+			Select("id").
+			Where("id in ?", rows).
+			Where("parent_id = ?", parentID).
+			Find(&rows).
+			Error
+
+		if err != nil {
+			return 0, errors.Wrap(r.Error, "GetObjectIDByProps")
+		}
 	}
 
 	switch len(rows) {
@@ -447,6 +449,6 @@ func (o *ObjectRepository) GetObjectIDByProps(props map[string]string, parentID 
 	case 1:
 		return rows[0], nil
 	default:
-		return 0, errors.Wrap(errors.New("multiple records found"), "GetObjectIDByProps")
+		return 0, errors.Wrap(errors.Errorf("multiple records found (%d)", len(rows)), "GetObjectIDByProps")
 	}
 }
