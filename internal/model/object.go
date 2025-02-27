@@ -16,6 +16,11 @@ const (
 	StatusOff         ObjectStatus = "OFF"
 )
 
+type Method struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+}
+
 // StoreObject Объект
 type StoreObject struct {
 	ID       int             `json:"id"`                                    // ID объекта
@@ -27,47 +32,13 @@ type StoreObject struct {
 	Status   ObjectStatus    `json:"status,omitempty"`                      // Состояние объекта
 	Tags     map[string]bool `json:"tags,omitempty" gorm:"serializer:json"` //
 	Enabled  bool            `json:"enabled"`                               // Включает методы Start/Shutdown
-	Methods  []Method        `gorm:"-"`
+	Methods  []Method        `json:"methods,omitempty" gorm:"-"`            //
 
 	Children []*StoreObject `json:"children,omitempty" gorm:"-"` // Дочерние объекты
 }
 
-type Method struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-}
-
-type JsonObject struct {
-	ID       int          `json:"id"`                  // ID объекта
-	ParentID *int         `json:"parent_id,omitempty"` // ID родительского объекта
-	ZoneID   *int         `json:"zone_id,omitempty"`   // ID зоны, в которой размещен объект
-	Category Category     `json:"category"`            // Категория объекта
-	Type     string       `json:"type"`                // Тип объекта
-	Name     string       `json:"name"`                // Название объекта
-	Status   ObjectStatus `json:"status,omitempty"`    // Состояние объекта
-	Tags     []string     `json:"tags"`                //
-	Enabled  bool         `json:"enabled"`             // Включает методы Start/Shutdown
-	Methods  []Method     `json:"methods,omitempty"`
-
-	Children []*JsonObject `json:"children,omitempty" gorm:"-"` // Дочерние объекты
-}
-
-func (o *StoreObject) MarshalJSON() ([]byte, error) {
-	return json.Marshal(StoreObjectToJsonObject(o))
-}
-
-func StoreObjectToJsonObject(o *StoreObject) *JsonObject {
-	r := &JsonObject{
-		ID:       o.ID,
-		ParentID: o.ParentID,
-		ZoneID:   o.ZoneID,
-		Category: o.Category,
-		Type:     o.Type,
-		Name:     o.Name,
-		Status:   o.Status,
-		Enabled:  o.Enabled,
-		Methods:  o.Methods,
-	}
+func (o *StoreObject) toJsonObject() *JsonObject {
+	r := &JsonObject{StoreObject: o}
 
 	for tag := range o.Tags {
 		r.Tags = append(r.Tags, tag)
@@ -76,10 +47,21 @@ func StoreObjectToJsonObject(o *StoreObject) *JsonObject {
 	sort.Strings(r.Tags)
 
 	for _, child := range o.Children {
-		r.Children = append(r.Children, StoreObjectToJsonObject(child))
+		r.Children = append(r.Children, child.toJsonObject())
 	}
 
 	return r
+}
+
+type JsonObject struct {
+	*StoreObject
+	Tags []string `json:"tags"` //
+
+	Children []*JsonObject `json:"children,omitempty" gorm:"-"` // Дочерние объекты
+}
+
+func (o *StoreObject) MarshalJSON() ([]byte, error) {
+	return json.Marshal(o.toJsonObject())
 }
 
 func (o *StoreObject) TableName() string {

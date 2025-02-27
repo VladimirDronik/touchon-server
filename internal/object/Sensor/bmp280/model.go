@@ -16,8 +16,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bmp280.MakeModel")
 	}
@@ -27,24 +27,28 @@ func MakeModel() (objects.Object, error) {
 
 	obj.SetType("bmp280")
 	obj.SetName("BMP280 Датчик температуры и влажности")
-	obj.SetTags("bmp280", string(SensorValue.TypeTemperature), string(SensorValue.TypeHumidity))
+	obj.SetTags("bmp280", SensorValue.TypeTemperature, SensorValue.TypeHumidity)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	if err := obj.GetProps().Set("interface", "I2C"); err != nil {
 		return nil, errors.Wrap(err, "bmp280.MakeModel")
 	}
 
-	temp, err := SensorValue.Make(SensorValue.TypeTemperature)
+	if !withChildren {
+		return obj, nil
+	}
+
+	temp, err := SensorValue.Make(SensorValue.TypeTemperature, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bmp280.MakeModel")
 	}
 
-	hum, err := SensorValue.Make(SensorValue.TypeHumidity)
+	hum, err := SensorValue.Make(SensorValue.TypeHumidity, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bmp280.MakeModel")
 	}
 
 	obj.GetChildren().Add(temp, hum)
-	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }

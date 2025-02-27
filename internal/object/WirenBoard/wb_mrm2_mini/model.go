@@ -19,8 +19,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := ModbusDevice.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := ModbusDevice.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
 	}

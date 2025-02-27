@@ -109,7 +109,7 @@ func (o *Server) handleGetObjectModel(ctx *fasthttp.RequestCtx) (interface{}, in
 		return nil, http.StatusBadRequest, errors.New("type is empty")
 	}
 
-	obj, err := objects.GetObjectModel(model.Category(objCat), objType)
+	obj, err := objects.GetObjectModel(objCat, objType, true)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
@@ -340,7 +340,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	// Подготавливаем список
 	for _, row := range rows {
 		if withMethods { // если опция показа методов включена
-			obj, err := objects.GetObjectModel(row.Category, row.Type)
+			obj, err := memStore.I.GetObject(row.ID)
 			if err != nil {
 				return nil, http.StatusBadRequest, err
 			}

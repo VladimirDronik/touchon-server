@@ -9,8 +9,8 @@ func init() {
 	// Регистрируем все значения датчиков
 	for t := range Names {
 		f := func(t Type) objects.ObjectMaker {
-			return func() (objects.Object, error) {
-				return Make(t)
+			return func(withChildren bool) (objects.Object, error) {
+				return Make(t, withChildren)
 			}
 		}
 		_ = objects.Register(f(t))
@@ -43,13 +43,13 @@ var Names = map[Type]string{
 	TypePresence:     "Присутствие",
 }
 
-func Make(valueType Type) (objects.Object, error) {
+func Make(valueType Type, withChildren bool) (objects.Object, error) {
 	name, ok := Names[valueType]
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("unknown value type %q", valueType), "SensorValue.Make")
 	}
 
-	obj, err := MakeModel()
+	obj, err := MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "SensorValue.Make")
 	}

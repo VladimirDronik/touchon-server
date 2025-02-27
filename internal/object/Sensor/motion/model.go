@@ -20,8 +20,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "motion.MakeModel")
 	}
@@ -72,7 +72,29 @@ func MakeModel() (objects.Object, error) {
 		return nil, errors.Wrap(err, "motion.MakeModel")
 	}
 
-	m, err := SensorValue.Make(SensorValue.TypeMotion)
+	// Удаляем лишние события
+	obj.GetEvents().Delete("object.sensor.on_check", "object.sensor.on_alarm")
+
+	// Добавляем свои события
+	onMotionOn, err := sensor.NewOnMotionOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
+	}
+
+	onMotionOff, err := sensor.NewOnMotionOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onMotionOn, onMotionOff); err != nil {
+		return nil, errors.Wrap(err, "motion.MakeModel")
+	}
+
+	if !withChildren {
+		return obj, nil
+	}
+
+	m, err := SensorValue.Make(SensorValue.TypeMotion, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "motion.MakeModel")
 	}
@@ -98,24 +120,6 @@ func MakeModel() (objects.Object, error) {
 	m.GetChildren().DeleteAll()
 
 	obj.GetChildren().Add(m)
-
-	// Удаляем лишние события
-	obj.GetEvents().Delete("object.sensor.on_check", "object.sensor.on_alarm")
-
-	// Добавляем свои события
-	onMotionOn, err := sensor.NewOnMotionOn(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "motion.MakeModel")
-	}
-
-	onMotionOff, err := sensor.NewOnMotionOff(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "motion.MakeModel")
-	}
-
-	if err := obj.GetEvents().Add(onMotionOn, onMotionOff); err != nil {
-		return nil, errors.Wrap(err, "motion.MakeModel")
-	}
 
 	return obj, nil
 }

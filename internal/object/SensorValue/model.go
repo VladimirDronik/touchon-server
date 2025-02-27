@@ -14,7 +14,7 @@ var (
 	ErrSensorErrorValue = errors.New("error-sensor")
 )
 
-func MakeModel() (objects.Object, error) {
+func MakeModel(withChildren bool) (objects.Object, error) {
 	props := []*objects.Prop{
 		{
 			Code:        "value",
@@ -131,7 +131,13 @@ func MakeModel() (objects.Object, error) {
 		return nil, errors.Wrap(err, "SensorValue.MakeModel")
 	}
 
-	reg, err := regulator.MakeModel()
+	obj := &SensorValueModel{ObjectModelImpl: impl}
+
+	if !withChildren {
+		return obj, nil
+	}
+
+	reg, err := regulator.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "SensorValue.MakeModel")
 	}
@@ -149,7 +155,7 @@ func MakeModel() (objects.Object, error) {
 
 	impl.GetChildren().Add(reg)
 
-	return &SensorValueModel{ObjectModelImpl: impl}, nil
+	return obj, nil
 }
 
 type SensorValueModel struct {

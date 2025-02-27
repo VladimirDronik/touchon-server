@@ -15,8 +15,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bh1750.MakeModel")
 	}
@@ -26,19 +26,23 @@ func MakeModel() (objects.Object, error) {
 
 	obj.SetType("bh1750")
 	obj.SetName("BH1750 Датчик интенсивности света")
-	obj.SetTags("bh1750", string(SensorValue.TypeIllumination))
+	obj.SetTags("bh1750", SensorValue.TypeIllumination)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	if err := obj.GetProps().Set("interface", "I2C"); err != nil {
 		return nil, errors.Wrap(err, "bh1750.MakeModel")
 	}
 
-	illum, err := SensorValue.Make(SensorValue.TypeIllumination)
+	if !withChildren {
+		return obj, nil
+	}
+
+	illum, err := SensorValue.Make(SensorValue.TypeIllumination, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bh1750.MakeModel")
 	}
 
 	obj.GetChildren().Add(illum)
-	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }

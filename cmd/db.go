@@ -16,7 +16,7 @@ func prepareDB() error {
 }
 
 func createServerObject() error {
-	count, err := store.I.ObjectRepository().GetTotal(map[string]interface{}{"category": model.CategoryServer, "type": "server"}, nil, model.ChildTypeNobody)
+	count, err := store.I.ObjectRepository().GetTotal(map[string]interface{}{"category": model.CategoryServer, "type": "server"}, nil)
 	if err != nil {
 		return errors.Wrap(err, "createServerObject")
 	}
@@ -43,7 +43,7 @@ func createServerObject() error {
 }
 
 func createObject(objCat model.Category, objType string, parentID *int, enabled bool) (int, error) {
-	objModel, err := objects.LoadObject(0, objCat, objType, model.ChildTypeAll)
+	objModel, err := objects.LoadObject(0, objCat, objType, true)
 	if err != nil {
 		return 0, errors.Wrap(err, "createObject")
 	}

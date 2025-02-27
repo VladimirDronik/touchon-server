@@ -15,8 +15,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "ds18b20.MakeModel")
 	}
@@ -26,7 +26,8 @@ func MakeModel() (objects.Object, error) {
 
 	obj.SetType("ds18b20")
 	obj.SetName("DS18B20 Датчик температуры")
-	obj.SetTags("ds18b20", string(SensorValue.TypeTemperature))
+	obj.SetTags("ds18b20", SensorValue.TypeTemperature)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	iface, err := obj.GetProps().Get("interface")
 	if err != nil {
@@ -39,13 +40,16 @@ func MakeModel() (objects.Object, error) {
 		return nil, errors.Wrap(err, "ds18b20.MakeModel")
 	}
 
-	temp, err := SensorValue.Make(SensorValue.TypeTemperature)
+	if !withChildren {
+		return obj, nil
+	}
+
+	temp, err := SensorValue.Make(SensorValue.TypeTemperature, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "ds18b20.MakeModel")
 	}
 
 	obj.GetChildren().Add(temp)
-	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }

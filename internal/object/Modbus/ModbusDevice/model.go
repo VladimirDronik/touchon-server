@@ -17,7 +17,7 @@ type ModbusDevice interface {
 	GetDefaultTries() int
 }
 
-func MakeModel() (objects.Object, error) {
+func MakeModel(withChildren bool) (objects.Object, error) {
 	props := []*objects.Prop{
 		{
 			Code:        "address",

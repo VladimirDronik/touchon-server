@@ -78,7 +78,7 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
+func MakeModel(withChildren bool) (objects.Object, error) {
 	props := []*objects.Prop{
 		{
 			Code:        "connection_string",

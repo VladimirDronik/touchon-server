@@ -14,7 +14,7 @@ func init() {
 }
 
 func setUp(t *testing.T) (*ModbusImpl, *MockClient) {
-	o, err := MakeModel()
+	o, err := MakeModel(true)
 	require.NotNil(t, o)
 	require.NoError(t, err)
 

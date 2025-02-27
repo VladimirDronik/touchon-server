@@ -67,13 +67,13 @@ func isProp(propCode string) bool {
 	return propsMap[propCode]
 }
 
-func MakeModel(gwModelCode string) (objects.Object, error) {
+func MakeModel(gwModelCode string, withChildren bool) (objects.Object, error) {
 	gw, ok := gateways[gwModelCode]
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("unknown gw model %q", gwModelCode), "ModbusGW.MakeModel")
 	}
 
-	baseObj, err := ModbusDevice.MakeModel()
+	baseObj, err := ModbusDevice.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
 	}

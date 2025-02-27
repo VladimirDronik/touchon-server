@@ -14,8 +14,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "cs.MakeModel")
 	}
@@ -25,19 +25,23 @@ func MakeModel() (objects.Object, error) {
 
 	obj.SetType("cs")
 	obj.SetName("CS Датчик тока")
-	obj.SetTags("cs", string(SensorValue.TypeCurrent))
+	obj.SetTags("cs", SensorValue.TypeCurrent)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	if err := obj.GetProps().Set("interface", "ADC"); err != nil {
 		return nil, errors.Wrap(err, "cs.MakeModel")
 	}
 
-	cur, err := SensorValue.Make(SensorValue.TypeCurrent)
+	if !withChildren {
+		return obj, nil
+	}
+
+	cur, err := SensorValue.Make(SensorValue.TypeCurrent, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "cs.MakeModel")
 	}
 
 	obj.GetChildren().Add(cur)
-	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }

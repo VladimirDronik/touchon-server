@@ -14,7 +14,7 @@ import (
 func LoadObject(objectID int, objCat model.Category, objType string, withChildren bool) (Object, error) {
 	// Если создаем новый объект, то создаем модель и возвращаем ее сразу
 	if objectID <= 0 {
-		objModel, err := GetObjectModel(objCat, objType)
+		objModel, err := GetObjectModel(objCat, objType, withChildren)
 		if err != nil {
 			return nil, errors.Wrap(err, "LoadObject")
 		}
@@ -28,7 +28,7 @@ func LoadObject(objectID int, objCat model.Category, objType string, withChildre
 		return nil, errors.Wrap(err, "LoadObject")
 	}
 
-	objModel, err := GetObjectModel(storeObj.Category, storeObj.Type)
+	objModel, err := GetObjectModel(storeObj.Category, storeObj.Type, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "LoadObject")
 	}

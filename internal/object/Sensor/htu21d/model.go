@@ -15,8 +15,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "htu21d.MakeModel")
 	}
@@ -26,24 +26,28 @@ func MakeModel() (objects.Object, error) {
 
 	obj.SetType("htu21d")
 	obj.SetName("HTU21D Датчик температуры и влажности")
-	obj.SetTags("htu21d", string(SensorValue.TypeTemperature), string(SensorValue.TypeHumidity))
+	obj.SetTags("htu21d", SensorValue.TypeTemperature, SensorValue.TypeHumidity)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	if err := obj.GetProps().Set("interface", "I2C"); err != nil {
 		return nil, errors.Wrap(err, "htu21d.MakeModel")
 	}
 
-	temp, err := SensorValue.Make(SensorValue.TypeTemperature)
+	if !withChildren {
+		return obj, nil
+	}
+
+	temp, err := SensorValue.Make(SensorValue.TypeTemperature, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "htu21d.MakeModel")
 	}
 
-	hum, err := SensorValue.Make(SensorValue.TypeHumidity)
+	hum, err := SensorValue.Make(SensorValue.TypeHumidity, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "htu21d.MakeModel")
 	}
 
 	obj.GetChildren().Add(temp, hum)
-	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }

@@ -71,7 +71,7 @@ func getProps(gwModelCode string) ([]*Prop, error) {
 }
 
 func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockModbusDevice, *store.MockStore, *interfaces.MockMessagesService, *objects.Props) {
-	obj, err := MakeModel(gwModelCode)
+	obj, err := MakeModel(gwModelCode, true)
 	require.NotNil(t, obj)
 	require.NoError(t, err)
 
