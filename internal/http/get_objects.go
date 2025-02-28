@@ -144,7 +144,7 @@ func filterObjects(params *GetObjectsParams) ([]objects.Object, error) {
 
 type GetObjectsResponse struct {
 	Total int                       `json:"total"`
-	List  []*GetObjectsResponseItem `json:"list"`
+	List  []*GetObjectsResponseItem `json:"list,omitempty"`
 }
 
 // Получение списка объектов
@@ -186,7 +186,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 
 	total := len(items)
 
-	if params.Offset > len(items) {
+	if params.Offset >= len(items) {
 		return GetObjectsResponse{Total: total}, http.StatusOK, nil
 	}
 	items = items[params.Offset:]
