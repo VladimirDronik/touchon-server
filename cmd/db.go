@@ -38,12 +38,12 @@ func createServerObject() error {
 
 	serverID := server.GetID()
 
-	bus0, err := createObject(model.CategoryModbus, "modbus", &serverID, true)
+	bus0, err := createObject(model.CategoryRS485, "bus", &serverID, true)
 	if err != nil {
 		return errors.Wrap(err, "createServerObject")
 	}
 
-	bus1, err := createObject(model.CategoryModbus, "modbus", &serverID, true)
+	bus1, err := createObject(model.CategoryRS485, "bus", &serverID, true)
 	if err != nil {
 		return errors.Wrap(err, "createServerObject")
 	}

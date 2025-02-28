@@ -297,7 +297,7 @@ func (o *Server) handleGetAllObjectsTags(ctx *fasthttp.RequestCtx) (interface{},
 		return nil, http.StatusBadRequest, err
 	}
 
-	if related == false {
+	if !related {
 		var tags = make(map[string]int)
 		catAndTypes := objects.GetCategoriesAndTypes()
 		for objCat, _ := range catAndTypes {

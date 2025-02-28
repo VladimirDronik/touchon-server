@@ -7,13 +7,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/simonvetter/modbus"
 	"touchon-server/internal/g"
-	"touchon-server/internal/object/Modbus"
+	"touchon-server/internal/object/RS485"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/object/onokom/gateway"
 	"touchon-server/lib/interfaces"
 )
 
-var doActionErr = errors.Errorf("ModbusDeviceImpl.DoAction returned bad value")
+var doActionErr = errors.Errorf("RS485DeviceImpl.DoAction returned bad value")
 
 // Check возвращает значения всех свойств устройства
 func (o *GatewayModel) Check(map[string]interface{}) ([]interfaces.Message, error) {
@@ -55,7 +55,7 @@ func (o *GatewayModel) check() {
 	maxCoilAddr := o.settings.getMaxCoilAddress()
 	maxHoldAddr := o.settings.getMaxHoldAddress()
 
-	action := func(client Modbus.Client) (interface{}, error) {
+	action := func(client RS485.Client) (interface{}, error) {
 		r := &checkDoActionResult{}
 		var err error
 
@@ -198,7 +198,7 @@ func (o *GatewayModel) check() {
 		}
 	}
 
-	if err := o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
+	if err := o.RS485Device.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, RS485.QueueMinPriority); err != nil {
 		g.Logger.Error(errors.Wrap(err, "ModbusGW.GatewayModel.check"))
 		return
 	}
@@ -374,7 +374,7 @@ func (o *GatewayModel) SetTargetTemperature(args map[string]interface{}) ([]inte
 		return nil, errors.Wrap(errors.Errorf("value is not int/float64: %T", v), "SetTargetTemperature")
 	}
 
-	action := func(client Modbus.Client) (interface{}, error) {
+	action := func(client RS485.Client) (interface{}, error) {
 		// Выставляем состояние устройства
 		return nil, client.WriteRegister(0x0005, uint16(t*100))
 	}
@@ -410,7 +410,7 @@ func (o *GatewayModel) SetTargetTemperature(args map[string]interface{}) ([]inte
 		}
 	}
 
-	if err := o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
+	if err := o.RS485Device.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, RS485.QueueMinPriority); err != nil {
 		return nil, errors.Wrap(err, "SetTargetTemperature")
 	}
 
@@ -441,7 +441,7 @@ func (o *GatewayModel) setCoilWrapper(propCode string, status bool, errFuncName 
 		return nil, errors.Wrap(errors.Wrap(errors.Errorf("шлюз %s не поддерживает свойство %s", o.modelCode, propCode), "setCoilWrapper"), errFuncName)
 	}
 
-	action := func(client Modbus.Client) (interface{}, error) {
+	action := func(client RS485.Client) (interface{}, error) {
 		// Выставляем состояние устройства
 		return nil, client.WriteCoil(reg.Address, status)
 	}
@@ -477,7 +477,7 @@ func (o *GatewayModel) setCoilWrapper(propCode string, status bool, errFuncName 
 		}
 	}
 
-	if err := o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
+	if err := o.RS485Device.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, RS485.QueueMinPriority); err != nil {
 		return nil, errors.Wrap(errors.Wrap(err, "setCoilWrapper"), errFuncName)
 	}
 
@@ -504,7 +504,7 @@ func (o *GatewayModel) setHoldingEnumValue(propCode string, value interface{}, e
 		return nil, errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName)
 	}
 
-	action := func(client Modbus.Client) (interface{}, error) {
+	action := func(client RS485.Client) (interface{}, error) {
 		return nil, client.WriteRegister(reg.Address, uint16(i))
 	}
 
@@ -539,7 +539,7 @@ func (o *GatewayModel) setHoldingEnumValue(propCode string, value interface{}, e
 		}
 	}
 
-	if err := o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
+	if err := o.RS485Device.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, RS485.QueueMinPriority); err != nil {
 		return nil, errors.Wrap(errors.Wrap(err, "setHoldingEnumValue"), errFuncName)
 	}
 

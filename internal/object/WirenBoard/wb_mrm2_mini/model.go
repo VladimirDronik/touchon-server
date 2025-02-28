@@ -5,8 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/g"
-	"touchon-server/internal/object/Modbus"
-	"touchon-server/internal/object/Modbus/ModbusDevice"
+	"touchon-server/internal/model"
+	"touchon-server/internal/object/RS485"
+	"touchon-server/internal/object/RS485Device"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
 	"touchon-server/lib/events/object/wiren_board/wb_mrm2_mini"
@@ -20,7 +21,7 @@ func init() {
 }
 
 func MakeModel(withChildren bool) (objects.Object, error) {
-	baseObj, err := ModbusDevice.MakeModel(withChildren)
+	baseObj, err := RS485Device.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.MakeModel")
 	}
@@ -33,8 +34,9 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 		},
 	}
 
-	obj.ModbusDevice = baseObj.(*ModbusDevice.ModbusDeviceImpl)
+	obj.RS485Device = baseObj.(*RS485Device.RS485DeviceImpl)
 
+	obj.SetCategory(model.CategoryModbus)
 	obj.SetType("wb_mrm2_mini")
 	obj.SetName("WB-MRM2-mini Двухканальный модуль реле")
 	obj.SetTags("wb_mrm2_mini")
@@ -103,14 +105,14 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 }
 
 type DeviceModel struct {
-	ModbusDevice.ModbusDevice
+	RS485Device.RS485Device
 	outputCount   int
 	coilAddresses map[int]uint16
 	unitID        int
 }
 
 func (o *DeviceModel) Start() error {
-	if err := o.ModbusDevice.Start(); err != nil {
+	if err := o.RS485Device.Start(); err != nil {
 		return errors.Wrap(err, "wb_mrm2_mini.DeviceModel.Start")
 	}
 
@@ -124,7 +126,7 @@ func (o *DeviceModel) Start() error {
 }
 
 func (o *DeviceModel) Shutdown() error {
-	if err := o.ModbusDevice.Shutdown(); err != nil {
+	if err := o.RS485Device.Shutdown(); err != nil {
 		return errors.Wrap(err, "wb_mrm2_mini.DeviceModel.Shutdown")
 	}
 
@@ -132,7 +134,7 @@ func (o *DeviceModel) Shutdown() error {
 }
 
 func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]interfaces.Message, error) {
-	action := func(client Modbus.Client) (interface{}, error) {
+	action := func(client RS485.Client) (interface{}, error) {
 		return client.ReadCoils(0x0000, uint16(o.outputCount))
 	}
 
@@ -164,7 +166,7 @@ func (o *DeviceModel) GetOutputsState(map[string]interface{}) ([]interfaces.Mess
 		}
 	}
 
-	if err := o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
+	if err := o.RS485Device.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, RS485.QueueMinPriority); err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputsState")
 	}
 
@@ -182,7 +184,7 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]interfaces.
 		return nil, errors.Wrap(errors.Errorf("address for output %d not found", outputNumber), "wb_mrm2_mini.DeviceModel.GetOutputState")
 	}
 
-	action := func(client Modbus.Client) (interface{}, error) {
+	action := func(client RS485.Client) (interface{}, error) {
 		return client.ReadCoil(address)
 	}
 
@@ -213,7 +215,7 @@ func (o *DeviceModel) GetOutputState(args map[string]interface{}) ([]interfaces.
 		}
 	}
 
-	if err := o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
+	if err := o.RS485Device.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, RS485.QueueMinPriority); err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.DeviceModel.GetOutputState")
 	}
 
@@ -236,7 +238,7 @@ func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]interfaces.
 		return nil, errors.Wrap(errors.Errorf("address for output %d not found", outputNumber), "wb_mrm2_mini.DeviceModel.SetOutputState")
 	}
 
-	action := func(client Modbus.Client) (interface{}, error) {
+	action := func(client RS485.Client) (interface{}, error) {
 		return nil, client.WriteCoil(address, state)
 	}
 
@@ -247,7 +249,7 @@ func (o *DeviceModel) SetOutputState(args map[string]interface{}) ([]interfaces.
 		}
 	}
 
-	if err = o.ModbusDevice.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, Modbus.QueueMinPriority); err != nil {
+	if err = o.RS485Device.DoAction(o.unitID, action, o.GetDefaultTries(), resultHandler, RS485.QueueMinPriority); err != nil {
 		return nil, errors.Wrap(err, "wb_mrm2_mini.DeviceModel.SetOutputState")
 	}
 

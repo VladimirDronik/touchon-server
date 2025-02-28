@@ -1,6 +1,6 @@
-// Шина Modbus
+// Шина RS-485
 
-package Modbus
+package RS485
 
 import (
 	"sync"
@@ -19,12 +19,10 @@ const QueuePriorities = 10
 const QueueMaxPriority = 1
 const QueueMinPriority = 10
 
-type Modbus interface {
+type RS485 interface {
 	objects.Object
 	DoAction(deviceAddr int, action Action, actionTries int, resultHandler ResultHandler, priority int) error
 	GetDefaultTries() int
-	GetClient() Client
-	SetClient(client Client)
 }
 
 type Client interface {
@@ -62,6 +60,10 @@ type Client interface {
 	WriteFloat64(addr uint16, value float64) (err error)
 	WriteBytes(addr uint16, values []byte) (err error)
 	WriteRawBytes(addr uint16, values []byte) (err error)
+
+	// Методы для "сырой" работы с девайсом
+	WriteToDevice(data []byte) error
+	ReadFromDevice(bytesCount int) ([]byte, error)
 }
 
 type Action func(client Client) (interface{}, error)
@@ -192,26 +194,26 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 	}
 
 	impl, err := objects.NewObjectModelImpl(
-		model.CategoryModbus,
-		"modbus",
+		model.CategoryRS485,
+		"bus",
 		0,
-		"Шина Modbus",
+		"Шина RS485",
 		props,
 		nil,
 		nil,
 		nil,
-		[]string{"modbus"},
+		[]string{model.CategoryRS485},
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "Modbus.MakeModel")
+		return nil, errors.Wrap(err, "RS485.MakeModel")
 	}
 
 	queue, err := priority_queue.New[*Task](QueueCapabilities, QueuePriorities)
 	if err != nil {
-		return nil, errors.Wrap(err, "Modbus.MakeModel")
+		return nil, errors.Wrap(err, "RS485.MakeModel")
 	}
 
-	o := &ModbusImpl{
+	o := &RS485Impl{
 		Object: impl,
 		queue:  queue,
 		done:   make(chan struct{}),
@@ -220,7 +222,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 	return o, nil
 }
 
-type ModbusImpl struct {
+type RS485Impl struct {
 	objects.Object
 	client Client
 	tries  int
@@ -230,24 +232,16 @@ type ModbusImpl struct {
 	wg    sync.WaitGroup
 }
 
-func (o *ModbusImpl) GetClient() Client {
-	return o.client
-}
-
-func (o *ModbusImpl) SetClient(client Client) {
-	o.client = client
-}
-
-func (o *ModbusImpl) Start() error {
+func (o *RS485Impl) Start() error {
 	var err error
 
 	if o.tries, err = o.GetProps().GetIntValue("tries"); err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.Start")
 	}
 
 	if o.client == nil {
 		if err := o.initClient(); err != nil {
-			return errors.Wrap(err, "ModbusImpl.Start")
+			return errors.Wrap(err, "RS485.Start")
 		}
 	}
 
@@ -258,44 +252,44 @@ func (o *ModbusImpl) Start() error {
 	return nil
 }
 
-func (o *ModbusImpl) initClient() error {
+func (o *RS485Impl) initClient() error {
 	if err := o.Object.Start(); err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	connString, err := o.GetProps().GetStringValue("connection_string")
 	if err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	speed, err := o.GetProps().GetIntValue("speed")
 	if err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	dataBits, err := o.GetProps().GetIntValue("data_bits")
 	if err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	parity, err := o.GetProps().GetIntValue("parity")
 	if err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	stopBits, err := o.GetProps().GetIntValue("stop_bits")
 	if err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	timeoutS, err := o.GetProps().GetStringValue("timeout")
 	if err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	timeout, err := time.ParseDuration(timeoutS)
 	if err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+		return errors.Wrap(err, "RS485.initClient")
 	}
 
 	cfg := &modbus.ClientConfiguration{
@@ -307,16 +301,16 @@ func (o *ModbusImpl) initClient() error {
 		StopBits: uint(stopBits),
 	}
 
-	if o.client, err = modbus.NewClient(cfg); err != nil {
-		return errors.Wrap(err, "ModbusImpl.initClient")
+	if o.client, err = newClient(cfg); err != nil {
+		return errors.Wrap(err, "RS485Impl.initClient")
 	}
 
 	return nil
 }
 
-func (o *ModbusImpl) Shutdown() error {
+func (o *RS485Impl) Shutdown() error {
 	if err := o.Object.Shutdown(); err != nil {
-		return errors.Wrap(err, "ModbusImpl.Shutdown")
+		return errors.Wrap(err, "RS485Impl.Shutdown")
 	}
 
 	close(o.done)
@@ -327,9 +321,9 @@ func (o *ModbusImpl) Shutdown() error {
 	return nil
 }
 
-func (o *ModbusImpl) DoAction(deviceAddr int, action Action, actionTries int, resultHandler ResultHandler, priority int) error {
+func (o *RS485Impl) DoAction(deviceAddr int, action Action, actionTries int, resultHandler ResultHandler, priority int) error {
 	if actionTries < 1 || 10 < actionTries {
-		return errors.Wrap(errors.Errorf("actionTries is bad"), "ModbusImpl.DoAction")
+		return errors.Wrap(errors.Errorf("actionTries is bad"), "RS485Impl.DoAction")
 	}
 
 	task := &Task{
@@ -340,13 +334,13 @@ func (o *ModbusImpl) DoAction(deviceAddr int, action Action, actionTries int, re
 	}
 
 	if err := o.queue.Push(task, priority); err != nil {
-		return errors.Wrap(err, "ModbusImpl.DoAction")
+		return errors.Wrap(err, "RS485Impl.DoAction")
 	}
 
 	return nil
 }
 
-func (o *ModbusImpl) actionsHandler() {
+func (o *RS485Impl) actionsHandler() {
 	defer o.wg.Done()
 
 	for {
@@ -368,17 +362,17 @@ func (o *ModbusImpl) actionsHandler() {
 		// Обрабатываем задачу
 		result, err := func() (_ interface{}, e error) {
 			if err := o.open(); err != nil {
-				return nil, errors.Wrap(err, "ModbusImpl.actionsHandler")
+				return nil, errors.Wrap(err, "RS485Impl.actionsHandler")
 			}
 
 			defer func() {
 				if err := o.client.Close(); err != nil && e == nil {
-					e = errors.Wrap(err, "ModbusImpl.actionsHandler")
+					e = errors.Wrap(err, "RS485Impl.actionsHandler")
 				}
 			}()
 
 			if err := o.client.SetUnitId(uint8(task.DeviceAddr)); err != nil {
-				return nil, errors.Wrap(err, "ModbusImpl.actionsHandler")
+				return nil, errors.Wrap(err, "RS485Impl.actionsHandler")
 			}
 
 			var r interface{}
@@ -390,7 +384,7 @@ func (o *ModbusImpl) actionsHandler() {
 				}
 			}
 
-			return nil, errors.Wrap(err, "ModbusImpl.actionsHandler")
+			return nil, errors.Wrap(err, "RS485Impl.actionsHandler")
 		}()
 
 		// Вызываем обработчик результата новой горутине
@@ -398,7 +392,7 @@ func (o *ModbusImpl) actionsHandler() {
 	}
 }
 
-func (o *ModbusImpl) open() error {
+func (o *RS485Impl) open() error {
 	var err error
 
 	for i := 0; i < o.tries; i++ {
@@ -407,9 +401,9 @@ func (o *ModbusImpl) open() error {
 		}
 	}
 
-	return errors.Wrap(err, "ModbusImpl.open")
+	return errors.Wrap(err, "RS485Impl.open")
 }
 
-func (o *ModbusImpl) GetDefaultTries() int {
+func (o *RS485Impl) GetDefaultTries() int {
 	return o.tries
 }

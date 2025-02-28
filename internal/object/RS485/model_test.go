@@ -1,4 +1,4 @@
-package Modbus
+package RS485
 
 import (
 	"testing"
@@ -13,16 +13,16 @@ func init() {
 	g.Logger = logrus.New()
 }
 
-func setUp(t *testing.T) (*ModbusImpl, *MockClient) {
+func setUp(t *testing.T) (*RS485Impl, *MockClient) {
 	o, err := MakeModel(true)
 	require.NotNil(t, o)
 	require.NoError(t, err)
 
-	mb, ok := o.(*ModbusImpl)
+	mb, ok := o.(*RS485Impl)
 	require.True(t, ok)
 
 	client := new(MockClient)
-	mb.SetClient(client)
+	mb.client = client
 
 	require.NoError(t, mb.GetProps().Set("tries", 1))
 	require.NoError(t, mb.Start())
@@ -30,7 +30,7 @@ func setUp(t *testing.T) (*ModbusImpl, *MockClient) {
 	return mb, client
 }
 
-func TestModbusModel(t *testing.T) {
+func TestRS485Model(t *testing.T) {
 	mb, client := setUp(t)
 
 	client.EXPECT().Open().Return(nil)

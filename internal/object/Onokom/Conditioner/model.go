@@ -30,7 +30,7 @@ func MakeModel(gwModelCode, name string, withChildren bool) (objects.Object, err
 	obj.SetCategory(model.CategoryConditioner)
 	obj.SetType("onokom/" + gwModelCode)
 	obj.SetName("Кондиционер (Onokom/" + name + ")")
-	obj.SetTags(string(model.CategoryConditioner), "onokom", "modbus", gwModelCode)
+	obj.SetTags(model.CategoryConditioner, "onokom", "modbus", gwModelCode)
 
 	return obj, nil
 }
