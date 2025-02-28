@@ -48,7 +48,7 @@ func GetUintParam(ctx *fasthttp.RequestCtx, paramName string) (int, error) {
 	return v, nil
 }
 
-func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string) (bool, error) {
+func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string, defaultValue bool) (bool, error) {
 	if s := GetParam(ctx, paramName); s != "" {
 		v, err := strconv.ParseBool(s)
 		if err != nil {
@@ -58,7 +58,7 @@ func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string) (bool, error) {
 		return v, nil
 	}
 
-	return false, nil
+	return defaultValue, nil
 }
 
 func GetSliceParam(ctx *fasthttp.RequestCtx, paramName string) []string {

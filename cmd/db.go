@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
@@ -15,6 +17,7 @@ func prepareDB() error {
 	return nil
 }
 
+// Создаем единственный экземпляр типа server/server и две шины RS485
 func createServerObject() error {
 	count, err := store.I.ObjectRepository().GetTotal(map[string]interface{}{"category": model.CategoryServer, "type": "server"}, nil)
 	if err != nil {
@@ -28,13 +31,47 @@ func createServerObject() error {
 		return nil
 	}
 
-	serverID, err := createObject(model.CategoryServer, "server", nil, true)
+	server, err := createObject(model.CategoryServer, "server", nil, true)
 	if err != nil {
 		return errors.Wrap(err, "createServerObject")
 	}
 
-	for i := 0; i < 2; i++ {
-		if _, err := createObject(model.CategoryModbus, "modbus", &serverID, false); err != nil {
+	serverID := server.GetID()
+
+	bus0, err := createObject(model.CategoryModbus, "modbus", &serverID, true)
+	if err != nil {
+		return errors.Wrap(err, "createServerObject")
+	}
+
+	bus1, err := createObject(model.CategoryModbus, "modbus", &serverID, true)
+	if err != nil {
+		return errors.Wrap(err, "createServerObject")
+	}
+
+	for i, bus := range []objects.Object{bus0, bus1} {
+		props := bus.GetProps()
+
+		if err := props.Set("connection_string", "rtu:///dev/ttyUSB"+strconv.Itoa(i)); err != nil {
+			return errors.Wrap(err, "createServerObject")
+		}
+
+		if err := props.Set("speed", "9600"); err != nil {
+			return errors.Wrap(err, "createServerObject")
+		}
+
+		if err := props.Set("data_bits", 8); err != nil {
+			return errors.Wrap(err, "createServerObject")
+		}
+
+		if err := props.Set("parity", "0"); err != nil {
+			return errors.Wrap(err, "createServerObject")
+		}
+
+		if err := props.Set("stop_bits", "1"); err != nil {
+			return errors.Wrap(err, "createServerObject")
+		}
+
+		if err := bus.Save(); err != nil {
 			return errors.Wrap(err, "createServerObject")
 		}
 	}
@@ -42,10 +79,10 @@ func createServerObject() error {
 	return nil
 }
 
-func createObject(objCat model.Category, objType string, parentID *int, enabled bool) (int, error) {
+func createObject(objCat model.Category, objType string, parentID *int, enabled bool) (objects.Object, error) {
 	objModel, err := objects.LoadObject(0, objCat, objType, true)
 	if err != nil {
-		return 0, errors.Wrap(err, "createObject")
+		return nil, errors.Wrap(err, "createObject")
 	}
 
 	objModel.SetParentID(parentID)
@@ -55,18 +92,18 @@ func createObject(objCat model.Category, objType string, parentID *int, enabled 
 	for _, p := range objModel.GetProps().GetAll().GetValueList() {
 		if p.GetValue() == nil && p.DefaultValue != nil {
 			if err := p.SetValue(p.DefaultValue); err != nil {
-				return 0, errors.Wrap(err, "createObject")
+				return nil, errors.Wrap(err, "createObject")
 			}
 		}
 	}
 
 	if err := objModel.GetProps().Check(); err != nil {
-		return 0, errors.Wrap(err, "createObject")
+		return nil, errors.Wrap(err, "createObject")
 	}
 
 	if err := objModel.Save(); err != nil {
-		return 0, errors.Wrap(err, "createObject")
+		return nil, errors.Wrap(err, "createObject")
 	}
 
-	return objModel.GetID(), nil
+	return objModel, nil
 }

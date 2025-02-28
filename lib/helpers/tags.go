@@ -27,8 +27,8 @@ func PrepareTag(tag string) string {
 	return s //string(r)
 }
 
-func PrepareTags(tags string) []string {
-	s := strings.Split(tags, ",")
+func PrepareTags(tags string, delim string) []string {
+	s := strings.Split(tags, delim)
 	m := make(map[string]bool, len(s))
 	for _, tag := range s {
 		tag = strings.TrimSpace(tag)

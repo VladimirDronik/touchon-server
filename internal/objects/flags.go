@@ -7,11 +7,11 @@ type Flags uint64
 const (
 	CreationForbidden Flags = 1 << iota // Запрещено создание через API
 	DeletionForbidden                   // Запрещено удаление через API
-	HideInTree                          // Скрыто в дереве устройств в панели администратора
+	Hidden                              // Скрывать объект в дереве устройств в панели администратора и не только там
 )
 
 const (
-	Internal = HideInTree | CreationForbidden | DeletionForbidden
+	Internal = Hidden | CreationForbidden | DeletionForbidden
 )
 
 func (o Flags) Err() error {
@@ -20,8 +20,8 @@ func (o Flags) Err() error {
 		return errors.New("creation forbidden")
 	case DeletionForbidden:
 		return errors.New("deletion forbidden")
-	case HideInTree:
-		return errors.New("hidden in tree")
+	case Hidden:
+		return errors.New("hidden object")
 	}
 
 	return errors.Errorf("unknown flag %d", o)

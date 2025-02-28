@@ -316,3 +316,15 @@ func (o *MemStore) DisableObject(objectID int) error {
 
 	return nil
 }
+
+func (o *MemStore) Search(f func(items map[int]objects.Object) ([]objects.Object, error)) ([]objects.Object, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	rows, err := f(o.objects)
+	if err != nil {
+		return nil, errors.Wrap(err, "MemStore.Search")
+	}
+
+	return rows, nil
+}

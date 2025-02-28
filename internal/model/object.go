@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-type ObjectStatus string
+type ObjectStatus = string
 
 const (
 	StatusAvailable   ObjectStatus = "available"
