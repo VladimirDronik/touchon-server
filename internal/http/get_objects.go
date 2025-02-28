@@ -3,7 +3,6 @@ package http
 import (
 	"net/http"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -73,7 +72,7 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (*GetObjectsParams, error) 
 
 	r.TypeStruct = helpers.GetParam(ctx, "type_struct")
 	typeChildren := helpers.GetParam(ctx, "type_children")
-	r.AllTypes = strings.TrimSpace(typeChildren) == "all"
+	r.AllTypes = typeChildren == "all" || typeChildren == "internal"
 
 	r.WithMethods, err = helpers.GetBoolParam(ctx, "with_methods", false)
 	if err != nil {

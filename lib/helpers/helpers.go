@@ -19,7 +19,7 @@ import (
 
 // GetParam отдает любой параметр, который был получен из GET запроса
 func GetParam(ctx *fasthttp.RequestCtx, paramName string) string {
-	return string(ctx.QueryArgs().Peek(paramName))
+	return strings.TrimSpace(string(ctx.QueryArgs().Peek(paramName)))
 }
 
 func GetIntParam(ctx *fasthttp.RequestCtx, paramName string) (int, error) {

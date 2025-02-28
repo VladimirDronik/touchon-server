@@ -35,7 +35,7 @@ func JsonHandlerWrapper(f interfaces.RequestHandler) fasthttp.RequestHandler {
 
 		start := time.Now()
 		data, status, err := f(ctx)
-		r.Meta.Duration = float64(int(time.Since(start).Seconds()*1000)) / 1000
+		r.Meta.Duration = float64(int(time.Since(start).Seconds()*1000000)) / 1000000
 		r.Meta.ContentLength = magic
 		ctx.Response.SetStatusCode(status)
 
