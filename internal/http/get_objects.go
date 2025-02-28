@@ -129,6 +129,10 @@ func filterObjects(params *GetObjectsParams) ([]objects.Object, error) {
 			}
 		}
 
+		sort.Slice(r, func(i, j int) bool {
+			return r[i].GetID() < r[j].GetID()
+		})
+
 		return r, nil
 	})
 
