@@ -76,18 +76,11 @@ var defaults = map[string]string{
 	"log_level":    "debug",
 	"version":      "0.1",
 
-	"access_token_ttl":          "30m",
-	"refresh_token_ttl":         "43200m",
-	"token_secret":              "Alli80ed!",
-	"ws_addr":                   "0.0.0.0:8092",
-	"server_id":                 "id=dev4",
-	"mdns_instance":             "touchon",
-	"mdns_service":              "_touchon._tcp",
-	"mdns_domain":               "local.",
-	"mdns_connection_interface": "en0", // eth0
-	"cctv_port":                 "8093",
-	"web_port":                  "8080",
-	"push_sender_address":       "http://localhost:8088",
+	"access_token_ttl":    "30m",
+	"refresh_token_ttl":   "43200m",
+	"token_secret":        "Alli80ed!",
+	"ws_addr":             "0.0.0.0:8092",
+	"push_sender_address": "http://localhost:8088",
 }
 
 const banner = `
