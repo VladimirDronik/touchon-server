@@ -43,6 +43,7 @@ func (o *Server) handleGetObjectsTypes(ctx *fasthttp.RequestCtx) (interface{}, i
 	// Эти объекты отдельно через API не создаются
 	delete(m, model.CategoryPort)
 	delete(m, model.CategorySensorValue)
+	delete(m, model.CategoryServer)
 
 	r := make([]*getObjectsTypesResponseItem, 0, len(m))
 	for objCat, cat := range m {
@@ -73,18 +74,18 @@ func (o *Server) handleGetObjectsTypes(ctx *fasthttp.RequestCtx) (interface{}, i
 func compareTags(inputsTags []string, objectTags []string) bool {
 	trueCnt := 0
 
-	for _, objectTag := range objectTags {
-		for _, inputTag := range inputsTags {
-			if strings.Trim(inputTag, " ") == objectTag {
+	for _, inputTag := range inputsTags {
+		inputTag = strings.Trim(inputTag, " ")
+
+		for _, objectTag := range objectTags {
+			if inputTag == objectTag {
 				trueCnt++
+				break
 			}
 		}
 	}
 
-	if trueCnt == len(inputsTags) {
-		return true
-	}
-	return false
+	return trueCnt == len(inputsTags)
 }
 
 // Получение модели объекта
@@ -299,7 +300,7 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	limit, _ := params["limit"].(int)
 	childrenAge, _ := params["children"].(int)
 	typeStruct := params["type_struct"]
-	//typeChildren := params["type_children"]
+	typeChildren := params["type_children"]
 	withMethods, _ := params["with_methods"].(bool)
 	withTags, _ := params["with_tags"].(bool)
 	simpleTree, _ := params["simple_tree"].(bool)
@@ -315,6 +316,8 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	if limit == 0 {
 		limit = 20
 	}
+
+	allChildren := typeChildren != "external"
 
 	rows, err := store.I.ObjectRepository().GetObjects(params, tags, offset, limit)
 	if err != nil {
@@ -375,114 +378,8 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 		m[row.ID] = row
 	}
 
-	// TODO
-	//var childType model.ChildType
-	//switch typeChildren {
-	//case "all":
-	//	childType = model.ChildTypeAll
-	//case "external":
-	//	childType = model.ChildTypeExternal
-	//case "internal":
-	//	childType = model.ChildTypeInternal
-	//default:
-	//	childType = model.ChildTypeExternal
-	//}
-
 	// Рекурсивно загружаем детей
 	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, withTags); err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	// Рекурсивно загружаем родителей
-	if err := loadParents(m, rows, store.I.ObjectRepository()); err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	// Детей добавляем к родителям
-	for _, item := range m {
-		if item.ParentID != nil {
-			parent, ok := m[*item.ParentID]
-			if !ok {
-				return nil, http.StatusInternalServerError, errors.Errorf("Parent(ID=%d) not found for object(ID=%d)", *item.ParentID, item.ID)
-			}
-
-			parent.Children = append(parent.Children, item)
-		}
-	}
-
-	// Выбираем эл-ты верхнего уровня
-	items := make([]*model.StoreObject, 0, len(m))
-	for _, item := range m {
-		if item.ParentID == nil {
-			items = append(items, item)
-		}
-	}
-
-	sortObjectsTree(items)
-
-	return GetObjectsResponse{
-		Total: total,
-		List:  items,
-	}, http.StatusOK, nil
-}
-
-// Получение объектов по тегам
-// @Summary Получение объектов по тегам
-// @Tags Objects
-// @Description Получение объектов  по тегам
-// @ID GetObjectsByTags
-// @Produce json
-// @Param tags query string true "Тэги" default(controller,mega_d)
-// @Param offset query string false "Смещение" default(0)
-// @Param limit query string false "Лимит" default(20)
-// @Param children query string false "Возвращать дочерние объекты (0-без детей, 1-дети, 2-дети+внуки и т.д.)" default(1)
-// @Success      200 {object} http.Response[GetObjectsResponse]
-// @Failure      400 {object} http.Response[any]
-// @Failure      500 {object} http.Response[any]
-// @Router /objects/by_tags [get]
-func (o *Server) handleGetObjectsByTags(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	tags := helpers.PrepareTags(helpers.GetParam(ctx, "tags"))
-	if len(tags) == 0 {
-		return nil, http.StatusBadRequest, errors.New("tags is empty")
-	}
-
-	offset, err := helpers.GetUintParam(ctx, "offset")
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	limit, err := helpers.GetUintParam(ctx, "limit")
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	if limit < 1 {
-		return nil, http.StatusBadRequest, errors.New("limit == 0")
-	}
-
-	childrenAge, err := helpers.GetUintParam(ctx, "children")
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
-
-	rows, err := store.I.ObjectRepository().GetObjectsByTags(tags, offset, limit)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	total, err := store.I.ObjectRepository().GetTotalByTags(tags)
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	// Создаем общий список всех эл-ов
-	m := make(map[int]*model.StoreObject, len(rows))
-	for _, row := range rows {
-		m[row.ID] = row
-	}
-
-	// Рекурсивно загружаем детей
-	if err := loadChildren(m, rows, store.I.ObjectRepository(), childrenAge, true); err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 

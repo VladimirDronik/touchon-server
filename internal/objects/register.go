@@ -92,5 +92,18 @@ func GetObjectModel(objCat model.Category, objType string, withChildren bool) (O
 }
 
 func GetCategoriesAndTypes() map[string]map[string]objectAttr {
-	return categoriesAndTypes
+	// Копируем все данные, т.к. карта может изменяться пользовательским кодом
+
+	r := make(map[string]map[string]objectAttr, len(categoriesAndTypes))
+
+	for objCat, types := range categoriesAndTypes {
+		c := make(map[string]objectAttr, len(types))
+		r[objCat] = c
+
+		for objType, info := range types {
+			c[objType] = info
+		}
+	}
+
+	return r
 }

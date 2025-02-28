@@ -83,7 +83,6 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	objects("PUT", "/", update_object.Handler)                 // обновление объекта
 	objects("DELETE", "/{id}", o.handleDeleteObject)           // удаление объекта
 	objects("GET", "/tags", o.handleGetAllObjectsTags)         // получение всех тегов
-	objects("GET", "/by_tags", o.handleGetObjectsByTags)       // получение объектов по тегам
 	objects("GET", "/by_props", o.handleGetObjectByProps)      // получение объекта по его свойствам
 	objects("GET", "/{id}/state", o.handleGetObjectState)      // Получение состояния объекта
 	objects("POST", "/{id}/exec/{method}", o.handleExecMethod) // Запуск метода объекта
