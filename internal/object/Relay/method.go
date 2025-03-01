@@ -1,6 +1,7 @@
 package Relay
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -88,14 +89,34 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 		}
 	}
 
-	relayMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), "")
+	state = strings.ToLower(state)
+
+	relayMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), state, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
+	var relayStateMsq interfaces.Message
+	switch state {
+	case "on":
+		relayStateMsq, err = relay.NewOnStateOn(o.GetID())
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.On")
+		}
+		break
+	case "off":
+		relayStateMsq, err = relay.NewOnStateOff(o.GetID())
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.Off")
+		}
+		break
+	default:
+		return nil, errors.Wrap(err, "Relay "+strconv.Itoa(o.GetID())+": the device did not return a state")
+	}
+
 	//TODO:: сделать тут сохранение статуса объекта в БД
 
-	return append(portMsg, relayMsg), nil
+	return append(portMsg, relayMsg, relayStateMsq), nil
 }
 
 func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
