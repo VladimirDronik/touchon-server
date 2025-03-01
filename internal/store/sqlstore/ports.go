@@ -19,10 +19,10 @@ func (o *PortRepository) GetPortObjectID(controllerID, portNumber string) (int, 
 
 	q := `
 SELECT o.id
-FROM props as p
+FROM om_props as p
     inner join objects as o on o.id = p.object_id
 WHERE o.category == 'port' AND p.code = 'number' AND p.value = ? AND o.parent_id in (
-    SELECT o.object_id FROM props as o
+    SELECT o.object_id FROM om_props as o
     WHERE o.code == 'id' AND o.value = ?
 );`
 

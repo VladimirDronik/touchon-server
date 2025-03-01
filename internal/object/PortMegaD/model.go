@@ -22,7 +22,7 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
+func MakeModel(withChildren bool) (objects.Object, error) {
 	props := []*objects.Prop{
 		{
 			Code:        "number",
@@ -131,7 +131,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryPort,
 		"port_mega_d",
-		true,
+		objects.Internal,
 		"Порт",
 		props,
 		nil,

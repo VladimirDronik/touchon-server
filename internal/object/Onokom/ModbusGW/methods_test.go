@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"touchon-server/internal/g"
-	"touchon-server/internal/object/Modbus"
-	"touchon-server/internal/object/Modbus/ModbusDevice"
+	"touchon-server/internal/object/RS485"
+	"touchon-server/internal/object/RS485Device"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	gw "touchon-server/lib/events/object/onokom/gateway"
@@ -70,16 +70,16 @@ func getProps(gwModelCode string) ([]*Prop, error) {
 	return r, nil
 }
 
-func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockModbusDevice, *store.MockStore, *interfaces.MockMessagesService, *objects.Props) {
-	obj, err := MakeModel(gwModelCode)
+func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *RS485Device.MockRS485Device, *store.MockStore, *interfaces.MockMessagesService, *objects.Props) {
+	obj, err := MakeModel(gwModelCode, true)
 	require.NotNil(t, obj)
 	require.NoError(t, err)
 
 	deviceModel, ok := obj.(*GatewayModel)
 	require.True(t, ok)
 
-	mockModbusDevice := new(ModbusDevice.MockModbusDevice)
-	deviceModel.ModbusDevice = mockModbusDevice
+	mockRS485Device := new(RS485Device.MockRS485Device)
+	deviceModel.RS485Device = mockRS485Device
 
 	gateway, ok := obj.(*GatewayModel)
 	require.True(t, ok)
@@ -135,12 +135,12 @@ func setUp(t *testing.T, gwModelCode string) (*GatewayModel, *ModbusDevice.MockM
 
 	require.NoError(t, pList.Add(a, p))
 
-	return gateway, mockModbusDevice, st, msgsService, pList
+	return gateway, mockRS485Device, st, msgsService, pList
 }
 
 func TestDeviceModel_Check(t *testing.T) {
 	for _, gwModelCode := range gwModelCodes {
-		gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
+		gateway, rs485Device, st, msgs, pList := setUp(t, gwModelCode)
 
 		payload := make(map[string]interface{}, pList.Len())
 		objectID := 123
@@ -157,8 +157,8 @@ func TestDeviceModel_Check(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run(gwModelCode+"/success", func(t *testing.T) {
-			modbusDevice.EXPECT().GetID().Return(objectID)
-			modbusDevice.EXPECT().GetProps().Return(pList)
+			rs485Device.EXPECT().GetID().Return(objectID)
+			rs485Device.EXPECT().GetProps().Return(pList)
 			msgs.EXPECT().Send(msg).Return(nil).Once()
 
 			_, err = gateway.Check(nil)
@@ -166,13 +166,13 @@ func TestDeviceModel_Check(t *testing.T) {
 			time.Sleep(500 * time.Millisecond)
 
 			st.AssertExpectations(t)
-			modbusDevice.AssertExpectations(t)
+			rs485Device.AssertExpectations(t)
 			msgs.AssertExpectations(t)
 		})
 
 		t.Run(gwModelCode+"/fail", func(t *testing.T) {
-			modbusDevice.EXPECT().GetID().Return(objectID)
-			modbusDevice.EXPECT().GetProps().Return(pList)
+			rs485Device.EXPECT().GetID().Return(objectID)
+			rs485Device.EXPECT().GetProps().Return(pList)
 			msgs.EXPECT().Send(msg).Return(testError).Once()
 
 			_, err = gateway.Check(nil)
@@ -180,7 +180,7 @@ func TestDeviceModel_Check(t *testing.T) {
 			time.Sleep(500 * time.Millisecond)
 
 			st.AssertExpectations(t)
-			modbusDevice.AssertExpectations(t)
+			rs485Device.AssertExpectations(t)
 			msgs.AssertExpectations(t)
 		})
 	}
@@ -191,22 +191,22 @@ func TestDeviceModel_check(t *testing.T) {
 
 	for _, gwModelCode := range gwModelCodes {
 		t.Run(gwModelCode+"/success", func(t *testing.T) {
-			gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
+			gateway, rs485Device, st, msgs, pList := setUp(t, gwModelCode)
 			objRepo := new(store.MockObjectRepository)
 
 			enabled := 2
-			modbusDevice.EXPECT().GetEnabled().RunAndReturn(func() bool {
+			rs485Device.EXPECT().GetEnabled().RunAndReturn(func() bool {
 				// Отключаем повторные запуски метода check()
 				enabled -= 1
 				return enabled > 0
 			})
-			modbusDevice.EXPECT().GetDefaultTries().Return(3)
+			rs485Device.EXPECT().GetDefaultTries().Return(3)
 
 			doActionResponse, expectedPayload := getDoActionResponse(t, gwModelCode, pList)
 
 			// Обращаемся к девайсу
-			modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-				func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+			rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 					handler(doActionResponse, nil)
 					return nil
 				})
@@ -214,13 +214,13 @@ func TestDeviceModel_check(t *testing.T) {
 			expectedMsg, err := gw.NewOnChange(objectID, expectedPayload)
 			require.NoError(t, err)
 
-			modbusDevice.EXPECT().Start().Return(nil)
-			modbusDevice.EXPECT().SetTimer(mock.Anything, mock.Anything)
-			modbusDevice.EXPECT().GetTimer().Return(helpers.NewTimer(time.Millisecond, gateway.check))
-			modbusDevice.EXPECT().GetID().Return(objectID)
+			rs485Device.EXPECT().Start().Return(nil)
+			rs485Device.EXPECT().SetTimer(mock.Anything, mock.Anything)
+			rs485Device.EXPECT().GetTimer().Return(helpers.NewTimer(time.Millisecond, gateway.check))
+			rs485Device.EXPECT().GetID().Return(objectID)
 			// Отправляем сообщение об изменении св-ва
 			msgs.EXPECT().Send(expectedMsg).Return(nil)
-			modbusDevice.EXPECT().GetProps().Return(pList)
+			rs485Device.EXPECT().GetProps().Return(pList)
 			st.EXPECT().ObjectRepository().Return(objRepo)
 			// Правим значение св-ва в БД
 			for propCode, value := range expectedPayload {
@@ -232,7 +232,7 @@ func TestDeviceModel_check(t *testing.T) {
 
 			time.Sleep(1500 * time.Millisecond)
 
-			modbusDevice.AssertExpectations(t)
+			rs485Device.AssertExpectations(t)
 			msgs.AssertExpectations(t)
 			st.AssertExpectations(t)
 			objRepo.AssertExpectations(t)
@@ -246,24 +246,24 @@ func TestDeviceModel_check(t *testing.T) {
 		})
 
 		t.Run(gwModelCode+"/fail", func(t *testing.T) {
-			gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
+			gateway, rs485Device, _, msgs, pList := setUp(t, gwModelCode)
 			objRepo := new(store.MockObjectRepository)
 
 			enabled := 2
-			modbusDevice.EXPECT().GetEnabled().RunAndReturn(func() bool {
+			rs485Device.EXPECT().GetEnabled().RunAndReturn(func() bool {
 				// Отключаем повторные запуски метода check()
 				enabled -= 1
 				return enabled > 0
 			})
-			modbusDevice.EXPECT().Start().Return(nil)
-			modbusDevice.EXPECT().SetTimer(mock.Anything, mock.Anything)
-			modbusDevice.EXPECT().GetTimer().Return(helpers.NewTimer(time.Millisecond, gateway.check))
-			modbusDevice.EXPECT().GetProps().Return(pList)
-			modbusDevice.EXPECT().GetID().Return(objectID)
-			modbusDevice.EXPECT().GetDefaultTries().Return(3)
+			rs485Device.EXPECT().Start().Return(nil)
+			rs485Device.EXPECT().SetTimer(mock.Anything, mock.Anything)
+			rs485Device.EXPECT().GetTimer().Return(helpers.NewTimer(time.Millisecond, gateway.check))
+			rs485Device.EXPECT().GetProps().Return(pList)
+			rs485Device.EXPECT().GetID().Return(objectID)
+			rs485Device.EXPECT().GetDefaultTries().Return(3)
 			// Обращаемся к девайсу
-			modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-				func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+			rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+				func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 					handler(nil, testError)
 					return nil
 				})
@@ -273,7 +273,7 @@ func TestDeviceModel_check(t *testing.T) {
 
 			time.Sleep(1500 * time.Millisecond)
 
-			modbusDevice.AssertExpectations(t)
+			rs485Device.AssertExpectations(t)
 			msgs.AssertNotCalled(t, "Send")
 			objRepo.AssertNotCalled(t, "SetProp")
 
@@ -374,22 +374,22 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
+				gateway, rs485Device, st, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, false))
 
-				modbusDevice.EXPECT().GetDefaultTries().Return(3)
+				rs485Device.EXPECT().GetDefaultTries().Return(3)
 				// Обращаемся к девайсу
-				modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-					func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+				rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+					func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 						handler(nil, nil)
 						return nil
 					})
 
-				modbusDevice.EXPECT().GetID().Return(objectID)
+				rs485Device.EXPECT().GetID().Return(objectID)
 				// Отправляем сообщение об изменении св-ва
 				msgs.EXPECT().Send(mock.Anything).Return(nil)
-				modbusDevice.EXPECT().GetProps().Return(pList)
+				rs485Device.EXPECT().GetProps().Return(pList)
 				st.EXPECT().ObjectRepository().Return(objRepo)
 				// Правим значение св-ва в БД
 				objRepo.EXPECT().SetProp(objectID, propCode, "true").Return(nil)
@@ -398,7 +398,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				require.NoError(t, err)
 				time.Sleep(500 * time.Millisecond)
 
-				modbusDevice.AssertExpectations(t)
+				rs485Device.AssertExpectations(t)
 				msgs.AssertExpectations(t)
 				st.AssertExpectations(t)
 				objRepo.AssertExpectations(t)
@@ -415,14 +415,14 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
+				gateway, rs485Device, _, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, false))
 
-				modbusDevice.EXPECT().GetDefaultTries().Return(3)
+				rs485Device.EXPECT().GetDefaultTries().Return(3)
 				// Обращаемся к девайсу
-				modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-					func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+				rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+					func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 						handler(nil, testError)
 						return nil
 					})
@@ -431,7 +431,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				require.NoError(t, err)
 				time.Sleep(500 * time.Millisecond)
 
-				modbusDevice.AssertExpectations(t)
+				rs485Device.AssertExpectations(t)
 				msgs.AssertNotCalled(t, "Send")
 				objRepo.AssertNotCalled(t, "SetProp")
 
@@ -446,22 +446,22 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
+				gateway, rs485Device, st, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, true))
 
-				modbusDevice.EXPECT().GetDefaultTries().Return(3)
+				rs485Device.EXPECT().GetDefaultTries().Return(3)
 				// Обращаемся к девайсу
-				modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-					func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+				rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+					func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 						handler(nil, nil)
 						return nil
 					})
 
-				modbusDevice.EXPECT().GetID().Return(objectID)
+				rs485Device.EXPECT().GetID().Return(objectID)
 				// Отправляем сообщение об изменении св-ва
 				msgs.EXPECT().Send(mock.Anything).Return(nil)
-				modbusDevice.EXPECT().GetProps().Return(pList)
+				rs485Device.EXPECT().GetProps().Return(pList)
 				st.EXPECT().ObjectRepository().Return(objRepo)
 				// Правим значение св-ва в БД
 				objRepo.EXPECT().SetProp(objectID, propCode, "false").Return(nil)
@@ -470,7 +470,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				require.NoError(t, err)
 				time.Sleep(500 * time.Millisecond)
 
-				modbusDevice.AssertExpectations(t)
+				rs485Device.AssertExpectations(t)
 				msgs.AssertExpectations(t)
 				st.AssertExpectations(t)
 				objRepo.AssertExpectations(t)
@@ -487,14 +487,14 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				// TODO избавиться от все глобальных объектов (нужна хорошая реализация)
 				//t.Parallel()
 
-				gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
+				gateway, rs485Device, _, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				require.NoError(t, pList.Set(propCode, true))
 
-				modbusDevice.EXPECT().GetDefaultTries().Return(3)
+				rs485Device.EXPECT().GetDefaultTries().Return(3)
 				// Обращаемся к девайсу
-				modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-					func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+				rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+					func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 						handler(nil, testError)
 						return nil
 					})
@@ -503,7 +503,7 @@ func TestDeviceModel_BoolProps(t *testing.T) {
 				require.NoError(t, err)
 				time.Sleep(500 * time.Millisecond)
 
-				modbusDevice.AssertExpectations(t)
+				rs485Device.AssertExpectations(t)
 				msgs.AssertNotCalled(t, "Send")
 				objRepo.AssertNotCalled(t, "SetProp")
 
@@ -521,22 +521,22 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 	targetTemp := 30
 
 	t.Run("success", func(t *testing.T) {
-		gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCodes[0])
+		gateway, rs485Device, st, msgs, pList := setUp(t, gwModelCodes[0])
 		objRepo := new(store.MockObjectRepository)
 		require.NoError(t, pList.Set(propCode, 0))
 
-		modbusDevice.EXPECT().GetDefaultTries().Return(3)
+		rs485Device.EXPECT().GetDefaultTries().Return(3)
 		// Обращаемся к девайсу
-		modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-			func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+		rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+			func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 				handler(nil, nil)
 				return nil
 			})
 
-		modbusDevice.EXPECT().GetID().Return(objectID)
+		rs485Device.EXPECT().GetID().Return(objectID)
 		// Отправляем сообщение об изменении св-ва
 		msgs.EXPECT().Send(mock.Anything).Return(nil)
-		modbusDevice.EXPECT().GetProps().Return(pList)
+		rs485Device.EXPECT().GetProps().Return(pList)
 		st.EXPECT().ObjectRepository().Return(objRepo)
 		// Правим значение св-ва в БД
 		objRepo.EXPECT().SetProp(objectID, propCode, strconv.Itoa(targetTemp)).Return(nil)
@@ -545,7 +545,7 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 		require.NoError(t, err)
 		time.Sleep(500 * time.Millisecond)
 
-		modbusDevice.AssertExpectations(t)
+		rs485Device.AssertExpectations(t)
 		msgs.AssertExpectations(t)
 		st.AssertExpectations(t)
 		objRepo.AssertExpectations(t)
@@ -557,14 +557,14 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 	})
 
 	t.Run("fail", func(t *testing.T) {
-		gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCodes[0])
+		gateway, rs485Device, _, msgs, pList := setUp(t, gwModelCodes[0])
 		objRepo := new(store.MockObjectRepository)
 		require.NoError(t, pList.Set(propCode, 0))
 
-		modbusDevice.EXPECT().GetDefaultTries().Return(3)
+		rs485Device.EXPECT().GetDefaultTries().Return(3)
 		// Обращаемся к девайсу
-		modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-			func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+		rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+			func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 				handler(nil, testError)
 				return nil
 			})
@@ -573,7 +573,7 @@ func TestDeviceModel_SetTargetTemperature(t *testing.T) {
 		require.NoError(t, err)
 		time.Sleep(500 * time.Millisecond)
 
-		modbusDevice.AssertExpectations(t)
+		rs485Device.AssertExpectations(t)
 		msgs.AssertNotCalled(t, "Send")
 		objRepo.AssertNotCalled(t, "SetProp")
 
@@ -609,21 +609,21 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 
 			for v, descr := range test.Values {
 				t.Run(fmt.Sprintf("%s/%s/success (%s, %s)", gwModelCode, propCode, v, descr), func(t *testing.T) {
-					gateway, modbusDevice, st, msgs, pList := setUp(t, gwModelCode)
+					gateway, rs485Device, st, msgs, pList := setUp(t, gwModelCode)
 					objRepo := new(store.MockObjectRepository)
 
-					modbusDevice.EXPECT().GetDefaultTries().Return(3)
+					rs485Device.EXPECT().GetDefaultTries().Return(3)
 					// Обращаемся к девайсу
-					modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-						func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+					rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+						func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 							handler(nil, nil)
 							return nil
 						})
 
-					modbusDevice.EXPECT().GetID().Return(objectID)
+					rs485Device.EXPECT().GetID().Return(objectID)
 					// Отправляем сообщение об изменении св-ва
 					msgs.EXPECT().Send(mock.Anything).Return(nil)
-					modbusDevice.EXPECT().GetProps().Return(pList)
+					rs485Device.EXPECT().GetProps().Return(pList)
 					st.EXPECT().ObjectRepository().Return(objRepo)
 					// Правим значение св-ва в БД
 					objRepo.EXPECT().SetProp(objectID, propCode, v).Return(nil)
@@ -632,7 +632,7 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 					require.NoError(t, err)
 					time.Sleep(500 * time.Millisecond)
 
-					modbusDevice.AssertExpectations(t)
+					rs485Device.AssertExpectations(t)
 					msgs.AssertExpectations(t)
 					st.AssertExpectations(t)
 					objRepo.AssertExpectations(t)
@@ -645,14 +645,14 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 			}
 
 			t.Run(fmt.Sprintf("%s/%s/fail", gwModelCode, propCode), func(t *testing.T) {
-				gateway, modbusDevice, _, msgs, pList := setUp(t, gwModelCode)
+				gateway, rs485Device, _, msgs, pList := setUp(t, gwModelCode)
 				objRepo := new(store.MockObjectRepository)
 				v := "123"
 
-				modbusDevice.EXPECT().GetDefaultTries().Return(3)
+				rs485Device.EXPECT().GetDefaultTries().Return(3)
 				// Обращаемся к девайсу
-				modbusDevice.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
-					func(deviceAddr int, action Modbus.Action, tries int, handler Modbus.ResultHandler, priority int) error {
+				rs485Device.EXPECT().DoAction(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
+					func(deviceAddr int, action RS485.Action, tries int, handler RS485.ResultHandler, priority int) error {
 						handler(nil, testError)
 						return nil
 					})
@@ -661,7 +661,7 @@ func TestDeviceModel_EnumProps(t *testing.T) {
 				require.NoError(t, err)
 				time.Sleep(500 * time.Millisecond)
 
-				modbusDevice.AssertExpectations(t)
+				rs485Device.AssertExpectations(t)
 				msgs.AssertNotCalled(t, "Send")
 				objRepo.AssertNotCalled(t, "SetProp")
 

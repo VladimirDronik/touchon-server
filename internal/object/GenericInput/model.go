@@ -14,7 +14,7 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
+func MakeModel(withChildren bool) (objects.Object, error) {
 	props := []*objects.Prop{
 		{
 			Code:        "address",
@@ -72,7 +72,7 @@ func MakeModel() (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryGenericInput,
 		"generic_input",
-		false,
+		0,
 		"Универсальный вход",
 		props,
 		nil,

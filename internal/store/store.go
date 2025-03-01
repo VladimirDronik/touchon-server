@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gorm.io/gorm"
 	"touchon-server/internal/model"
 	"touchon-server/lib/interfaces"
 )
@@ -14,6 +15,8 @@ var ErrNotFound = errors.New("not found")
 var I Store
 
 type Store interface {
+	GetDB() *gorm.DB
+
 	ObjectRepository() ObjectRepository
 	PortRepository() PortRepository
 	DeviceRepository() DeviceRepository
@@ -57,13 +60,13 @@ type ObjectRepository interface {
 	GetObjectIDByProps(props map[string]string, parentID int) (int, error)
 	SetParent(objectID int, parentID *int) error //Установка родителя для объекта
 	SaveObject(object *model.StoreObject) error  // create, update
-	GetObjects(filters map[string]interface{}, tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
+	GetObjects(filters map[string]interface{}, tags []string, offset, limit int) ([]*model.StoreObject, error)
 	GetObjectsByAddress(address []string) ([]*model.StoreObject, error) // Выводит объекты, у которых адрес совпадает с искомым
-	GetTotal(filters map[string]interface{}, tags []string, objectType model.ChildType) (int, error)
-	GetObjectsByTags(tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error)
-	GetTotalByTags(tags []string, objectType model.ChildType) (int, error)
+	GetTotal(filters map[string]interface{}, tags []string) (int, error)
+	GetObjectsByTags(tags []string, offset, limit int) ([]*model.StoreObject, error)
+	GetTotalByTags(tags []string) (int, error)
 	GetObjectsByIDs(ids []int) ([]*model.StoreObject, error)
-	GetObjectChildren(childType model.ChildType, objectID ...int) ([]*model.StoreObject, error)
+	GetObjectChildren(objectID ...int) ([]*model.StoreObject, error)
 	DelObject(objectID int) error
 	GetAllTags() (map[string]int, error)
 	SetEnabled(objectID int, enabled bool) error

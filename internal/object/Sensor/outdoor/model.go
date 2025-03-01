@@ -14,8 +14,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "outdoor.MakeModel")
 	}
@@ -32,33 +32,37 @@ func MakeModel() (objects.Object, error) {
 		SensorValue.TypeHumidity,
 		SensorValue.TypeIllumination,
 	)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	if err := obj.GetProps().Set("interface", "I2C"); err != nil {
 		return nil, errors.Wrap(err, "outdoor.MakeModel")
 	}
 
-	temp, err := SensorValue.Make(SensorValue.TypeTemperature)
+	if !withChildren {
+		return obj, nil
+	}
+
+	temp, err := SensorValue.Make(SensorValue.TypeTemperature, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "outdoor.MakeModel")
 	}
 
-	pres, err := SensorValue.Make(SensorValue.TypePressure)
+	pres, err := SensorValue.Make(SensorValue.TypePressure, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "outdoor.MakeModel")
 	}
 
-	hum, err := SensorValue.Make(SensorValue.TypeHumidity)
+	hum, err := SensorValue.Make(SensorValue.TypeHumidity, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "outdoor.MakeModel")
 	}
 
-	illum, err := SensorValue.Make(SensorValue.TypeIllumination)
+	illum, err := SensorValue.Make(SensorValue.TypeIllumination, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "outdoor.MakeModel")
 	}
 
 	obj.GetChildren().Add(temp, pres, hum, illum)
-	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }
@@ -74,13 +78,13 @@ func (o *SensorModel) getValues(timeout time.Duration) (map[SensorValue.Type]flo
 	}
 
 	// Temperature, Humidity, Pressure:
-	bme280, err := objects.GetObjectModel(model.CategorySensor, "bme280")
+	bme280, err := objects.GetObjectModel(model.CategorySensor, "bme280", false)
 	if err != nil {
 		return nil, errors.Wrap(err, "getValues")
 	}
 
 	// Illumination:
-	bh1750, err := objects.GetObjectModel(model.CategorySensor, "bh1750")
+	bh1750, err := objects.GetObjectModel(model.CategorySensor, "bh1750", false)
 	if err != nil {
 		return nil, errors.Wrap(err, "getValues")
 	}
@@ -89,8 +93,6 @@ func (o *SensorModel) getValues(timeout time.Duration) (map[SensorValue.Type]flo
 		if err := obj.GetProps().Set("address", addr); err != nil {
 			return nil, errors.Wrap(err, "getValues")
 		}
-
-		obj.GetChildren().DeleteAll()
 	}
 
 	for _, child := range o.GetChildren().GetAll() {

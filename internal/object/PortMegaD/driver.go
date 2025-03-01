@@ -5,11 +5,11 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
 	"touchon-server/internal/g"
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	"touchon-server/lib/interfaces"
@@ -22,7 +22,7 @@ func (o *PortModel) ResCommand(controllerID, portNumber, extPortNumber, clickCou
 		return nil, errors.Wrap(err, "ResCommand")
 	}
 
-	obj, err := objects.LoadPort(objectID, model.ChildTypeNobody)
+	obj, err := objects.LoadPort(objectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "ResCommand")
 	}

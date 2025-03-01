@@ -12,14 +12,14 @@ import (
 func init() {
 	// Регистрируем для каждого поддерживаемого Modbus-шлюза свой тип кондиционера.
 	for gwModelCode, name := range ModbusGW.SupportedGateways {
-		_ = objects.Register(func() (objects.Object, error) {
-			return MakeModel(gwModelCode, name)
+		_ = objects.Register(func(withChildren bool) (objects.Object, error) {
+			return MakeModel(gwModelCode, name, withChildren)
 		})
 	}
 }
 
-func MakeModel(gwModelCode, name string) (objects.Object, error) {
-	baseObj, err := ModbusGW.MakeModel(gwModelCode)
+func MakeModel(gwModelCode, name string, withChildren bool) (objects.Object, error) {
+	baseObj, err := ModbusGW.MakeModel(gwModelCode, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "Conditioner.MakeModel")
 	}
@@ -30,7 +30,7 @@ func MakeModel(gwModelCode, name string) (objects.Object, error) {
 	obj.SetCategory(model.CategoryConditioner)
 	obj.SetType("onokom/" + gwModelCode)
 	obj.SetName("Кондиционер (Onokom/" + name + ")")
-	obj.SetTags(string(model.CategoryConditioner), "onokom", "modbus", gwModelCode)
+	obj.SetTags(model.CategoryConditioner, "onokom", "modbus", gwModelCode)
 
 	return obj, nil
 }

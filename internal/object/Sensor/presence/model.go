@@ -18,8 +18,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := motion.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := motion.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "presence.MakeModel")
 	}
@@ -31,7 +31,26 @@ func MakeModel() (objects.Object, error) {
 	obj.SetName("Датчик присутствия")
 	obj.SetTags("presence", "присутствие")
 
-	p, err := SensorValue.Make(SensorValue.TypePresence)
+	// Добавляем свои события
+	onPresenceOn, err := sensor.NewOnPresenceOn(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
+
+	onPresenceOff, err := sensor.NewOnPresenceOff(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
+
+	if err := obj.GetEvents().Add(onPresenceOn, onPresenceOff); err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
+
+	if !withChildren {
+		return obj, nil
+	}
+
+	p, err := SensorValue.Make(SensorValue.TypePresence, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "presence.MakeModel")
 	}
@@ -57,21 +76,6 @@ func MakeModel() (objects.Object, error) {
 	p.GetChildren().DeleteAll()
 
 	obj.GetChildren().Add(p)
-
-	// Добавляем свои события
-	onPresenceOn, err := sensor.NewOnPresenceOn(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "presence.MakeModel")
-	}
-
-	onPresenceOff, err := sensor.NewOnPresenceOff(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "presence.MakeModel")
-	}
-
-	if err := obj.GetEvents().Add(onPresenceOn, onPresenceOff); err != nil {
-		return nil, errors.Wrap(err, "presence.MakeModel")
-	}
 
 	return obj, nil
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
 	"touchon-server/internal/helpers"
-	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
@@ -106,9 +105,13 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 }
 
 func createObject(req *Request) (int, error) {
-	objModel, err := objects.LoadObject(0, req.Object.Category, req.Object.Type, model.ChildTypeAll)
+	objModel, err := objects.LoadObject(0, req.Object.Category, req.Object.Type, true)
 	if err != nil {
 		return 0, errors.Wrap(err, "createObject")
+	}
+
+	if objModel.GetFlags().Has(objects.CreationForbidden) {
+		return 0, errors.Wrap(objects.CreationForbidden.Err(), "createObject")
 	}
 
 	objModel.SetParentID(req.Object.ParentID)

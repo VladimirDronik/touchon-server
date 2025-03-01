@@ -2,10 +2,11 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
-	"github.com/valyala/fasthttp"
 	"net/http"
 	"strconv"
+
+	"github.com/pkg/errors"
+	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
@@ -450,7 +451,7 @@ func (o *Server) getSensor(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	sensor.Title = item.Title
 
 	//Берем у объекта текущее значение
-	sensorVal, err := objects.LoadObject(sensor.ObjectID, "", "", model.ChildTypeAll)
+	sensorVal, err := objects.LoadObject(sensor.ObjectID, "", "", true)
 	if err != nil {
 		return nil, http.StatusInternalServerError, errors.Wrap(err, "Error of LoadObject: "+strconv.Itoa(sensor.ObjectID))
 	}

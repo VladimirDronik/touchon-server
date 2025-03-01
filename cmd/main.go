@@ -9,6 +9,8 @@
 
 package main
 
+//go:generate find ../internal -name '*_mock.go' -delete
+//go:generate find ../lib -name '*_mock.go' -delete
 //go:generate go tool swag init --dir=../cmd,../internal,../lib --output=../docs --outputTypes=go --parseDepth=1 --parseDependency --parseInternal
 //go:generate go tool mockery --dir=../internal --all --inpackage --inpackage-suffix --with-expecter
 //go:generate go tool mockery --dir=../lib --all --inpackage --inpackage-suffix --with-expecter
@@ -33,9 +35,9 @@ import (
 	_ "touchon-server/internal/object/GenericInput"
 	_ "touchon-server/internal/object/ImpulseCounter"
 	_ "touchon-server/internal/object/MegaD"
-	_ "touchon-server/internal/object/Modbus"
 	_ "touchon-server/internal/object/Onokom/Conditioner"
 	_ "touchon-server/internal/object/PortMegaD"
+	_ "touchon-server/internal/object/RS485"
 	_ "touchon-server/internal/object/Regulator"
 	_ "touchon-server/internal/object/Relay"
 	_ "touchon-server/internal/object/Sensor/bh1750"
@@ -49,6 +51,7 @@ import (
 	_ "touchon-server/internal/object/Sensor/presence"
 	_ "touchon-server/internal/object/Sensor/scd4x"
 	_ "touchon-server/internal/object/SensorValue"
+	_ "touchon-server/internal/object/Server"
 	_ "touchon-server/internal/object/WirenBoard/wb_mrm2_mini"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
@@ -74,18 +77,11 @@ var defaults = map[string]string{
 	"log_level":    "debug",
 	"version":      "0.1",
 
-	"access_token_ttl":          "30m",
-	"refresh_token_ttl":         "43200m",
-	"token_secret":              "Alli80ed!",
-	"ws_addr":                   "0.0.0.0:8092",
-	"server_id":                 "id=dev4",
-	"mdns_instance":             "touchon",
-	"mdns_service":              "_touchon._tcp",
-	"mdns_domain":               "local.",
-	"mdns_connection_interface": "en0", // eth0
-	"cctv_port":                 "8093",
-	"web_port":                  "8080",
-	"push_sender_address":       "http://localhost:8088",
+	"access_token_ttl":    "30m",
+	"refresh_token_ttl":   "43200m",
+	"token_secret":        "Alli80ed!",
+	"ws_addr":             "0.0.0.0:8092",
+	"push_sender_address": "http://localhost:8088",
 }
 
 const banner = `
@@ -113,13 +109,17 @@ func main() {
 	g.Logger = logger
 	g.Config = cfg
 
+	// Создаем хранилище
 	store.I = sqlstore.New(db)
+	check(prepareDB())
 
+	// Создаем экземпляр вебсокет сервера для мобильных приложений
 	ws.I, err = ws.New()
 	check(err)
 
 	check(ws.I.Start(cfg["ws_addr"]))
 
+	// Создаем шину сообщений
 	g.Msgs, err = messages.NewService(runtime.NumCPU(), 2000)
 	check(err)
 
@@ -130,6 +130,7 @@ func main() {
 	memStore.I, err = memStore.New()
 	check(err)
 
+	// Создаем штатные обработчики сообщений
 	action_router.I = action_router.New()
 
 	check(memStore.I.Start())
@@ -140,8 +141,10 @@ func main() {
 
 	check(action_router.I.Start())
 
+	// Создаем вебсокет-мост между NodeRed и шиной сообщений
 	g.NodeRed = nodered.New()
 
+	// Создаем основной API-сервер
 	g.HttpServer, err = httpServer.New(rb)
 	check(err)
 
@@ -150,11 +153,13 @@ func main() {
 
 	check(g.NodeRed.Start())
 
+	// Создаем планировщик задач
 	sch, err := cron.New()
 	check(err)
 
 	check(sch.Start())
 
+	// Ждем от ОС сигнала на завершение работы сервиса
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-sig

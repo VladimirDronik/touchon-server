@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
-	"touchon-server/internal/object/Modbus/ModbusDevice"
+	"touchon-server/internal/object/RS485Device"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/scripts"
 	"touchon-server/lib/events/object/onokom/gateway"
@@ -67,13 +67,13 @@ func isProp(propCode string) bool {
 	return propsMap[propCode]
 }
 
-func MakeModel(gwModelCode string) (objects.Object, error) {
+func MakeModel(gwModelCode string, withChildren bool) (objects.Object, error) {
 	gw, ok := gateways[gwModelCode]
 	if !ok {
 		return nil, errors.Wrap(errors.Errorf("unknown gw model %q", gwModelCode), "ModbusGW.MakeModel")
 	}
 
-	baseObj, err := ModbusDevice.MakeModel()
+	baseObj, err := RS485Device.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "ModbusGW.MakeModel")
 	}
@@ -82,9 +82,9 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 		modelCode: gwModelCode,
 		settings:  gw,
 	}
-	obj.ModbusDevice = baseObj.(*ModbusDevice.ModbusDeviceImpl)
+	obj.RS485Device = baseObj.(*RS485Device.RS485DeviceImpl)
 
-	obj.SetCategory(model.CategoryModbusGateway)
+	obj.SetCategory(model.CategoryModbus)
 	obj.SetType("onokom/" + gwModelCode)
 	obj.SetName("Modbus шлюз ONOKOM " + gw.Name)
 	obj.SetTags("onokom", "modbus", "gateway", gwModelCode)
@@ -281,14 +281,14 @@ func MakeModel(gwModelCode string) (objects.Object, error) {
 }
 
 type GatewayModel struct {
-	ModbusDevice.ModbusDevice
+	RS485Device.RS485Device
 	unitID    int
 	modelCode string
 	settings  *Gateway
 }
 
 func (o *GatewayModel) Start() error {
-	if err := o.ModbusDevice.Start(); err != nil {
+	if err := o.RS485Device.Start(); err != nil {
 		return errors.Wrapf(err, "ModbusGW.GatewayModel.Start(%d)", o.GetID())
 	}
 
@@ -315,7 +315,7 @@ func (o *GatewayModel) Start() error {
 }
 
 func (o *GatewayModel) Shutdown() error {
-	if err := o.ModbusDevice.Shutdown(); err != nil {
+	if err := o.RS485Device.Shutdown(); err != nil {
 		return errors.Wrap(err, "ModbusGW.GatewayModel.Shutdown")
 	}
 

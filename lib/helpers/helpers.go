@@ -19,7 +19,7 @@ import (
 
 // GetParam отдает любой параметр, который был получен из GET запроса
 func GetParam(ctx *fasthttp.RequestCtx, paramName string) string {
-	return string(ctx.QueryArgs().Peek(paramName))
+	return strings.TrimSpace(string(ctx.QueryArgs().Peek(paramName)))
 }
 
 func GetIntParam(ctx *fasthttp.RequestCtx, paramName string) (int, error) {
@@ -48,7 +48,7 @@ func GetUintParam(ctx *fasthttp.RequestCtx, paramName string) (int, error) {
 	return v, nil
 }
 
-func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string) (bool, error) {
+func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string, defaultValue bool) (bool, error) {
 	if s := GetParam(ctx, paramName); s != "" {
 		v, err := strconv.ParseBool(s)
 		if err != nil {
@@ -58,7 +58,47 @@ func GetBoolParam(ctx *fasthttp.RequestCtx, paramName string) (bool, error) {
 		return v, nil
 	}
 
-	return false, nil
+	return defaultValue, nil
+}
+
+func GetSliceParam(ctx *fasthttp.RequestCtx, paramName string) []string {
+	v := GetParam(ctx, paramName)
+	slice := strings.Split(v, ",")
+
+	items := make([]string, 0, len(slice))
+	for _, item := range slice {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			items = append(items, item)
+		}
+	}
+
+	return items
+}
+
+func GetMapParam(ctx *fasthttp.RequestCtx, paramName string) (map[string]string, error) {
+	s := GetSliceParam(ctx, paramName)
+
+	m := make(map[string]string, len(s))
+	for _, item := range s {
+		kv := strings.Split(item, "=")
+		if len(kv) != 2 {
+			return nil, errors.Wrap(errors.New("bad map param"), "GetMapParam")
+		}
+		for i, item := range kv {
+			kv[i] = strings.TrimSpace(item)
+		}
+
+		k, v := kv[0], kv[1]
+
+		if k == "" {
+			return nil, errors.Wrap(errors.New("bad map param"), "GetMapParam")
+		}
+
+		m[k] = v
+	}
+
+	return m, nil
 }
 
 func GetPathParam(ctx *fasthttp.RequestCtx, paramName string) string {

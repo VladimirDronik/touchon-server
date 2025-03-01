@@ -8,7 +8,7 @@ import (
 )
 
 // ObjectMaker Функция для создания экземпляра модели объекта
-type ObjectMaker func() (Object, error)
+type ObjectMaker func(withChildren bool) (Object, error)
 
 // Реестр объектов
 var register = make(map[string]ObjectMaker, 50)
@@ -34,7 +34,7 @@ func Register(maker ObjectMaker) (e error) {
 	}()
 
 	// Создаем экземпляр модели объекта для проверки модели
-	obj, err := maker()
+	obj, err := maker(true)
 	if err != nil {
 		return err
 	}
@@ -76,14 +76,14 @@ func Register(maker ObjectMaker) (e error) {
 	return nil
 }
 
-func GetObjectModel(objCat model.Category, objType string) (Object, error) {
+func GetObjectModel(objCat model.Category, objType string, withChildren bool) (Object, error) {
 	key := getKey(objCat, objType)
 	maker, ok := register[key]
 	if !ok {
 		return nil, errors.Wrapf(errors.New("object not found"), "GetObjectModel(%s, %s)", string(objCat), objType)
 	}
 
-	obj, err := maker()
+	obj, err := maker(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetObjectModel")
 	}

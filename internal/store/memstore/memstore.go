@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/g"
-	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 )
@@ -14,7 +13,7 @@ import (
 var I *MemStore
 
 func New() (*MemStore, error) {
-	rows, err := store.I.ObjectRepository().GetObjects(map[string]interface{}{"parent_id": nil}, nil, 0, 10000, model.ChildTypeAll)
+	rows, err := store.I.ObjectRepository().GetObjects(map[string]interface{}{"parent_id": nil}, nil, 0, 10000)
 	if err != nil {
 		return nil, errors.Wrap(err, "memstore.New")
 	}
@@ -22,7 +21,7 @@ func New() (*MemStore, error) {
 	tree := make(map[int]objects.Object, len(rows))
 
 	for _, row := range rows {
-		obj, err := objects.LoadObject(row.ID, "", "", model.ChildTypeAll)
+		obj, err := objects.LoadObject(row.ID, "", "", true)
 		if err != nil {
 			return nil, errors.Wrap(err, "memstore.New")
 		}
@@ -316,4 +315,16 @@ func (o *MemStore) DisableObject(objectID int) error {
 	}
 
 	return nil
+}
+
+func (o *MemStore) Search(f func(items map[int]objects.Object) ([]objects.Object, error)) ([]objects.Object, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	rows, err := f(o.objects)
+	if err != nil {
+		return nil, errors.Wrap(err, "MemStore.Search")
+	}
+
+	return rows, nil
 }

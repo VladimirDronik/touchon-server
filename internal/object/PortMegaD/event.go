@@ -74,6 +74,8 @@ func (o *PortModel) OnChangeState(state string) interfaces.Message {
 		return nil
 	}
 
+	msg.SetPayload(map[string]interface{}{"state": state})
+
 	return msg
 }
 

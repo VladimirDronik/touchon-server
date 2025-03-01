@@ -123,6 +123,12 @@ func (o *ServiceImpl) Send(msgs ...interfaces.Message) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
+	select {
+	case <-o.done:
+		return errors.Wrap(errors.New("service is done"), "messages.ServiceImpl.Send")
+	default:
+	}
+
 	t := time.NewTimer(time.Second)
 	defer t.Stop()
 

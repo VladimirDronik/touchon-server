@@ -10,10 +10,8 @@ import (
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
-	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
 	_ "touchon-server/lib/http/server"
-	"touchon-server/lib/interfaces"
 )
 
 // Обновление объекта
@@ -34,7 +32,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return nil, http.StatusBadRequest, err
 	}
 
-	objModel, err := objects.LoadObject(req.ID, "", "", model.ChildTypeAll)
+	objModel, err := objects.LoadObject(req.ID, "", "", true)
 	if err != nil {
 		return nil, 0, err
 	}

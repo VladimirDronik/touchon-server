@@ -34,7 +34,7 @@ func GetExample(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		return nil, http.StatusBadRequest, errors.New("type is empty")
 	}
 
-	obj, err := objects.GetObjectModel(model.Category(objCat), objType)
+	obj, err := objects.GetObjectModel(objCat, objType, false)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}

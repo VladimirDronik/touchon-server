@@ -1,11 +1,11 @@
 package Relay
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events"
 	"touchon-server/lib/events/object/relay"
@@ -18,7 +18,7 @@ func (o *RelayModel) On(args map[string]interface{}) ([]interfaces.Message, erro
 		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.On")
 	}
@@ -44,7 +44,7 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]interfaces.Message, err
 		return nil, err
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Off")
 	}
@@ -70,7 +70,7 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
@@ -89,14 +89,34 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 		}
 	}
 
-	relayMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), strings.ToLower(state), "")
+	state = strings.ToLower(state)
+
+	relayMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), state, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
+	var relayStateMsq interfaces.Message
+	switch state {
+	case "on":
+		relayStateMsq, err = relay.NewOnStateOn(o.GetID())
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.On")
+		}
+		break
+	case "off":
+		relayStateMsq, err = relay.NewOnStateOff(o.GetID())
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.Off")
+		}
+		break
+	default:
+		return nil, errors.Wrap(err, "Relay "+strconv.Itoa(o.GetID())+": the device did not return a state")
+	}
+
 	//TODO:: сделать тут сохранение статуса объекта в БД
 
-	return append(portMsg, relayMsg), nil
+	return append(portMsg, relayMsg, relayStateMsq), nil
 }
 
 func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
@@ -105,7 +125,7 @@ func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, e
 		return nil, errors.Wrap(err, "RelayModel.check")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.check")
 	}

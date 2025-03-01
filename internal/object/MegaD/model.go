@@ -22,7 +22,7 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
+func MakeModel(withChildren bool) (objects.Object, error) {
 	props := []*objects.Prop{
 		{
 			Code:        "id",
@@ -102,10 +102,41 @@ func MakeModel() (objects.Object, error) {
 	}
 	sort.Ints(ports)
 
+	onLoad, err := controller.NewOnLoad(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "MegaD.MakeModel")
+	}
+
+	onUnavailable, err := controller.NewOnUnavailable(0)
+	if err != nil {
+		return nil, errors.Wrap(err, "MegaD.MakeModel")
+	}
+
+	impl, err := objects.NewObjectModelImpl(
+		model.CategoryController,
+		"mega_d",
+		0,
+		"MegaD",
+		props,
+		nil,
+		[]interfaces.Event{onLoad, onUnavailable},
+		nil,
+		[]string{"controller", "mega_d"},
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "MegaD.MakeModel")
+	}
+
+	obj := &ObjectModel{ObjectModelImpl: impl}
+
+	if !withChildren {
+		return obj, nil
+	}
+
 	children := make([]objects.Object, 0, 45)
 	for _, portNumber := range ports {
 		// Создаем основу объекта-порта
-		port, err := PortMegaD.MakeModel()
+		port, err := PortMegaD.MakeModel(withChildren)
 		if err != nil {
 			return nil, err
 		}
@@ -214,32 +245,9 @@ func MakeModel() (objects.Object, error) {
 		children = append(children, port)
 	}
 
-	onLoad, err := controller.NewOnLoad(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "MegaD.MakeModel")
-	}
+	obj.GetChildren().Add(children...)
 
-	onUnavailable, err := controller.NewOnUnavailable(0)
-	if err != nil {
-		return nil, errors.Wrap(err, "MegaD.MakeModel")
-	}
-
-	impl, err := objects.NewObjectModelImpl(
-		model.CategoryController,
-		"mega_d",
-		false,
-		"MegaD",
-		props,
-		children,
-		[]interfaces.Event{onLoad, onUnavailable},
-		nil,
-		[]string{"controller", "mega_d"},
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "MegaD.MakeModel")
-	}
-
-	return &ObjectModel{ObjectModelImpl: impl}, nil
+	return obj, nil
 }
 
 // Implementation of Object interface

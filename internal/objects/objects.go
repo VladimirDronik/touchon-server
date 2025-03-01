@@ -15,7 +15,7 @@ var ErrObjectDisabled = errors.New("object disabled")
 // Object Абстрактный тип объекта
 type Object interface {
 	// Init заполняет модель данными из БД
-	Init(storeObj *model.StoreObject, childType model.ChildType) error
+	Init(storeObj *model.StoreObject, withChildren bool) error
 	Save() error
 
 	GetID() int
@@ -34,9 +34,6 @@ type Object interface {
 	// GetType Возвращает конкретный тип объекта (MegaD)
 	GetType() string
 	SetType(string)
-
-	GetInternal() bool
-	SetInternal(bool)
 
 	// GetName Возвращает название объекта (MegaD2561)
 	GetName() string
@@ -82,6 +79,9 @@ type Object interface {
 	SetTimer(time.Duration, func())
 	GetTimer() *helpers.Timer
 	GetState() (interfaces.Message, error)
+
+	GetFlags() Flags
+	SetFlags(Flags)
 }
 
 type ObjectModel struct {
@@ -91,7 +91,6 @@ type ObjectModel struct {
 
 	Category model.Category     `json:"category"`
 	Type     string             `json:"type"`
-	Internal bool               `json:"internal"` // Признак внутреннего объекта (port, sensor_value)
 	Name     string             `json:"name"`
 	Status   model.ObjectStatus `json:"status"`
 	Tags     []string           `json:"tags,omitempty"`

@@ -3,7 +3,11 @@ package helpers
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"math/rand"
+	"time"
 )
+
+var Rnd = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 
 var dayOfWeekEnToRuMap = map[string]string{
 	"Monday":    "пн",

@@ -3,6 +3,7 @@ package sqlstore
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -211,7 +212,7 @@ func (o *ObjectRepository) SaveObject(object *model.StoreObject) error {
 	return nil
 }
 
-func (o *ObjectRepository) prepareQuery(filters map[string]interface{}, tags []string, objectType model.ChildType) (*gorm.DB, error) {
+func (o *ObjectRepository) prepareQuery(filters map[string]interface{}, tags []string) (*gorm.DB, error) {
 	q := o.store.db.Model(&model.StoreObject{})
 
 	for k, v := range filters {
@@ -237,19 +238,12 @@ func (o *ObjectRepository) prepareQuery(filters map[string]interface{}, tags []s
 		}
 	}
 
-	switch objectType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
-	}
-
 	return q, nil
 }
 
 // GetObjects получение объектов с учетом фильтров
-func (o *ObjectRepository) GetObjects(filters map[string]interface{}, tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error) {
-	q, err := o.prepareQuery(filters, tags, objectType)
+func (o *ObjectRepository) GetObjects(filters map[string]interface{}, tags []string, offset, limit int) ([]*model.StoreObject, error) {
+	q, err := o.prepareQuery(filters, tags)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetObjects")
 	}
@@ -265,8 +259,8 @@ func (o *ObjectRepository) GetObjects(filters map[string]interface{}, tags []str
 }
 
 // GetTotal получение общего кол-ва объектов с учетом фильтров
-func (o *ObjectRepository) GetTotal(filters map[string]interface{}, tags []string, objectType model.ChildType) (int, error) {
-	q, err := o.prepareQuery(filters, tags, objectType)
+func (o *ObjectRepository) GetTotal(filters map[string]interface{}, tags []string) (int, error) {
+	q, err := o.prepareQuery(filters, tags)
 	if err != nil {
 		return 0, errors.Wrap(err, "GetTotal")
 	}
@@ -280,18 +274,11 @@ func (o *ObjectRepository) GetTotal(filters map[string]interface{}, tags []strin
 }
 
 // GetObjectsByTags получение объектов по тегам
-func (o *ObjectRepository) GetObjectsByTags(tags []string, offset, limit int, objectType model.ChildType) ([]*model.StoreObject, error) {
+func (o *ObjectRepository) GetObjectsByTags(tags []string, offset, limit int) ([]*model.StoreObject, error) {
 	q := o.store.db.Model(&model.StoreObject{}).Offset(offset).Limit(limit)
 
 	for _, tag := range tags {
 		q = q.Where(fmt.Sprintf("json_extract(tags, '$.%s')", tag))
-	}
-
-	switch objectType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
 	}
 
 	rows := make([]*model.StoreObject, 0)
@@ -303,18 +290,11 @@ func (o *ObjectRepository) GetObjectsByTags(tags []string, offset, limit int, ob
 }
 
 // GetTotalByTags получение общего кол-ва объектов по тегам
-func (o *ObjectRepository) GetTotalByTags(tags []string, objectType model.ChildType) (int, error) {
+func (o *ObjectRepository) GetTotalByTags(tags []string) (int, error) {
 	q := o.store.db.Model(&model.StoreObject{})
 
 	for _, tag := range tags {
 		q = q.Where(fmt.Sprintf("json_extract(tags, '$.%s')", tag))
-	}
-
-	switch objectType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
 	}
 
 	r := int64(0)
@@ -337,17 +317,10 @@ func (o *ObjectRepository) GetObjectsByIDs(ids []int) ([]*model.StoreObject, err
 }
 
 // GetObjectChildren получение дочерних объектов
-func (o *ObjectRepository) GetObjectChildren(childType model.ChildType, objectIDs ...int) ([]*model.StoreObject, error) {
+func (o *ObjectRepository) GetObjectChildren(objectIDs ...int) ([]*model.StoreObject, error) {
 	rows := make([]*model.StoreObject, 0)
 
 	q := o.store.db.Where("parent_id in ?", objectIDs)
-
-	switch childType {
-	case model.ChildTypeInternal:
-		q = q.Where("internal = true")
-	case model.ChildTypeExternal:
-		q = q.Where("internal = false")
-	}
 
 	if err := q.Find(&rows).Error; err != nil {
 		return nil, errors.Wrap(err, "GetObjectChildren")
@@ -438,28 +411,44 @@ func (o *ObjectRepository) SetEnabled(objectID int, enabled bool) error {
 }
 
 func (o *ObjectRepository) GetObjectIDByProps(props map[string]string, parentID int) (int, error) {
-	var objectID int
-
-	q := o.store.db.Table("om_props").Select("object_ID")
+	args := make([]interface{}, 0, len(props)*2)
+	qq := make([]string, 0, len(props))
 
 	for code, value := range props {
-		q = q.Where("code = ?", code)
-		q = q.Where("value = ?", value)
+		qq = append(qq, `code = ? and value = ?`)
+		args = append(args, code, value)
 	}
+	args = append(args, len(props))
 
-	if objectID != 0 {
-		q.Where("om_props.object_id = ?", objectID)
+	q := `select object_id from om_props where ` + strings.Join(qq, " or ") + ` group by object_id having count(object_id) = ?;`
+
+	rows := make([]int, 0, 10)
+
+	r := o.store.db.Raw(q, args...).Scan(&rows)
+	if r.Error != nil {
+		return 0, errors.Wrap(r.Error, "GetObjectIDByProps")
 	}
 
 	if parentID != 0 {
-		q.InnerJoins("JOIN om_objects ON om_objects.id = om_props.object_id")
-		q.Where("om_objects.parent_id = ?", parentID)
+		err := o.store.db.
+			Model(&model.StoreObject{}).
+			Select("id").
+			Where("id in ?", rows).
+			Where("parent_id = ?", parentID).
+			Find(&rows).
+			Error
+
+		if err != nil {
+			return 0, errors.Wrap(r.Error, "GetObjectIDByProps")
+		}
 	}
 
-	err := q.Find(&objectID).Error
-	if err != nil {
-		return 0, errors.Wrap(err, "GetObjectIDByProps")
+	switch len(rows) {
+	case 0:
+		return 0, nil
+	case 1:
+		return rows[0], nil
+	default:
+		return 0, errors.Wrap(errors.Errorf("multiple records found (%d)", len(rows)), "GetObjectIDByProps")
 	}
-
-	return objectID, nil
 }

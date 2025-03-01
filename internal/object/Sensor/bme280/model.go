@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
@@ -17,8 +16,8 @@ func init() {
 	_ = objects.Register(MakeModel)
 }
 
-func MakeModel() (objects.Object, error) {
-	baseObj, err := Sensor.MakeModel()
+func MakeModel(withChildren bool) (objects.Object, error) {
+	baseObj, err := Sensor.MakeModel(withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bme280.MakeModel")
 	}
@@ -28,29 +27,33 @@ func MakeModel() (objects.Object, error) {
 
 	obj.SetType("bme280")
 	obj.SetName("BME280 Датчик температуры, влажности и давления")
-	obj.SetTags("bme280", string(SensorValue.TypeTemperature), string(SensorValue.TypeHumidity), string(SensorValue.TypePressure))
+	obj.SetTags("bme280", SensorValue.TypeTemperature, SensorValue.TypeHumidity, SensorValue.TypePressure)
+	obj.SetGetValuesFunc(obj.getValues)
 
 	if err := obj.GetProps().Set("interface", "I2C"); err != nil {
 		return nil, errors.Wrap(err, "bme280.MakeModel")
 	}
 
-	temp, err := SensorValue.Make(SensorValue.TypeTemperature)
+	if !withChildren {
+		return obj, nil
+	}
+
+	temp, err := SensorValue.Make(SensorValue.TypeTemperature, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bme280.MakeModel")
 	}
 
-	hum, err := SensorValue.Make(SensorValue.TypeHumidity)
+	hum, err := SensorValue.Make(SensorValue.TypeHumidity, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bme280.MakeModel")
 	}
 
-	pres, err := SensorValue.Make(SensorValue.TypePressure)
+	pres, err := SensorValue.Make(SensorValue.TypePressure, withChildren)
 	if err != nil {
 		return nil, errors.Wrap(err, "bme280.MakeModel")
 	}
 
 	obj.GetChildren().Add(temp, hum, pres)
-	obj.SetGetValuesFunc(obj.getValues)
 
 	return obj, nil
 }
@@ -73,7 +76,7 @@ func (o *SensorModel) getValues(timeout time.Duration) (map[SensorValue.Type]flo
 		return nil, errors.Wrap(err, "getValues")
 	}
 
-	port, err := objects.LoadPort(sdaPortObjectID, model.ChildTypeNobody)
+	port, err := objects.LoadPort(sdaPortObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "getValues")
 	}
