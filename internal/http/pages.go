@@ -124,21 +124,22 @@ func (o *Server) getZones(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	}
 
 	// Backward compatibility
-	setIsGroup(zones)
+	//setIsGroup(zones)
 
 	return zones, http.StatusOK, nil
 }
 
+//TODO: проверить у удалить, если не используется
 // Backward compatibility
-func setIsGroup(items []*model.Zone) {
-	for _, item := range items {
-		item.IsGroup = len(item.Children) > 0
-
-		if len(item.Children) > 0 {
-			setIsGroup(item.Children)
-		}
-	}
-}
+//func setIsGroup(items []*model.Zone) {
+//	for _, item := range items {
+//		item.IsGroup = len(item.Children) > 0
+//
+//		if len(item.Children) > 0 {
+//			setIsGroup(item.Children)
+//		}
+//	}
+//}
 
 // Получение всех зон
 // @Security TokenAuth
@@ -158,9 +159,6 @@ func (o *Server) getAllZones(ctx *fasthttp.RequestCtx) (interface{}, int, error)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
-
-	// Backward compatibility
-	setIsGroup(zones)
 
 	return zones, http.StatusOK, nil
 }
