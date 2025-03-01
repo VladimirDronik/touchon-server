@@ -104,7 +104,7 @@ func (o *ImpulseCounter) getPort() (interfaces.Port, error) {
 		return nil, errors.Wrap(err, "getValues")
 	}
 
-	portObj, err := objects.LoadPort(portObjectID, model.ChildTypeNobody)
+	portObj, err := objects.LoadPort(portObjectID, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "getValues")
 	}

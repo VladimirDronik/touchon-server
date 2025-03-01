@@ -2,12 +2,11 @@ package create_object
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
+	"github.com/valyala/fasthttp"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/objects"
@@ -65,11 +64,6 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 			}
 		}
 	}()
-
-	//Если объект является сенсором, то создаем в экшен-роутере действия для его проверки
-	if req.Object.Category == model.CategorySensor {
-		e = createSensorCronTask(objectID, req)
-	}
 
 	// Если событий нет, то уходим
 	if len(req.Events) == 0 {
@@ -239,36 +233,6 @@ func deleteObject(objectID int) error {
 
 	if err := store.I.ObjectRepository().DelObject(objectID); err != nil {
 		return errors.Wrap(err, "deleteObject")
-	}
-
-	return nil
-}
-
-// createSensorCronTask отправляет в action-router запрос на добавление задачи и действия для крона
-func createSensorCronTask(objectID int, req *Request) error {
-	_, ok := req.Object.Props["update_interval"].(string)
-	if !ok {
-		return nil
-	}
-
-	task := &interfaces.CronTask{
-		Enabled:     true,
-		Name:        "check sensor",
-		Description: "Проверка датчика: [" + strconv.Itoa(objectID) + "]" + req.Object.Name,
-		Period:      req.Object.Props["update_interval"].(string),
-		Actions: []*interfaces.CronAction{
-			{
-				Enabled:    true,
-				TargetType: interfaces.TargetTypeObject,
-				Type:       interfaces.ActionTypeMethod,
-				TargetID:   objectID,
-				Name:       "check",
-			},
-		},
-	}
-
-	if err := g.HttpServer.CreateCronTask(task); err != nil {
-		return errors.Wrap(err, "createSensorCronTask")
 	}
 
 	return nil
