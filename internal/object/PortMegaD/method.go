@@ -212,7 +212,7 @@ func (o *PortModel) Check(args map[string]interface{}) ([]interfaces.Message, er
 
 // setPortStatus установка статуса для порта
 func (o *PortModel) setPortStatus(portOption bool, command string, params map[string]string) ([]interfaces.Message, error) {
-	code, _, err := o.sendCommand(o.GetContrAddr(), o.GetPortNumber(), portOption, command, params, time.Duration(5)*time.Second)
+	code, body, err := o.sendCommand(o.GetContrAddr(), o.GetPortNumber(), portOption, command, params, time.Duration(5)*time.Second)
 	if err != nil {
 		return nil, errors.Wrap(err, "setPortStatus")
 	}
@@ -222,13 +222,12 @@ func (o *PortModel) setPortStatus(portOption bool, command string, params map[st
 		// сообщаем, что порт не поменял свой статус и отдаем текущее состояние порта
 		return nil, errors.Wrap(errors.New("device not available"), "setPortStatus")
 	} else {
-		// проверяем статус порта, что он действительно поменялся и генерим событие onChange
-		msgs, err := o.Check(nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "setPortStatus")
+		state := strings.ToLower(string(body))
+		if state == "on" || state == "off" {
+			return []interfaces.Message{o.OnChangeState(state)}, nil
 		}
 
-		return msgs, nil
+		return nil, nil
 	}
 }
 
