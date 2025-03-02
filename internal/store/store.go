@@ -241,5 +241,6 @@ type Zones interface {
 type Events interface {
 	AddEvent(event *model.TrEvent) (int, error)
 	AddEventAction(eventAction *model.EventActions) (int, error)
-	DeleteEvent(itemID int) error
+	DeleteEvent(target string, itemID int) error
+	DeleteEventAction(target string, itemID int) error
 }

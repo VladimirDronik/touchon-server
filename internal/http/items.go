@@ -186,7 +186,8 @@ func (o *Server) handleDeleteSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 		return nil, http.StatusBadRequest, err
 	}
 
-	store.I.Events().DeleteEvent(itemID)
+	store.I.Events().DeleteEventAction("item", itemID)
+	store.I.Events().DeleteEvent("item", itemID)
 	store.I.Devices().DeleteSensor(itemID)
 
 	return o.deleteItem(itemID)
@@ -369,8 +370,15 @@ func (o *Server) handleDeleteItem(ctx *fasthttp.RequestCtx) (interface{}, int, e
 }
 
 func (o *Server) deleteItem(itemID int) (interface{}, int, error) {
+
+	if err := store.I.Events().DeleteEventAction("item", itemID); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	if err := store.I.Events().DeleteEvent("item", itemID); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
 	if err := store.I.Items().DeleteItem(itemID); err != nil {
-		return nil, http.StatusBadRequest, err
+		return nil, http.StatusInternalServerError, err
 	}
 
 	return nil, http.StatusOK, nil
