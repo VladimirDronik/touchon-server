@@ -10,7 +10,6 @@ import (
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/events/object/impulse_counter"
-	"touchon-server/lib/events/object/onokom/gateway"
 	"touchon-server/lib/interfaces"
 )
 
@@ -37,31 +36,18 @@ func (o *ImpulseCounter) Check(params map[string]interface{}) ([]interfaces.Mess
 
 func (o *ImpulseCounter) check() {
 	defer o.GetTimer().Reset()
-	_, err := o.Check(nil)
-	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
-		return
-	}
-
-	payload := make(map[string]interface{}, o.GetProps().Len())
-
-	payload["current_count"], err = o.GetProps().GetIntValue("value")
-	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
-		return
-	}
-
-	// Отправляем сообщение с измененными полями
-	msg, err := gateway.NewOnChange(o.GetID(), payload)
+	msg, err := o.Check(nil)
 	if err != nil {
 		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
 		return
 	}
 
 	// Отправляем сообщение об изменении св-ва объекта
-	if err := g.Msgs.Send(msg); err != nil {
-		g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
-		return
+	for _, m := range msg {
+		if err := g.Msgs.Send(m); err != nil {
+			g.Logger.Error(errors.Wrap(err, "ImpulseCounter.check"))
+			return
+		}
 	}
 
 	return
@@ -94,12 +80,7 @@ func (o *ImpulseCounter) megaRelease() (int, error) {
 }
 
 func (o *ImpulseCounter) getPort() (interfaces.Port, error) {
-	addr, err := o.GetProps().GetStringValue("address")
-	if err != nil {
-		return nil, errors.Wrap(err, "getValues")
-	}
-
-	portObjectID, err := strconv.Atoi(addr)
+	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return nil, errors.Wrap(err, "getValues")
 	}

@@ -37,7 +37,7 @@ func NewOnCheck(targetID, countImpulse int) (interfaces.Event, error) {
 		return nil, errors.Wrap(err, "NewOnCheck")
 	}
 
-	o := &OnThreshold{
+	o := &OnCheck{
 		Event: &event.EventImpl{
 			Message:     msg,
 			Title:       "on_check",
