@@ -141,7 +141,7 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 		EventName:  "object.sensor.on_check",
 		TargetType: "object",
 		TargetID:   *sensorObj.GetParentID(),
-		Enabled:    1,
+		Enabled:    true,
 	}
 
 	eventID, err := store.I.Events().AddEvent(event)
@@ -156,6 +156,7 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 		Type:       "method",
 		Name:       "set_value",
 		Args:       "{\"param\":\"" + sensor.Type + "\"}",
+		Enabled:    true,
 	}
 
 	_, err = store.I.Events().AddEventAction(eventAction)

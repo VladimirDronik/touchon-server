@@ -3,11 +3,9 @@ package model
 type TrEvent struct {
 	ID         int    `json:"id"`
 	TargetType string `json:"target_type"`
-	EventName  string `json:"event" gorm:"column:event"`
+	EventName  string `json:"event_name"`
 	TargetID   int    `json:"target_id"`
-	Enabled    int    `json:"enabled"`
-	//Value      string `json:"value"`
-	//ItemID     int    `json:"item_id"`
+	Enabled    bool   `json:"enabled"`
 }
 
 func (o *TrEvent) TableName() string {

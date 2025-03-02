@@ -106,6 +106,7 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 		event.EventName = "on_change_state"
 		event.TargetType = "object"
 		event.TargetID = item.ControlObject
+		event.Enabled = true
 
 		eventID, err := store.I.Events().AddEvent(event)
 		if err != nil || eventID == 0 {
@@ -119,6 +120,7 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 			Type:       "method",
 			Name:       "set_state",
 			Args:       "{\"param\":\"state\"}",
+			Enabled:    true,
 		}
 
 		_, err = store.I.Events().AddEventAction(eventAction)
