@@ -106,10 +106,23 @@ func (o *Server) handleWizardCreateItem(ctx *fasthttp.RequestCtx) (_ interface{}
 		event.EventName = "on_change_state"
 		event.TargetType = "object"
 		event.TargetID = item.ControlObject
-		event.Value = "state"
-		event.ItemID = item.ID
 
-		if err := store.I.Events().AddEvent(event); err != nil {
+		eventID, err := store.I.Events().AddEvent(event)
+		if err != nil || eventID == 0 {
+			return nil, http.StatusInternalServerError, err
+		}
+
+		eventAction := &model.EventActions{
+			EventID:    eventID,
+			TargetType: "item",
+			TargetID:   item.ID,
+			Type:       "method",
+			Name:       "set_state",
+			Args:       "{\"param\":\"state\"}",
+		}
+
+		_, err = store.I.Events().AddEventAction(eventAction)
+		if err != nil {
 			return nil, http.StatusInternalServerError, err
 		}
 	}

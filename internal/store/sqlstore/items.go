@@ -291,11 +291,13 @@ func (o *Items) ChangeItem(id int, status string) error {
 func (o *Items) GetItemsForChange(targetType interfaces.TargetType, targetID int, eventName string) ([]*model.ItemForWS, error) {
 	var items []*model.ItemForWS
 
-	err := o.store.db.Table("events").Select("view_items.id, target_id, status, params, view_items.type, value AS EventValue").
-		Where("target_type = ?", targetType).
-		Where("target_id = ?", targetID).
-		Where("event = ?", eventName).
-		InnerJoins("INNER JOIN view_items ON view_items.id = events.item_id").
+	err := o.store.db.Table("ar_event_actions AS event_actions").
+		Select("view_items.id, status, params, view_items.type, args AS EventArgs").
+		Where("events.target_type = ?", targetType).
+		Where("events.target_id = ?", targetID).
+		Where("events.event_name = ?", eventName).
+		InnerJoins("INNER JOIN ar_events AS events ON events.id = event_actions.event_id").
+		InnerJoins("INNER JOIN view_items ON view_items.id = event_actions.target_id").
 		Find(&items).Error
 
 	if err != nil {

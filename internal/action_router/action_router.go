@@ -198,10 +198,18 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 
 	// Перебираем найденные итемы, чтобы произвести с ними действие
 	for _, item := range items {
+
+		args := make(map[string]interface{})
+		err = json.Unmarshal(item.EventArgs, &args)
+		if err != nil {
+			g.Logger.Error(errors.Wrap(err, "processObjectEvent: error retrieving event arguments"))
+			return
+		}
+
 		switch item.Type {
 
 		case "button", "switch", "conditioner":
-			item.Status, _ = msg.GetStringValue(item.EventValue)
+			item.Status, _ = msg.GetStringValue(args["param"].(string))
 			if err := store.I.Items().ChangeItem(item.ID, item.Status); err != nil {
 				g.Logger.Error(errors.Wrap(err, "processObjectEvent"))
 				return
@@ -210,7 +218,7 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 			ws.I.Send(item)
 
 		case "sensor":
-			item.Value, _ = msg.GetFloatValue(item.EventValue)
+			item.Value, _ = msg.GetFloatValue(args["param"].(string))
 
 			sensor, err := store.I.Devices().GetSensor(item.ID)
 			if err != nil {
@@ -218,7 +226,7 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 				return
 			}
 
-			if sensor.Current != item.Value {
+			if sensor.Current != item.Value { //TODO: эта конструкция бесполезна, т.к. данные с датчика снимаем и сразу шлеём в сокет, убрать
 				ws.I.Send(item)
 			}
 

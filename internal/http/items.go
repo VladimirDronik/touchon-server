@@ -141,11 +141,25 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 		EventName:  "object.sensor.on_check",
 		TargetType: "object",
 		TargetID:   *sensorObj.GetParentID(),
-		Value:      sensor.Type,
-		ItemID:     item.ID,
+		Enabled:    1,
 	}
 
-	if err := store.I.Events().AddEvent(event); err != nil {
+	eventID, err := store.I.Events().AddEvent(event)
+	if err != nil || eventID == 0 {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	eventAction := &model.EventActions{
+		EventID:    eventID,
+		TargetType: "item",
+		TargetID:   item.ID,
+		Type:       "method",
+		Name:       "set_value",
+		Args:       "{\"param\":\"" + sensor.Type + "\"}",
+	}
+
+	_, err = store.I.Events().AddEventAction(eventAction)
+	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
