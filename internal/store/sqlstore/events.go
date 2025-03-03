@@ -9,13 +9,10 @@ type Events struct {
 }
 
 func (e *Events) AddEvent(event *model.TrEvent) (int, error) {
-	err := e.store.db.Where("target_type = ?", event.TargetType).
+	e.store.db.Where("target_type = ?", event.TargetType).
 		Where("target_id = ?", event.TargetID).
 		Where("event_name = ?", event.EventName).
-		First(&event).Error
-	if err != nil {
-		return 0, err
-	}
+		First(&event)
 
 	if event.ID == 0 {
 		err := e.store.db.Create(&event).Error
