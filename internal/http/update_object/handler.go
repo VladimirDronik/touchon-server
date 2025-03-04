@@ -132,6 +132,19 @@ func setChildrenProps(objModelChildren *objects.Children, children []Child) erro
 }
 
 func configureDevice(req Request, objModel objects.Object, dstProp objects.Prop) error {
+	//ищем контроллер, если опция быстрого конфига выключена, то не конфигурим порты на лету
+	objContr, err := objects.LoadObject(*req.ParentID, model.CategoryController, "", false)
+	if err != nil {
+		return err
+	}
+	fastConfig, err := objContr.GetProps().GetBoolValue("fast_config")
+	if err != nil {
+		return err
+	}
+	if fastConfig == false {
+		return nil
+	}
+
 	interfaceConnection, err := objModel.GetProps().Get("interface")
 	if err != nil {
 		return nil

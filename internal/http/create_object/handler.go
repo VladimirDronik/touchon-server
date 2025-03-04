@@ -9,6 +9,7 @@ import (
 	"strings"
 	"touchon-server/internal/g"
 	"touchon-server/internal/helpers"
+	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
@@ -65,6 +66,11 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		}
 	}()
 
+	status, err := deviceConfiguration(*req, objectID)
+	if err != nil {
+		return nil, status, err
+	}
+
 	// Если событий нет, то уходим
 	if len(req.Events) == 0 {
 		return resp, http.StatusOK, nil
@@ -81,11 +87,6 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 			}
 		}
 	}()
-
-	status, err := deviceConfiguration(*req, objectID)
-	if err != nil {
-		return nil, status, err
-	}
 
 	for _, ev := range req.Events {
 		for _, act := range ev.Actions {
@@ -244,18 +245,18 @@ func deviceConfiguration(req Request, objectID int) (_ int, e error) {
 	addressObject, _ := req.Object.Props["address"].(string)
 	typeObject := req.Object.Type
 
-	//ищем контроллер
-	//objContr, err := objects.LoadObject(*req.Object.ParentID, model.CategoryController, "", false)
-	//if err != nil {
-	//	return 0, errors.Wrap(err, "deviceConfiguration")
-	//}
-	//fastConfig, err := objContr.GetProps().GetBoolValue("fast_config")
-	//if err != nil {
-	//	return 0, errors.Wrap(err, "deviceConfiguration")
-	//}
-	//if fastConfig == false {
-	//	return 0, nil
-	//}
+	//ищем контроллер, если опция быстрого конфига выключена, то не конфигурим порты на лету
+	objContr, err := objects.LoadObject(*req.Object.ParentID, model.CategoryController, "", false)
+	if err != nil {
+		return 0, errors.Wrap(err, "deviceConfiguration")
+	}
+	fastConfig, err := objContr.GetProps().GetBoolValue("fast_config")
+	if err != nil {
+		return 0, errors.Wrap(err, "deviceConfiguration")
+	}
+	if fastConfig == false {
+		return 0, nil
+	}
 
 	//Проверяем назначен ли адрес на какой-либо другой объект
 	objectsToReset, _, err := objects.FindRelatedObjects(addressObject, interfaceConnection, objectID, typeObject)

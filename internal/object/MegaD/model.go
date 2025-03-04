@@ -92,6 +92,18 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Editable: objects.False(),
 			Visible:  objects.False(),
 		},
+		{
+			Code:        "fast_config",
+			Name:        "Конфигурация портов \"на лету\"",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeBool,
+				DefaultValue: false,
+			},
+			Required: objects.False(),
+			Editable: objects.False(),
+			Visible:  objects.False(),
+		},
 	}
 
 	// Создаем сортированный список портов
