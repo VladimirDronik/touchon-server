@@ -2,10 +2,10 @@ package sqlstore
 
 import (
 	"encoding/json"
-	"sort"
-
 	"github.com/pkg/errors"
+	"sort"
 	"touchon-server/internal/model"
+	"touchon-server/internal/objects"
 	"touchon-server/lib/interfaces"
 )
 
@@ -250,14 +250,27 @@ func (o *Items) GetGroupElements(groupID int) ([]*model.ViewItem, error) {
 func (o *Items) GetCountersList() ([]*model.Counter, error) {
 	var r []*model.Counter
 
-	err := o.store.db.Table("counters").
-		Select("*").
-		Where("enabled").
-		Order("sort").
-		Find(&r).Error
-
+	storedObjects, err := o.store.ObjectRepository().GetObjects(map[string]interface{}{"category": "counter"}, nil, 0, 100)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetCountersList")
+	}
+
+	for _, obj := range storedObjects {
+		object, err := objects.LoadObject(obj.ID, "", "", false)
+		if err != nil {
+			return nil, errors.Wrap(err, "GetCountersList")
+		}
+
+		var counter model.Counter
+		counter.ID = object.GetID()
+		counter.Name = object.GetName()
+		counter.Enabled = true
+		counter.Type, _ = object.GetProps().GetStringValue("type_param")
+		counter.Unit, _ = object.GetProps().GetStringValue("unit")
+		*counter.PriceForUnit, _ = object.GetProps().GetFloatValue("price")
+		counter.Value, _ = object.GetProps().GetFloatValue("total")
+
+		r = append(r, &counter)
 	}
 
 	return r, nil

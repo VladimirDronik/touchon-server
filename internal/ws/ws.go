@@ -131,9 +131,17 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (o *Server) Send(message interface{}) {
+func (o *Server) Send(sender string, message interface{}) {
+	msg := struct {
+		Sender  string      `json:"sender"`
+		Message interface{} `json:"data"`
+	}{
+		Sender:  sender,
+		Message: message,
+	}
+
 	for clientID := range o.clients {
-		o.send(clientID, message)
+		o.send(clientID, msg)
 	}
 }
 

@@ -10,7 +10,7 @@ type Counter struct {
 	WeekValue    float32  `json:"week_value"`
 	MonthValue   float32  `json:"month_value"`
 	YearValue    float32  `json:"year_value"`
-	Impulse      float32  `json:"impulse"`
+	Value        float32  `json:"value"`
 	PriceForUnit *float32 `json:"price_for_unit,omitempty"`
 	Sort         int      `json:"sort,omitempty"`
 	Enabled      bool     `json:"enabled"`

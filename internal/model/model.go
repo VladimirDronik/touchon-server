@@ -15,4 +15,5 @@ const (
 	CategoryRS485        Category = "rs485"         // Шина RS485
 	CategoryModbus       Category = "modbus"        // Устройства MODBUS
 	CategoryConditioner  Category = "conditioner"   // Кондиционер
+	CategoryCounter      Category = "counter"
 )

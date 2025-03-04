@@ -68,10 +68,10 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 		},
 		{
 			Code:        "total",
-			Name:        "Общее значение счетчика, хранящееся в БД",
+			Name:        "Общее значение счетчика, хранящееся в БД уже преобразованное",
 			Description: "",
 			Item: &models.Item{
-				Type:         models.DataTypeInt,
+				Type:         models.DataTypeFloat,
 				DefaultValue: 0,
 			},
 			Required: objects.True(),
@@ -174,6 +174,42 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Editable: objects.True(),
 			Visible:  objects.True(),
 		},
+		{
+			Code:        "type_param",
+			Name:        "Измеряемый параметр",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeString,
+				DefaultValue: "",
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
+		{
+			Code:        "last_update",
+			Name:        "Последнее обновление",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeString,
+				DefaultValue: "",
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
+		{
+			Code:        "price",
+			Name:        "Стоимость одного юнита",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeFloat,
+				DefaultValue: "",
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
 	}
 
 	//events
@@ -189,10 +225,10 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 
 	//model
 	impl, err := objects.NewObjectModelImpl(
-		model.CategoryGenericInput,
+		model.CategoryCounter,
 		"impulse_counter",
 		0,
-		"Счетчик импульсов",
+		"Счетчик импульсов (входной порт на любом устройстве)",
 		props,
 		nil,
 		[]interfaces.Event{onThreshold, onCheck},

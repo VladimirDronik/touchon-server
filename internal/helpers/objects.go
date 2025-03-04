@@ -52,7 +52,7 @@ func SaveAndSendStatus(obj objects.Object, status model.ObjectStatus) error {
 		ID:     obj.GetID(),
 		Status: obj.GetStatus(),
 	}
-	ws.I.Send(wsMsg)
+	ws.I.Send("object", wsMsg)
 
 	return nil
 }

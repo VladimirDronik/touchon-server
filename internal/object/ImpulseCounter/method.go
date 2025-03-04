@@ -9,6 +9,7 @@ import (
 	helpersObj "touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
+	"touchon-server/internal/ws"
 	"touchon-server/lib/events/object/impulse_counter"
 	"touchon-server/lib/interfaces"
 )
@@ -109,9 +110,14 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 		return errors.Wrap(err, "Property 'current' error getIntValue")
 	}
 
-	total, err := totalProp.GetIntValue()
+	total, err := totalProp.GetFloatValue()
 	if err != nil {
 		return errors.Wrap(err, "Property 'total' error getIntValue")
+	}
+
+	multiplier, err := o.GetProps().GetFloatValue("multiplier")
+	if err != nil {
+		return errors.Wrap(err, "Property 'multiplier' error getFloatValue")
 	}
 
 	//если кол-во снятых импульсов меньше хранимых, значит счетчик сбросили из вне
@@ -120,12 +126,16 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 		d = count
 	}
 
-	totalProp.SetValue(total + d)
+	totalValue := total * (multiplier + float32(d))
+	totalProp.SetValue(total * (multiplier + float32(d)))
 
 	if err := o.resetTo(0); err != nil {
 		currentProp.SetValue(0)
 	}
 
+	//TODO: Заносим значение в графики
+
+	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: totalValue})
 	err = helpersObj.SaveAndSendStatus(o, model.StatusAvailable)
 
 	return err

@@ -69,7 +69,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 		model.CategoryRelay,
 		"relay",
 		0,
-		"Реле",
+		"Реле (выходной порт на любом устройстве)",
 		props,
 		nil,
 		[]interfaces.Event{onChangeState, onStateOn, onStateOff, onCheck},
