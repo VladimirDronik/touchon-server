@@ -55,8 +55,20 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Visible:  objects.True(),
 		},
 		{
-			Code:        "value",
-			Name:        "Значение счетчика, хранящееся в БД",
+			Code:        "current",
+			Name:        "Значение счетчика, приходящее от источника",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeInt,
+				DefaultValue: 0,
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
+		{
+			Code:        "total",
+			Name:        "Общее значение счетчика, хранящееся в БД",
 			Description: "",
 			Item: &models.Item{
 				Type:         models.DataTypeInt,
@@ -115,11 +127,23 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Visible:  objects.True(),
 		},
 		{
-			Code:        "math_transformation",
-			Name:        "Формула математического преобразования импульсов",
+			Code:        "multiplier",
+			Name:        "Множитель преобразования импульсов",
 			Description: "",
 			Item: &models.Item{
-				Type:         models.DataTypeString,
+				Type:         models.DataTypeFloat,
+				DefaultValue: "",
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
+		{
+			Code:        "start_value",
+			Name:        "Начальные значения счетчика",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeFloat,
 				DefaultValue: "",
 			},
 			Required: objects.True(),

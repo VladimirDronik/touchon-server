@@ -95,11 +95,36 @@ func (o *ImpulseCounter) getPort() (interfaces.Port, error) {
 
 // сохраняем количество импульсов в БД
 func (o *ImpulseCounter) saveImpulses(count int) error {
-	valueCount, err := o.GetProps().Get("value")
+	currentProp, err := o.GetProps().Get("current")
 	if err != nil {
-		return errors.Wrap(err, "Property 'value' not found for object")
+		return errors.Wrap(err, "Property 'current' not found for object")
 	}
-	valueCount.SetValue(count)
+	totalProp, err := o.GetProps().Get("total")
+	if err != nil {
+		return errors.Wrap(err, "Property 'total' not found for object")
+	}
+
+	current, err := currentProp.GetIntValue()
+	if err != nil {
+		return errors.Wrap(err, "Property 'current' error getIntValue")
+	}
+
+	total, err := totalProp.GetIntValue()
+	if err != nil {
+		return errors.Wrap(err, "Property 'total' error getIntValue")
+	}
+
+	//если кол-во снятых импульсов меньше хранимых, значит счетчик сбросили из вне
+	d := count - current
+	if d < 0 {
+		d = count
+	}
+
+	totalProp.SetValue(total + d)
+
+	if err := o.resetTo(0); err != nil {
+		currentProp.SetValue(0)
+	}
 
 	err = helpersObj.SaveAndSendStatus(o, model.StatusAvailable)
 
