@@ -232,7 +232,7 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 
 			// Обновление значения в таблице графиков для сенсора
 			t := time.Now().Format("2006-01-02T15:04")
-			if err := store.I.History().SetHourlyValue(item.ID, t, item.Value); err != nil {
+			if err := store.I.History().SetValue(item.ID, t, item.Value, model.TableDailyHistory); err != nil {
 				g.Logger.Error(errors.Wrap(err, "processObjectEvent"))
 				return
 			}

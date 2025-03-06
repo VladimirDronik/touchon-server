@@ -37,6 +37,13 @@ const (
 	HistoryFilterYear  HistoryFilter = "year"
 )
 
+type DestTable string
+
+const (
+	TableDailyHistory   DestTable = "daily_history"
+	TableMonthlyHistory DestTable = "monthly_history"
+)
+
 // HistoryItemType ENUM возможных типов сущностей имеющих историю значений
 type HistoryItemType string
 

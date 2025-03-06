@@ -248,7 +248,7 @@ func (o *Items) GetGroupElements(groupID int) ([]*model.ViewItem, error) {
 
 // GetCountersList Получение списка счетчиков
 func (o *Items) GetCountersList() ([]*model.Counter, error) {
-	var r []*model.Counter
+	var counters []*model.Counter
 
 	storedObjects, err := o.store.ObjectRepository().GetObjects(map[string]interface{}{"category": "counter"}, nil, 0, 100)
 	if err != nil {
@@ -267,29 +267,38 @@ func (o *Items) GetCountersList() ([]*model.Counter, error) {
 		counter.Enabled = true
 		counter.Type, _ = object.GetProps().GetStringValue("type_param")
 		counter.Unit, _ = object.GetProps().GetStringValue("unit")
-		*counter.PriceForUnit, _ = object.GetProps().GetFloatValue("price")
+		price, _ := object.GetProps().GetFloatValue("price")
+		counter.PriceForUnit = &price
 		counter.Value, _ = object.GetProps().GetFloatValue("total")
 
-		r = append(r, &counter)
+		counters = append(counters, &counter)
 	}
 
-	return r, nil
+	return counters, nil
 }
 
 // GetCounter Получение счетчика
 func (o *Items) GetCounter(id int) (*model.Counter, error) {
-	var r *model.Counter
+	var counter model.Counter
 
-	err := o.store.db.Table("counters").
-		Select("*").
-		Where("id = ?", id).
-		First(&r).Error
-
+	object, err := objects.LoadObject(id, "", "", false)
 	if err != nil {
-		return nil, errors.Wrap(err, "GetCounter")
+		return nil, errors.Wrap(err, "GetCountersList")
 	}
 
-	return r, nil
+	counter.ID = id
+	counter.Name = object.GetName()
+	counter.Enabled = true
+	counter.Type, _ = object.GetProps().GetStringValue("type_param")
+	counter.Unit, _ = object.GetProps().GetStringValue("unit")
+	price, _ := object.GetProps().GetFloatValue("price")
+	counter.PriceForUnit = &price
+	counter.Value, _ = object.GetProps().GetFloatValue("total")
+
+	//TODO: добавить графики и дневные значения
+	//counter.TodayValue = store.I
+
+	return &counter, nil
 }
 
 // ChangeItem обработка изменения итема

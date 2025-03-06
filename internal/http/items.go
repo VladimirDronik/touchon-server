@@ -564,6 +564,8 @@ func (o *Server) getCounter(ctx *fasthttp.RequestCtx) (interface{}, int, error) 
 		return nil, http.StatusBadRequest, err
 	}
 
+	store.I.History().GetValue(id, "", model.TableDailyHistory)
+
 	counter.History, err = store.I.History().GetHistory(id, model.HistoryItemTypeCounterObject, "")
 	if err != nil {
 		return nil, http.StatusBadRequest, err

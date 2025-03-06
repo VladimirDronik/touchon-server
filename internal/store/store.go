@@ -179,8 +179,9 @@ type Devices interface {
 
 type History interface {
 	GetHistory(itemID int, itemType model.HistoryItemType, filter model.HistoryFilter) (*model.HistoryPoints, error)
-	SetHourlyValue(itemID int, dateTime string, value float32) error
+	SetValue(objectID int, dateTime string, value float32, destination model.DestTable) error
 	GenerateHistory(itemID int, itemType model.HistoryItemType, filter model.HistoryFilter, startDate, endDate string, min, max float32) error
+	GetValue(objectID int, dateTime string, destination model.DestTable) (float32, error)
 }
 
 type Notifications interface {

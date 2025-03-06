@@ -15,6 +15,12 @@ type History struct {
 	store *Store
 }
 
+type recordStruct struct {
+	ObjectID int
+	Datetime string
+	Value    float32
+}
+
 // GetHistory получение истории изменения значений
 func (o *History) GetHistory(itemID int, itemType model.HistoryItemType, filter model.HistoryFilter) (*model.HistoryPoints, error) {
 	var filters []model.HistoryFilter
@@ -142,27 +148,35 @@ func (o *History) GenerateHistory(itemID int, itemType model.HistoryItemType, fi
 }
 
 // SetHourlyValue Добавляет в график ежечасное значение
-func (o History) SetHourlyValue(itemID int, dateTime string, value float32) error {
-	type recordStruct struct {
-		ViewItemID int `gorm:"view_item_id"`
-		Datetime   string
-		Value      float32
-	}
+func (o History) SetValue(objectID int, dateTime string, value float32, destination model.DestTable) error {
+	row := recordStruct{ObjectID: objectID, Datetime: dateTime, Value: float32(math.Round(float64(value)*10)) / 10}
 
-	row := recordStruct{ViewItemID: itemID, Datetime: dateTime, Value: float32(math.Round(float64(value)*10)) / 10}
+	//r := o.store.db.Table(destination).Where("object_id = ?", objectID).Where("datetime = ?", dateTime).Updates(&row)
+	//if r.Error != nil {
+	//	return errors.Wrap(r.Error, "SetValue")
+	//}
 
-	r := o.store.db.Table("device_hourly_history").Where("view_item_id = ?", itemID).Where("datetime = ?", dateTime).Updates(&row)
-	if r.Error != nil {
-		return errors.Wrap(r.Error, "SetHourlyValue")
+	//if r.RowsAffected == 0 {
+	if err := o.store.db.Table(string(destination)).Create(&row).Error; err != nil {
+		return errors.Wrap(err, "Error of create row on table: "+string(destination))
 	}
-
-	if r.RowsAffected == 0 {
-		if err := o.store.db.Table("device_hourly_history").Create(&row).Error; err != nil {
-			return errors.Wrap(err, "SetHourlyValue")
-		}
-	}
+	//}
 
 	return nil
+}
+
+func (o History) GetValue(objectID int, dateTime string, destination model.DestTable) (float32, error) {
+	row := recordStruct{}
+
+	err := o.store.db.Table(string(destination)).
+		Where("object_id = ?", objectID).
+		Where("datetime LIKE ?", dateTime).
+		First(&row).Error
+	if err != nil {
+		return 0.0, errors.Wrap(err, "Error get value")
+	}
+
+	return row.Value, nil
 }
 
 // prepareHistoryPoints заполнение полей formatted_date
