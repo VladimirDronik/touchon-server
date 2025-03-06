@@ -102,6 +102,9 @@ func (o *Server) handleCreateZone(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	}
 
 	zoneID, err := store.I.Zones().CreateZone(zone)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
 
 	return zoneID, http.StatusOK, err
 }
