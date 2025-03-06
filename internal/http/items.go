@@ -54,9 +54,6 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 		return nil, http.StatusInternalServerError, err
 	}
 
-	sensor.MinThreshold = nil
-	sensor.MaxThreshold = nil
-
 	sensorObj, err := memStore.I.GetObject(sensor.ObjectID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
@@ -69,7 +66,7 @@ func (o *Server) handleCreateSensor(ctx *fasthttp.RequestCtx) (interface{}, int,
 
 	//Если включена регулировка датчика, то выставляем пороговые значения у параметра сенсора
 	if sensor.Adjustment == true {
-		//objModel, err := objects.LoadObject(sensorValue.ID, "", "", model.ChildTypeNobody)
+		//objModel, err := objects.LoadObject(sensorObj.GetID(), "", "", false)
 		//if err != nil {
 		//	return nil, http.StatusInternalServerError, errors.Wrap(err, "LoadObject By ID")
 		//}
