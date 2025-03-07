@@ -155,8 +155,9 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 	//TODO: Заносим значение в графики
 	err = o.saveGraph(lastUpdate, total)
 
+	o.SetStatus(model.StatusAvailable)
 	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: totalValue})
-	err = helpersObj.SaveAndSendStatus(o, model.StatusAvailable)
+	helpersObj.SaveAndSendStatus(o, model.StatusAvailable, false)
 
 	return err
 }

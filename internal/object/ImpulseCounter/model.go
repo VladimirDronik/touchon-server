@@ -284,6 +284,14 @@ func (o *ImpulseCounter) Start() error {
 		return errors.Wrapf(err, "ImpulseCounterModel(%d) started", o.GetID())
 	}
 
+	startValue, err := o.GetProps().GetFloatValue("start_value")
+	if err != nil {
+		return errors.Wrap(err, "Property 'start_value' error getFloatValue")
+	}
+
+	o.GetProps().Set("total", startValue)
+
+	o.Check(nil)
 	o.SetTimer(updateInterval, o.check)
 	o.GetTimer().Start()
 
@@ -336,7 +344,7 @@ func (o *ImpulseCounter) handler(svc interfaces.MessageSender, msg interfaces.Me
 		return
 	}
 
-	helpersObj.SaveAndSendStatus(o, status)
+	helpersObj.SaveAndSendStatus(o, status, true)
 	if err := svc.Send(msg); err != nil {
 		g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler"))
 		return

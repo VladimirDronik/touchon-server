@@ -37,15 +37,17 @@ func ResetParentAndAddress(objectsToReset map[int]string) error {
 }
 
 // SaveAndSendStatus Установка статуса объекту и отправка этого статуса в вебсокеты
-func SaveAndSendStatus(obj objects.Object, status model.ObjectStatus) error {
+func SaveAndSendStatus(obj objects.Object, status model.ObjectStatus, memstoreUse bool) error {
 	obj.SetStatus(status)
 
 	if err := obj.Save(); err != nil {
 		return errors.Wrap(err, "Unable to save object")
 	}
 
-	if err := memstore.I.SaveObject(obj); err != nil {
-		return errors.Wrap(err, "Unable to save to memory object")
+	if memstoreUse {
+		if err := memstore.I.SaveObject(obj); err != nil {
+			return errors.Wrap(err, "Unable to save to memory object")
+		}
 	}
 
 	wsMsg := model.ObjectForWS{
