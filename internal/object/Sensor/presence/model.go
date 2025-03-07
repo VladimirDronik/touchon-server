@@ -1,10 +1,9 @@
 package presence
 
 import (
+	"github.com/pkg/errors"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/Sensor/motion"
@@ -30,6 +29,10 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 	obj.SetType("presence")
 	obj.SetName("Датчик присутствия")
 	obj.SetTags("presence", "присутствие")
+
+	if err := obj.GetProps().Set("interface", "MEGA-IN"); err != nil {
+		return nil, errors.Wrap(err, "presence.MakeModel")
+	}
 
 	// Добавляем свои события
 	onPresenceOn, err := sensor.NewOnPresenceOn(0)
