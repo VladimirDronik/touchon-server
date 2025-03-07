@@ -240,6 +240,7 @@ func deleteObject(objectID int) error {
 }
 
 func deviceConfiguration(req Request, objectID int) (_ int, e error) {
+	fastConfig := false
 	//Настройка портов контроллера, либо конфигурирование другого устройства, на котором располагается объект
 	interfaceConnection, _ := req.Object.Props["interface"].(string)
 	addressObject, _ := req.Object.Props["address"].(string)
@@ -248,12 +249,15 @@ func deviceConfiguration(req Request, objectID int) (_ int, e error) {
 	//ищем контроллер, если опция быстрого конфига выключена, то не конфигурим порты на лету
 	objContr, err := objects.LoadObject(*req.Object.ParentID, model.CategoryController, "", false)
 	if err != nil {
-		return 0, errors.Wrap(err, "deviceConfiguration")
+		g.Logger.Error(err)
 	}
-	fastConfig, err := objContr.GetProps().GetBoolValue("fast_config")
-	if err != nil {
-		return 0, errors.Wrap(err, "deviceConfiguration")
+	if objContr != nil {
+		fastConfig, err = objContr.GetProps().GetBoolValue("fast_config")
+		if err != nil {
+			g.Logger.Error(err)
+		}
 	}
+
 	if fastConfig == false {
 		return 0, nil
 	}
