@@ -51,6 +51,7 @@ type GroupRoom struct {
 	Name     string `json:"name"`
 	Style    string `json:"style"`
 	Sort     int    `json:"sort"`
+	IsGroup  bool   `json:"is_group"`
 
 	Sensors []*SensorItem `json:"sensors,omitempty"`
 	Items   []*ViewItem   `json:"items,omitempty"`

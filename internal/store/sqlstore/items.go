@@ -105,9 +105,10 @@ func (o *Items) GetZoneItems(withEmptyRooms bool, withDisabledItems bool) ([]*mo
 
 	for _, zone := range zones {
 		groupRoom := &model.GroupRoom{
-			ID:    zone.ID,
-			Name:  zone.Name,
-			Style: zone.Style,
+			ID:      zone.ID,
+			Name:    zone.Name,
+			Style:   zone.Style,
+			IsGroup: zone.IsGroup,
 		}
 
 		groupRoom.Sensors, err = o.GetZoneSensors(zone.ID, withDisabledItems)
@@ -136,7 +137,7 @@ type getZonesRow struct {
 func (o *Items) GetZones(withEmptyRooms bool) ([]*model.Zone, error) {
 	var rows []*getZonesRow
 
-	q := `select zones.id, zones.parent_id, zones.name, zones.style, count(view_items.id) items_count
+	q := `select zones.id, zones.parent_id, zones.name, zones.style, zones.is_group, count(view_items.id) items_count
 	 from zones
 	 left join view_items ON view_items.zone_id = zones.id
 	 where view_items.id is null or view_items.enabled and view_items.type != 'group'
