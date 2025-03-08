@@ -216,7 +216,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Description: "",
 			Item: &models.Item{
 				Type:         models.DataTypeFloat,
-				DefaultValue: "",
+				DefaultValue: 0.0,
 			},
 			Required: objects.True(),
 			Editable: objects.True(),
@@ -228,7 +228,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Description: "",
 			Item: &models.Item{
 				Type:         models.DataTypeFloat,
-				DefaultValue: "",
+				DefaultValue: 0.0,
 			},
 			Required: objects.True(),
 			Editable: objects.True(),
