@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"touchon-server/internal/ws"
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/g"
@@ -197,6 +198,8 @@ func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error
 		vals[string(k)] = v
 	}
 
+	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: vals})
+
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {
 		return nil, errors.Wrap(err, "SensorModel.Check")
@@ -235,7 +238,7 @@ func (o *SensorModel) Start() error {
 
 	_, err = o.Check(nil)
 	if err != nil {
-		return errors.Wrap(err, "SensorModel.Start: Check func")
+		g.Logger.Error(errors.Wrap(err, "SensorModel.Start: Check func"))
 	}
 
 	o.SetTimer(updateInterval, func() {

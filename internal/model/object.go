@@ -89,5 +89,5 @@ func (o *StoreObject) TableName() string {
 type ObjectForWS struct {
 	ID     int          `json:"item_id"`
 	Status ObjectStatus `json:"status,omitempty"`
-	Value  float32      `json:"value,omitempty" gorm:"-"`
+	Value  interface{}  `json:"value,omitempty" gorm:"-"`
 }
