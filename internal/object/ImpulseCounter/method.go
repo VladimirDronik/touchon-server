@@ -2,7 +2,6 @@ package ImpulseCounter
 
 import (
 	"github.com/pkg/errors"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -100,35 +99,31 @@ func (o *ImpulseCounter) getPort() (interfaces.Port, error) {
 
 // сохраняем количество импульсов в БД
 func (o *ImpulseCounter) saveImpulses(count int) error {
-	currentProp, err := o.GetProps().Get("current")
+	current, err := o.GetProps().GetIntValue("current")
 	if err != nil {
 		return errors.Wrap(err, "Property 'current' not found for object")
 	}
-	totalProp, err := o.GetProps().Get("total")
+	total, err := o.GetProps().GetFloatValue("total")
 	if err != nil {
 		return errors.Wrap(err, "Property 'total' not found for object")
 	}
-	lastUpdateProp, err := o.GetProps().Get("last_update")
+	lastUpdate, err := o.GetProps().GetStringValue("last_update")
 	if err != nil {
 		return errors.Wrap(err, "Property 'lastUpdate' not found for object")
 	}
-
-	current, err := currentProp.GetIntValue()
+	today, err := o.GetProps().GetFloatValue("today")
 	if err != nil {
-		return errors.Wrap(err, "Property 'current' error getIntValue")
+		return errors.Wrap(err, "Property 'today' not found for object")
 	}
-
-	total, err := totalProp.GetFloatValue()
+	hour, err := o.GetProps().GetFloatValue("hour")
 	if err != nil {
-		return errors.Wrap(err, "Property 'total' error getIntValue")
+		return errors.Wrap(err, "Property 'hour' not found for object")
 	}
 
 	multiplier, err := o.GetProps().GetFloatValue("multiplier")
 	if err != nil {
 		return errors.Wrap(err, "Property 'multiplier' error getFloatValue")
 	}
-
-	lastUpdate, err := lastUpdateProp.GetStringValue()
 
 	// если кол-во снятых импульсов меньше хранимых, значит счетчик сбросили из вне
 	d := count - current
@@ -141,28 +136,32 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 		d = 0
 	}
 
-	totalValue := total + multiplier*float32(d)
-	total64 := float64(totalValue)
-	ratio := math.Pow(10, float64(1))
-	totalValue = float32(math.Round(total64*ratio) / ratio)
-	totalProp.SetValue(totalValue)
-	lastUpdateProp.SetValue(time.Now().Format(ValueUpdateAtFormat))
+	cur := multiplier * float32(d)
+	total = total + cur
+	today = today + cur
+	hour = hour + cur
+	//total64 := float64(totalValue)
+	//ratio := math.Pow(10, float64(1))
+	//totalValue = float32(math.Round(total64*ratio) / ratio)
+	o.GetProps().Set("total", total)
+	o.GetProps().Set("last_update", time.Now().Format(ValueUpdateAtFormat))
 
 	if err := o.resetTo(0); err != nil {
-		currentProp.SetValue(0)
+
+		o.GetProps().Set("current", 0)
 	}
 
 	//TODO: Заносим значение в графики
-	err = o.saveGraph(lastUpdate, total)
+	err = o.saveGraph(lastUpdate, cur, today, hour)
 
 	o.SetStatus(model.StatusAvailable)
-	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: totalValue})
+	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: total})
 	helpersObj.SaveAndSendStatus(o, model.StatusAvailable, false)
 
 	return err
 }
 
-func (o *ImpulseCounter) saveGraph(lastUpdate string, current float32) error {
+func (o *ImpulseCounter) saveGraph(lastUpdate string, current float32, today float32, hour float32) error {
 	datetime, err := time.Parse("2006-01-02", lastUpdate)
 	if err != nil {
 		return err
@@ -172,22 +171,15 @@ func (o *ImpulseCounter) saveGraph(lastUpdate string, current float32) error {
 	//Если наступил новый час, то за предыдущий сохраняем данные в БД
 	if datetime.Hour() != now.Hour() {
 		dateTimeMinus := now.Add(time.Duration(-1) * time.Hour)
-		prewHourVal, err := store.I.History().GetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04"), model.TableDailyHistory)
-		if err != nil {
-			return err
-		}
-		store.I.History().SetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04:05"), current-prewHourVal, model.TableDailyHistory)
+		store.I.History().SetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04:05"), hour, model.TableDailyHistory)
+		o.GetProps().Set("hour", 0.0)
 		//Очищаем таблицу от старых данных, больше 2х недель
 	}
 
 	//Если наступил новый день, то за предыдущий сохраняем данные в БД
 	if datetime.Day() != now.Day() {
 		dateTimeMinus := now.Add(time.Duration(-24) * time.Hour)
-		prewDayVal, err := store.I.History().GetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04"), model.TableMonthlyHistory)
-		if err != nil {
-			return err
-		}
-		store.I.History().SetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04:05"), current-prewDayVal, model.TableMonthlyHistory)
+		store.I.History().SetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04:05"), today, model.TableMonthlyHistory)
 		//Очищаем таблицу от старых данных больше 1 года
 	}
 

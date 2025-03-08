@@ -210,6 +210,30 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Editable: objects.True(),
 			Visible:  objects.True(),
 		},
+		{
+			Code:        "today",
+			Name:        "Значения счетчика за сегодня",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeFloat,
+				DefaultValue: "",
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
+		{
+			Code:        "hour",
+			Name:        "Значения счетчика за час",
+			Description: "",
+			Item: &models.Item{
+				Type:         models.DataTypeFloat,
+				DefaultValue: "",
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
 	}
 
 	//events
