@@ -169,8 +169,6 @@ func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _
 }
 
 func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error) {
-	defer o.GetTimer().Reset()
-
 	if o.getValues == nil {
 		return nil, errors.Wrap(ErrGetValuesFuncNotSet, "SensorModel.Check")
 	}
@@ -213,6 +211,11 @@ func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error
 	return nil, nil
 }
 
+func (o *SensorModel) check() ([]interfaces.Message, error) {
+	defer o.GetTimer().Reset()
+	return o.Check(nil)
+}
+
 func (o *SensorModel) Start() error {
 	if err := o.ObjectModelImpl.Start(); err != nil {
 		return errors.Wrap(err, "SensorModel.Start")
@@ -230,9 +233,14 @@ func (o *SensorModel) Start() error {
 		return errors.Wrap(err, "SensorModel.Start")
 	}
 
+	_, err = o.Check(nil)
+	if err != nil {
+		return errors.Wrap(err, "SensorModel.Start: Check func")
+	}
+
 	o.SetTimer(updateInterval, func() {
 		// Игнорируем ошибку ErrGetValuesFuncNotSet при автоматическом обновлении датчика
-		if _, err := o.Check(nil); err != nil && !errors.Is(err, ErrGetValuesFuncNotSet) {
+		if _, err := o.check(); err != nil && !errors.Is(err, ErrGetValuesFuncNotSet) {
 			g.Logger.Error(errors.Wrap(err, "SensorModel.Start"))
 		}
 	})
