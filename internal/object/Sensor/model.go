@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	helpersObj "touchon-server/internal/helpers"
 	"touchon-server/internal/ws"
 
 	"github.com/pkg/errors"
@@ -199,6 +200,7 @@ func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error
 	}
 
 	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: vals})
+	helpersObj.SaveAndSendStatus(o, model.StatusAvailable, false)
 
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {
@@ -214,9 +216,18 @@ func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error
 	return nil, nil
 }
 
-func (o *SensorModel) check() ([]interfaces.Message, error) {
-	defer o.GetTimer().Reset()
-	return o.Check(nil)
+func (o *SensorModel) check(timerEnable bool) {
+	//Запускаем с таймером
+	if timerEnable {
+		defer o.GetTimer().Reset()
+	}
+
+	_, err := o.Check(nil)
+	// Игнорируем ошибку ErrGetValuesFuncNotSet при автоматическом обновлении датчика
+	if err != nil && !errors.Is(err, ErrGetValuesFuncNotSet) {
+		g.Logger.Error(errors.Wrap(err, "SensorModel.Start: Check func"))
+	}
+	return
 }
 
 func (o *SensorModel) Start() error {
@@ -236,17 +247,14 @@ func (o *SensorModel) Start() error {
 		return errors.Wrap(err, "SensorModel.Start")
 	}
 
-	_, err = o.Check(nil)
-	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "SensorModel.Start: Check func"))
-	}
+	//Опрос датчика сразу же после запуска
+	o.check(false)
 
+	//Запуск таймера для опроса датчика
 	o.SetTimer(updateInterval, func() {
-		// Игнорируем ошибку ErrGetValuesFuncNotSet при автоматическом обновлении датчика
-		if _, err := o.check(); err != nil && !errors.Is(err, ErrGetValuesFuncNotSet) {
-			g.Logger.Error(errors.Wrap(err, "SensorModel.Start"))
-		}
+		o.check(true)
 	})
+
 	o.GetTimer().Start()
 
 	return nil
