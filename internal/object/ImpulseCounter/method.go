@@ -1,16 +1,16 @@
 package ImpulseCounter
 
 import (
-	"github.com/pkg/errors"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 	"touchon-server/internal/g"
 	helpersObj "touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
-	"touchon-server/internal/ws"
 	"touchon-server/lib/events/object/impulse_counter"
 	"touchon-server/lib/interfaces"
 )
@@ -157,7 +157,7 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 	err = o.saveGraph(lastUpdate, cur, today, hour)
 
 	o.SetStatus(model.StatusAvailable)
-	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: total})
+	g.WSServer.Send("object", model.ObjectForWS{ID: o.GetID(), Value: total})
 	helpersObj.SaveAndSendStatus(o, model.StatusAvailable, false)
 
 	return err

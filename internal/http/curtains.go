@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/store"
-	"touchon-server/lib/helpers"
 )
 
 // Возвращает объект шторы

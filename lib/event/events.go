@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"touchon-server/lib/helpers/orderedmap"
 	"touchon-server/lib/interfaces"
+	"touchon-server/lib/ordered_map"
 )
 
 func NewEvents() *Events {
 	return &Events{
-		m: orderedmap.New[string, interfaces.Event](10),
+		m: ordered_map.New[string, interfaces.Event](10),
 	}
 }
 
 type Events struct {
-	m *orderedmap.OrderedMap[string, interfaces.Event]
+	m *ordered_map.OrderedMap[string, interfaces.Event]
 }
 
 func (o *Events) Len() int {

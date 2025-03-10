@@ -2,11 +2,11 @@ package helpers
 
 import (
 	"github.com/pkg/errors"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	"touchon-server/internal/store/memstore"
-	"touchon-server/internal/ws"
 )
 
 // ResetParentAndAddress Убирает у объекта родителя и адрес в свойствах
@@ -54,7 +54,7 @@ func SaveAndSendStatus(obj objects.Object, status model.ObjectStatus, memstoreUs
 		ID:     obj.GetID(),
 		Status: obj.GetStatus(),
 	}
-	ws.I.Send("object", wsMsg)
+	g.WSServer.Send("object", wsMsg)
 
 	return nil
 }

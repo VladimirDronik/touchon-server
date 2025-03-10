@@ -12,7 +12,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
-	"touchon-server/lib/helpers"
+	"touchon-server/internal/helpers"
 	"touchon-server/lib/interfaces"
 )
 

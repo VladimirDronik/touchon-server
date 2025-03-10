@@ -7,19 +7,18 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/g"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/internal/token"
-	"touchon-server/lib/helpers"
 	"touchon-server/lib/http/server"
 	"touchon-server/lib/interfaces"
 )
 
-const disabledAuthDeviceID = 10
-
 func (o *Server) disableAuth(ctx *fasthttp.RequestCtx) *model.Tokens {
 	if tokenSecret := o.GetConfig()["token_secret"]; tokenSecret == "disable_auth" {
-		tokens, err := o.createSession(disabledAuthDeviceID)
+		tokens, err := helpers.CreateSession(g.DisabledAuthDeviceID)
 		if err != nil {
 			return nil
 		}
@@ -78,7 +77,7 @@ func (o *Server) getToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 		return nil, http.StatusUnauthorized, errors.New("credentials not found")
 	}
 
-	tokens, err := o.createSession(deviceID)
+	tokens, err := helpers.CreateSession(deviceID)
 	if err != nil {
 		return nil, http.StatusUnauthorized, err
 	}
@@ -137,7 +136,7 @@ func (o *Server) refreshToken(ctx *fasthttp.RequestCtx) (interface{}, int, error
 		return nil, http.StatusUnauthorized, err
 	}
 
-	tokens, err := o.createSession(user.DeviceID)
+	tokens, err := helpers.CreateSession(user.DeviceID)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
@@ -154,7 +153,7 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.Reques
 	tokenSecret := o.GetConfig()["token_secret"]
 	if tokenSecret == "disable_auth" {
 		// Disable auth
-		ctx.SetUserValue("device_id", disabledAuthDeviceID)
+		ctx.SetUserValue("device_id", g.DisabledAuthDeviceID)
 		return next(ctx)
 	}
 

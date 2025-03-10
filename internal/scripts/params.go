@@ -4,24 +4,24 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"touchon-server/lib/helpers/orderedmap"
+	"touchon-server/lib/ordered_map"
 )
 
 func NewParams() *Params {
 	return &Params{
-		m: orderedmap.New[string, *Param](10),
+		m: ordered_map.New[string, *Param](10),
 	}
 }
 
 type Params struct {
-	m *orderedmap.OrderedMap[string, *Param]
+	m *ordered_map.OrderedMap[string, *Param]
 }
 
 func (o *Params) Len() int {
 	return o.m.Len()
 }
 
-func (o *Params) GetAll() *orderedmap.OrderedMap[string, *Param] {
+func (o *Params) GetAll() *ordered_map.OrderedMap[string, *Param] {
 	return o.m
 }
 

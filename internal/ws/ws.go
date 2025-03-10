@@ -10,13 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/token"
-	"touchon-server/lib/helpers"
 	"touchon-server/lib/http/server"
 )
-
-// Global instance
-var I *Server
 
 func New() (*Server, error) {
 	baseServer, err := server.New("WS", g.Config, g.Logger)
@@ -60,17 +57,21 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 	helpers.DumpRequest(o.GetLogger(), ctx)
 	defer helpers.DumpResponse(o.GetLogger(), ctx)
 
-	authToken := string(ctx.Request.Header.Peek("token"))
-	if authToken == "" {
-		ctx.Error(http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		return
-	}
+	deviceID := g.DisabledAuthDeviceID
+	var err error
 
-	// Проверяем и извлекаем ID клиента из токена
-	clientID, err := token.KeysExtract(authToken, o.GetConfig()["token_secret"])
-	if err != nil {
-		ctx.Error(http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		return
+	if o.GetConfig()["token_secret"] != "disable_auth" {
+		authToken := string(ctx.Request.Header.Peek("token"))
+		if authToken == "" {
+			ctx.Error(http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		// Проверяем и извлекаем ID клиента из токена
+		if deviceID, err = token.KeysExtract(authToken, o.GetConfig()["token_secret"]); err != nil {
+			ctx.Error(http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 	}
 
 	var upgrader = websocket.FastHTTPUpgrader{
@@ -104,17 +105,17 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 			}
 		}()
 
-		if o.clients[clientID] == nil {
-			o.clients[clientID] = map[*websocket.Conn]bool{}
+		if o.clients[deviceID] == nil {
+			o.clients[deviceID] = map[*websocket.Conn]bool{}
 		}
-		o.GetLogger().Debugf("ws.Server: client %d connected", clientID)
-		o.clients[clientID][ws] = true        // Сохраняем соединение, используя его как ключ
-		defer delete(o.clients[clientID], ws) // Удаляем соединение
+		o.GetLogger().Debugf("ws.Server: client %d connected", deviceID)
+		o.clients[deviceID][ws] = true        // Сохраняем соединение, используя его как ключ
+		defer delete(o.clients[deviceID], ws) // Удаляем соединение
 
 		for {
 			mt, message, err := ws.ReadMessage()
 			if err != nil || mt == websocket.CloseMessage {
-				o.GetLogger().Debugf("ws.Server: client %d disconnected", clientID)
+				o.GetLogger().Debugf("ws.Server: client %d disconnected", deviceID)
 				break // Выходим из цикла, если клиент пытается закрыть соединение или связь прервана
 			}
 

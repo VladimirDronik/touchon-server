@@ -18,8 +18,8 @@ import (
 	"touchon-server/internal/g"
 	"touchon-server/internal/store"
 	"touchon-server/lib/events/script"
-	"touchon-server/lib/helpers/orderedmap"
 	"touchon-server/lib/interfaces"
+	"touchon-server/lib/ordered_map"
 )
 
 // Global instance
@@ -74,7 +74,7 @@ func (o *Scripts) GetScript(id int) (*Script, error) {
 	}
 
 	script.Params = &Params{
-		m: orderedmap.New[string, *Param](10),
+		m: ordered_map.New[string, *Param](10),
 	}
 
 	if err := json.Unmarshal(s.Params, &script.Params); err != nil {
@@ -104,7 +104,7 @@ func (o *Scripts) GetScriptByCode(code string) (*Script, error) {
 	}
 
 	script.Params = &Params{
-		m: orderedmap.New[string, *Param](10),
+		m: ordered_map.New[string, *Param](10),
 	}
 
 	if err := json.Unmarshal(s.Params, &script.Params); err != nil {

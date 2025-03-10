@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"touchon-server/internal/model"
-	"touchon-server/internal/store"
-	"touchon-server/lib/helpers"
-
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/helpers"
+	"touchon-server/internal/model"
+	"touchon-server/internal/store"
 )
 
 // deviceTokenRequest представляет тело запроса для привязки токена устройства

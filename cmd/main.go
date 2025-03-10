@@ -114,10 +114,10 @@ func main() {
 	check(prepareDB())
 
 	// Создаем экземпляр вебсокет сервера для мобильных приложений
-	ws.I, err = ws.New()
+	g.WSServer, err = ws.New()
 	check(err)
 
-	check(ws.I.Start(cfg["ws_addr"]))
+	check(g.WSServer.Start(cfg["ws_addr"]))
 
 	// Создаем шину сообщений
 	g.Msgs, err = messages.NewService(runtime.NumCPU(), 2000)
@@ -189,7 +189,7 @@ func main() {
 		logger.Error(err)
 	}
 
-	if err := ws.I.Shutdown(); err != nil {
+	if err := g.WSServer.Shutdown(); err != nil {
 		logger.Error(err)
 	}
 

@@ -3,7 +3,6 @@ package http
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -12,11 +11,9 @@ import (
 	"touchon-server/internal/g"
 	"touchon-server/internal/http/create_object"
 	"touchon-server/internal/http/update_object"
-	"touchon-server/internal/model"
 	"touchon-server/internal/scripts"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
-	"touchon-server/internal/token"
 	"touchon-server/lib/http/server"
 )
 
@@ -60,14 +57,14 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	// Служебные эндпоинты
 	svc := o.addMiddleware("/_", o.authMiddleware)
 	svc("GET", "/info", o.handleGetInfo)
-	svc("GET", "/sensors", o.handleGetSensors)               // получение значение датчиков
-	svc("GET", "/objects/example", create_object.GetExample) // получение примера json'а для создания объекта
-	svc("POST", "/kill", func(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
+	svc("GET", "/sensors", o.handleGetSensors)                                            // получение значение датчиков
+	svc("GET", "/objects/example", create_object.GetExample)                              // получение примера json'а для создания объекта
+	svc("POST", "/kill", func(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) { // прибить сервис, если он хотя бы хттп-запрос может обработать
 		panic("kill by /_/kill endpoint")
 		return 0, 0, nil
 	})
 	if g.Logger.IsLevelEnabled(logrus.DebugLevel) {
-		o.AddHandler("POST", "/_/switch_auth", o.handleSwitchAuth)
+		o.AddHandler("POST", "/_/switch_auth", o.handleSwitchAuth) // Включение/отключение авторизации (для удобства разработки)
 	}
 
 	rawSvc := o.addRawMiddleware("/_", o.authMiddleware)
@@ -233,41 +230,6 @@ type Server struct {
 //
 //	return nil
 //}
-
-func (o *Server) createSession(deviceID int) (*model.Tokens, error) {
-	tokenJWT := token.New(o.GetConfig()["token_secret"])
-
-	accessTokenTTL, err := time.ParseDuration(o.GetConfig()["access_token_ttl"])
-	if err != nil {
-		return nil, errors.Wrap(err, "createSession")
-	}
-
-	refreshTokenTTL, err := time.ParseDuration(o.GetConfig()["refresh_token_ttl"])
-	if err != nil {
-		return nil, errors.Wrap(err, "createSession")
-	}
-
-	accessToken, err := tokenJWT.NewJWT(deviceID, accessTokenTTL)
-	if err != nil {
-		return nil, errors.Wrap(err, "createSession")
-	}
-
-	refreshToken, err := tokenJWT.NewRefreshToken()
-	if err != nil {
-		return nil, errors.Wrap(err, "createSession")
-	}
-
-	tokens := &model.Tokens{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
-
-	if err := store.I.Users().AddRefreshToken(deviceID, tokens.RefreshToken, refreshTokenTTL); err != nil {
-		return nil, errors.Wrap(err, "createSession")
-	}
-
-	return tokens, nil
-}
 
 func (o *Server) setCookie(ctx *fasthttp.RequestCtx, name string, value string, httpOnly bool) {
 	c := &fasthttp.Cookie{}

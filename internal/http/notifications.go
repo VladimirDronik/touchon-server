@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
-	"touchon-server/lib/helpers"
 )
 
 // Получение кол-ва непрочитанных уведомлений

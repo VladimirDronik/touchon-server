@@ -6,10 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	memStore "touchon-server/internal/store/memstore"
-	"touchon-server/lib/helpers"
+	libHelpers "touchon-server/lib/helpers"
 )
 
 type GetObjectsParams struct {
@@ -37,7 +38,7 @@ func parseGetObjectsParams(ctx *fasthttp.RequestCtx) (*GetObjectsParams, error) 
 	r := &GetObjectsParams{}
 	var err error
 
-	r.FilterByTags = helpers.PrepareTags(helpers.GetParam(ctx, "tags"), ",")
+	r.FilterByTags = libHelpers.PrepareTags(helpers.GetParam(ctx, "tags"), ",")
 
 	r.FilterByID, err = helpers.GetUintParam(ctx, "filter_by_id")
 	if err != nil {

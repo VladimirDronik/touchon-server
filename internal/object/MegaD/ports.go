@@ -3,20 +3,20 @@ package MegaD
 import (
 	"sort"
 
-	"touchon-server/lib/helpers/orderedmap"
+	"touchon-server/lib/ordered_map"
 )
 
 // ============================================================
 // Работаем с этими переменными
 
 // Список всех портов
-var Ports = orderedmap.New[int, *Port](50)
+var Ports = ordered_map.New[int, *Port](50)
 
 // Список портов по группам
-var Groups = orderedmap.New[string, []*Port](3)
+var Groups = ordered_map.New[string, []*Port](3)
 
 // Список типов портов
-var PortTypes = orderedmap.New[string, *PortType](10)
+var PortTypes = ordered_map.New[string, *PortType](10)
 
 // ============================================================
 // Здесь настраиваем группы/типы/режимы портов
@@ -155,19 +155,19 @@ type port struct {
 type Port struct {
 	Number int
 	Group  string
-	Types  *orderedmap.OrderedMap[string, *PortType]
+	Types  *ordered_map.OrderedMap[string, *PortType]
 }
 
 type PortType struct {
 	Code        string
 	Name        string
 	Description string
-	Modes       *orderedmap.OrderedMap[string, *PortMode]
+	Modes       *ordered_map.OrderedMap[string, *PortMode]
 }
 
 func init() {
 	// Создаем карту для поиска объекта группы по его коду
-	var portGroups = orderedmap.New[string, *portGroup](len(PortGroupList))
+	var portGroups = ordered_map.New[string, *portGroup](len(PortGroupList))
 	for _, item := range PortGroupList {
 		if err := portGroups.Add(item.Code, item); err != nil {
 			panic(err)
@@ -180,7 +180,7 @@ func init() {
 			Code:        item.Code,
 			Name:        item.Name,
 			Description: item.Description,
-			Modes:       orderedmap.New[string, *PortMode](10),
+			Modes:       ordered_map.New[string, *PortMode](10),
 		}
 
 		for _, mode := range item.Modes {
@@ -203,7 +203,7 @@ func init() {
 		}
 
 		// Подготавливаем типы
-		portTypes := orderedmap.New[string, *PortType](len(item.Types))
+		portTypes := ordered_map.New[string, *PortType](len(item.Types))
 		for _, typeCode := range item.Types {
 			v, err := PortTypes.Get(typeCode)
 			if err != nil {
@@ -216,7 +216,7 @@ func init() {
 			// Некоторые порты поддерживают ШИМ, некоторые нет.
 			// В списке есть все режимы для данного типа.
 			// Лишние не копируем.
-			modes := orderedmap.New[string, *PortMode](portType.Modes.Len())
+			modes := ordered_map.New[string, *PortMode](portType.Modes.Len())
 			for _, mode := range portType.Modes.GetValueList() {
 				if supportedModes[mode.Code] {
 					if err := modes.Add(mode.Code, mode); err != nil {

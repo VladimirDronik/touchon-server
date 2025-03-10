@@ -8,7 +8,7 @@ import (
 var abc = map[rune]bool{}
 
 func init() {
-	for _, r := range "abcdefghijklmnopqrstuvwxyz0123456789_" {
+	for _, r := range "abcdefghijklmnopqrstuvwxyz0123456789_йцукенгшщзхъфывапролджэёячсмитьбю" {
 		abc[r] = true
 	}
 }
@@ -17,14 +17,14 @@ func PrepareTag(tag string) string {
 	s := strings.TrimSpace(strings.ToLower(tag))
 	s = strings.ReplaceAll(s, "-", "_")
 
-	//var r []rune //Убрали, чтобы выводилась кириллица, убрать совсем, если не нужно
-	//for _, c := range s {
-	//	if abc[c] {
-	//		r = append(r, c)
-	//	}
-	//}
+	var r []rune
+	for _, c := range s {
+		if abc[c] {
+			r = append(r, c)
+		}
+	}
 
-	return s //string(r)
+	return string(r)
 }
 
 func PrepareTags(tags string, delim string) []string {

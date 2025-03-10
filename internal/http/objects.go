@@ -9,11 +9,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
 	memStore "touchon-server/internal/store/memstore"
-	"touchon-server/lib/helpers"
+	libHelpers "touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
 )
 
@@ -35,7 +36,7 @@ type getObjectsTypesResponseItem struct {
 // @Failure      500 {object} http.Response[any]
 // @Router /objects/types [get]
 func (o *Server) handleGetObjectsTypes(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	tags := helpers.PrepareTags(helpers.GetParam(ctx, "tags"), ";")
+	tags := libHelpers.PrepareTags(helpers.GetParam(ctx, "tags"), ";")
 	m := objects.GetCategoriesAndTypes()
 
 	r := make([]*getObjectsTypesResponseItem, 0, len(m))

@@ -4,25 +4,25 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"touchon-server/lib/helpers/orderedmap"
 	"touchon-server/lib/models"
+	"touchon-server/lib/ordered_map"
 )
 
 func NewProps() *Props {
 	return &Props{
-		m: orderedmap.New[string, *Prop](10),
+		m: ordered_map.New[string, *Prop](10),
 	}
 }
 
 type Props struct {
-	m *orderedmap.OrderedMap[string, *Prop]
+	m *ordered_map.OrderedMap[string, *Prop]
 }
 
 func (o *Props) Len() int {
 	return o.m.Len()
 }
 
-func (o *Props) GetAll() *orderedmap.OrderedMap[string, *Prop] {
+func (o *Props) GetAll() *ordered_map.OrderedMap[string, *Prop] {
 	return o.m
 }
 

@@ -5,11 +5,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	helpersObj "touchon-server/internal/helpers"
-	"touchon-server/internal/ws"
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/g"
+	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/object/SensorValue"
 	"touchon-server/internal/objects"
@@ -199,8 +198,8 @@ func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error
 		vals[string(k)] = v
 	}
 
-	ws.I.Send("object", model.ObjectForWS{ID: o.GetID(), Value: vals})
-	helpersObj.SaveAndSendStatus(o, model.StatusAvailable, false)
+	g.WSServer.Send("object", model.ObjectForWS{ID: o.GetID(), Value: vals})
+	helpers.SaveAndSendStatus(o, model.StatusAvailable, false)
 
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {

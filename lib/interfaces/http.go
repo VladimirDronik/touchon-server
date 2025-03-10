@@ -28,3 +28,9 @@ type HttpServer interface {
 	CreateEventAction(targetType string, targetID int, eventName string, act *EventAction) error
 	DeleteObject(objectID int) (interface{}, int, error)
 }
+
+type WSServer interface {
+	Send(sender string, message interface{})
+	Start(bindAddr string) error
+	Shutdown() error
+}
