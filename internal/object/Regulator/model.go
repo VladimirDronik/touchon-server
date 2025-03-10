@@ -185,7 +185,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategoryRegulator,
 		"regulator",
-		objects.Internal,
+		0,
 		"Регулятор",
 		props,
 		nil,
