@@ -17,8 +17,8 @@ import (
 // @Description Возвращает пример тела запроса для создания объекта
 // @ID GetObjectExample
 // @Produce json
-// @Param category query string true "Категория объекта" Enums(controller,sensor,regulator,generic_input,relay,modbus,conditioner)
-// @Param type query string true "Тип объекта" example(mega_d,htu21d,regulator,generic_input,relay,wb_mrm2_mini,onokom/hr_1_mb_b)
+// @Param category query string true "Категория объекта" Enums(controller,sensor,regulator,generic_input,relay,rs485,conditioner)
+// @Param type query string true "Тип объекта" example(mega_d,htu21d,regulator,generic_input,relay,wb_mrm2_mini,onokom/hr_1_mb_b,bus)
 // @Success      200 {object} server.Response[Request]
 // @Failure      400 {object} server.Response[any]
 // @Failure      500 {object} server.Response[any]

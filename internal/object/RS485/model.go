@@ -197,12 +197,12 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 		model.CategoryRS485,
 		"bus",
 		0,
-		"RS485-TCP шлюз",
+		"Шина RS485 (rtu, tcp)",
 		props,
 		nil,
 		nil,
 		nil,
-		[]string{model.CategoryRS485, "rs-485", "шлюз"},
+		[]string{model.CategoryRS485, "rs-485", "шина"},
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "RS485.MakeModel")

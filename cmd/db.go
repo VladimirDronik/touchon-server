@@ -31,47 +31,23 @@ func createServerObject() error {
 		return nil
 	}
 
-	server, err := createObject(model.CategoryServer, "server", nil, true)
+	server, err := createObject(model.CategoryServer, "server", nil, true, nil)
 	if err != nil {
 		return errors.Wrap(err, "createServerObject")
 	}
 
 	serverID := server.GetID()
 
-	bus0, err := createObject(model.CategoryRS485, "bus", &serverID, true)
-	if err != nil {
-		return errors.Wrap(err, "createServerObject")
-	}
-
-	bus1, err := createObject(model.CategoryRS485, "bus", &serverID, true)
-	if err != nil {
-		return errors.Wrap(err, "createServerObject")
-	}
-
-	for i, bus := range []objects.Object{bus0, bus1} {
-		props := bus.GetProps()
-
-		if err := props.Set("connection_string", "rtu:///dev/ttyUSB"+strconv.Itoa(i)); err != nil {
-			return errors.Wrap(err, "createServerObject")
+	for i := 0; i < 2; i++ {
+		props := map[string]interface{}{
+			"connection_string": "rtu:///dev/ttyUSB" + strconv.Itoa(i),
+			"speed":             "9600",
+			"data_bits":         8,
+			"parity":            "0",
+			"stop_bits":         "1",
 		}
 
-		if err := props.Set("speed", "9600"); err != nil {
-			return errors.Wrap(err, "createServerObject")
-		}
-
-		if err := props.Set("data_bits", 8); err != nil {
-			return errors.Wrap(err, "createServerObject")
-		}
-
-		if err := props.Set("parity", "0"); err != nil {
-			return errors.Wrap(err, "createServerObject")
-		}
-
-		if err := props.Set("stop_bits", "1"); err != nil {
-			return errors.Wrap(err, "createServerObject")
-		}
-
-		if err := bus.Save(); err != nil {
+		if _, err := createObject(model.CategoryRS485, "bus", &serverID, true, props); err != nil {
 			return errors.Wrap(err, "createServerObject")
 		}
 	}
@@ -79,10 +55,10 @@ func createServerObject() error {
 	return nil
 }
 
-func createObject(objCat model.Category, objType string, parentID *int, enabled bool) (objects.Object, error) {
+func createObject(objCat model.Category, objType string, parentID *int, enabled bool, props map[string]interface{}) (objects.Object, error) {
 	objModel, err := objects.LoadObject(0, objCat, objType, true)
 	if err != nil {
-		return nil, errors.Wrap(err, "createObject")
+		return nil, errors.Wrapf(err, "createObject(%s, %s)", objCat, objType)
 	}
 
 	objModel.SetParentID(parentID)
@@ -92,17 +68,23 @@ func createObject(objCat model.Category, objType string, parentID *int, enabled 
 	for _, p := range objModel.GetProps().GetAll().GetValueList() {
 		if p.GetValue() == nil && p.DefaultValue != nil {
 			if err := p.SetValue(p.DefaultValue); err != nil {
-				return nil, errors.Wrap(err, "createObject")
+				return nil, errors.Wrapf(err, "createObject(%s, %s)", objCat, objType)
 			}
 		}
 	}
 
+	for k, v := range props {
+		if err := objModel.GetProps().Set(k, v); err != nil {
+			return nil, errors.Wrapf(err, "createObject(%s, %s)", objCat, objType)
+		}
+	}
+
 	if err := objModel.GetProps().Check(); err != nil {
-		return nil, errors.Wrap(err, "createObject")
+		return nil, errors.Wrapf(err, "createObject(%s, %s)", objCat, objType)
 	}
 
 	if err := objModel.Save(); err != nil {
-		return nil, errors.Wrap(err, "createObject")
+		return nil, errors.Wrapf(err, "createObject(%s, %s)", objCat, objType)
 	}
 
 	return objModel, nil

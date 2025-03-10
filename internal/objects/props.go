@@ -144,8 +144,8 @@ func (o *Props) Check() error {
 	for _, p := range o.m.GetValueList() {
 		switch p.Type {
 		case models.DataTypeString:
-			_, err := p.GetStringValue()
-			if p.Required.Check(o) && err != nil {
+			v, err := p.GetStringValue()
+			if p.Required.Check(o) && (err != nil || v == "") {
 				return errors.Wrapf(errors.New("value is not set"), "check(%s)", p.Code)
 			}
 			if err == nil && p.CheckValue != nil {

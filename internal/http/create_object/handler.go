@@ -119,7 +119,7 @@ func createObject(req *Request) (int, error) {
 
 	// Выставляем сначала значения по умолчанию
 	for _, p := range objModel.GetProps().GetAll().GetValueList() {
-		if p.DefaultValue != nil {
+		if p.GetValue() == nil && p.DefaultValue != nil {
 			if err := p.SetValue(p.DefaultValue); err != nil {
 				return 0, errors.Wrap(err, "createObject")
 			}

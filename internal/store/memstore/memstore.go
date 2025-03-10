@@ -96,31 +96,29 @@ func (o *MemStore) Start() error {
 		return errors.Wrap(err, "Start")
 	}
 
-	if err := startTree(list); err != nil {
-		return errors.Wrap(err, "Start")
-	}
+	startTree(list)
 
 	return nil
 }
 
-func startTree(items []*treeItem) error {
+func startTree(items []*treeItem) {
 	for _, item := range items {
 		if !item.Object.GetEnabled() {
 			continue
 		}
 
 		if err := item.Object.Start(); err != nil {
-			return errors.Wrap(err, "startTree")
+			// При старте сервиса неверно сконфигурированный объект не должен
+			// останавливать сервис или прекращать запуск других не дочерних объектов.
+			// Сервис должен запуститься, чтобы была возможность изменить св-ва объекта.
+			g.Logger.Error(errors.Wrap(err, "startTree"))
+			continue
 		}
 
 		if len(item.Children) > 0 {
-			if err := startTree(item.Children); err != nil {
-				return err
-			}
+			startTree(item.Children)
 		}
 	}
-
-	return nil
 }
 
 func (o *MemStore) Shutdown() error {
