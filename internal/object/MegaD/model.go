@@ -4,7 +4,6 @@ package MegaD
 
 import (
 	"fmt"
-	"net"
 	"sort"
 	"strconv"
 
@@ -44,14 +43,14 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 				Type:         models.DataTypeString,
 				DefaultValue: "sec",
 			},
-			Required: objects.True(),
+			Required: objects.False(),
 			Editable: objects.True(),
 			Visible:  objects.True(),
 		},
 		{
 			Code:        "address",
-			Name:        "IP адрес",
-			Description: "",
+			Name:        "Адрес",
+			Description: "Хост или IP-адрес",
 			Item: &models.Item{
 				Type:         models.DataTypeString,
 				DefaultValue: "127.0.0.1",
@@ -59,13 +58,13 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Required: objects.True(),
 			Editable: objects.True(),
 			Visible:  objects.True(),
-			CheckValue: func(p *objects.Prop, allProps map[string]*objects.Prop) error {
-				if v, _ := p.GetStringValue(); net.ParseIP(v) == nil {
-					return errors.New("IP address is bad")
-				}
-
-				return nil
-			},
+			//CheckValue: func(p *objects.Prop, allProps map[string]*objects.Prop) error {
+			//	if v, _ := p.GetStringValue(); net.ParseIP(v) == nil {
+			//		return errors.New("IP address is bad")
+			//	}
+			//
+			//	return nil
+			//},
 		},
 		{
 			Code:        "protocol",
