@@ -3,8 +3,10 @@ package http
 import (
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/valyala/fasthttp"
+	"touchon-server/internal/g"
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/internal/store/memstore"
@@ -120,4 +122,32 @@ func (o *Server) handleGetSensors(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	}
 
 	return r, http.StatusOK, nil
+}
+
+var (
+	authOldTokenMU sync.Mutex
+	authOldToken   = "disable_auth"
+)
+
+// Включение/отключение авторизации (только в debug mode)
+// @Summary Включение/отключение авторизации (только в debug mode)
+// @Tags Service
+// @Description Включение/отключение авторизации (только в debug mode)
+// @ID ServiceAuth
+// @Produce json
+// @Success      200 {object} http.Response[string]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /_/switch_auth [post]
+func (o *Server) handleSwitchAuth(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	authOldTokenMU.Lock()
+	defer authOldTokenMU.Unlock()
+
+	authOldToken, g.Config["token_secret"] = g.Config["token_secret"], authOldToken
+
+	if g.Config["token_secret"] == "disable_auth" {
+		return "Авторизация отключена", http.StatusOK, nil
+	} else {
+		return "Авторизация включена", http.StatusOK, nil
+	}
 }

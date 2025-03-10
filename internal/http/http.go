@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	_ "touchon-server/docs"
 	"touchon-server/internal/g"
@@ -65,6 +66,9 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 		panic("kill by /_/kill endpoint")
 		return 0, 0, nil
 	})
+	if g.Logger.IsLevelEnabled(logrus.DebugLevel) {
+		o.AddHandler("POST", "/_/switch_auth", o.handleSwitchAuth)
+	}
 
 	rawSvc := o.addRawMiddleware("/_", o.authMiddleware)
 	rawSvc("GET", "/log", o.handleGetLog)
