@@ -144,6 +144,8 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 	//ratio := math.Pow(10, float64(1))
 	//totalValue = float32(math.Round(total64*ratio) / ratio)
 	o.GetProps().Set("total", total)
+	o.GetProps().Set("hour", hour)
+	o.GetProps().Set("today", today)
 	o.GetProps().Set("last_update", time.Now().Format(ValueUpdateAtFormat))
 
 	if err := o.resetTo(0); err != nil {
@@ -180,6 +182,7 @@ func (o *ImpulseCounter) saveGraph(lastUpdate string, current float32, today flo
 	if datetime.Day() != now.Day() {
 		dateTimeMinus := now.Add(time.Duration(-24) * time.Hour)
 		store.I.History().SetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04:05"), today, model.TableMonthlyHistory)
+		o.GetProps().Set("today", 0.0)
 		//Очищаем таблицу от старых данных больше 1 года
 	}
 
