@@ -2,10 +2,10 @@
 //
 // ./bin $ go generate -C ../cmd
 // ./bin $ go build -C ../cmd -o ../bin/cmd && TOKEN_SECRET=disable_auth ./cmd
-// docker build --progress=plain -t ts . && docker run --rm -it --network=host --name ts ts
+// ./bin $ docker build -f ../Dockerfile --progress=plain -t ts ../ && docker run --rm -it --network=host --name ts ts
 //
-// GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=bin/db.sqlite GOOSE_MIGRATION_DIR=migrations go tool goose status
-// GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=bin/db.sqlite GOOSE_MIGRATION_DIR=migrations go tool goose create <migration_name> sql
+// ./bin $ GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=db.sqlite GOOSE_MIGRATION_DIR=../migrations go tool goose status
+// ./bin $ GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=db.sqlite GOOSE_MIGRATION_DIR=../migrations go tool goose create <migration_name> sql
 
 package main
 

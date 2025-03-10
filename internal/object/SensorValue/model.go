@@ -119,7 +119,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 	impl, err := objects.NewObjectModelImpl(
 		model.CategorySensorValue,
 		"",
-		objects.Internal,
+		objects.CreationForbidden|objects.DeletionForbidden,
 		"",
 		props,
 		nil,

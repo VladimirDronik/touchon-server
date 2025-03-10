@@ -9,7 +9,7 @@ ENV GO111MODULE=on
 COPY . ./
 
 RUN go generate -C cmd
-# RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go test -mod vendor ./...
+RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go test -mod vendor ./...
 
 ARG TARGETOS TARGETARCH
 

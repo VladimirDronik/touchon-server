@@ -2,11 +2,12 @@ package create_object
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
-	"github.com/valyala/fasthttp"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
@@ -66,7 +67,7 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		}
 	}()
 
-	if req.Object.Category != model.CategoryController || req.Object.Category != model.CategoryRS485 {
+	if req.Object.Category != model.CategoryController && req.Object.Category != model.CategoryRS485 {
 		status, err := deviceConfiguration(*req, objectID)
 		if err != nil {
 			return nil, status, err
