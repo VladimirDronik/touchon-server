@@ -81,14 +81,8 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 	err = upgrader.Upgrade(ctx, func(ws *websocket.Conn) {
 		defer ws.Close()
 
-		// Устанавливаем PongHandler
-		ws.SetPongHandler(func(appData string) error {
-			return nil
-		})
-
-		// Устанавливаем обработчик Ping сообщений
+		ws.SetPongHandler(func(appData string) error { return nil })
 		ws.SetPingHandler(func(appData string) error {
-			//o.GetLogger().Debugf("ws.Server: received ping from client %d", clientID)
 			return ws.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(time.Second))
 		})
 
@@ -108,7 +102,9 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 		if o.clients[deviceID] == nil {
 			o.clients[deviceID] = map[*websocket.Conn]bool{}
 		}
+
 		o.GetLogger().Debugf("ws.Server: client %d connected", deviceID)
+
 		o.clients[deviceID][ws] = true        // Сохраняем соединение, используя его как ключ
 		defer delete(o.clients[deviceID], ws) // Удаляем соединение
 
@@ -142,19 +138,15 @@ func (o *Server) Send(sender string, message interface{}) {
 	}
 
 	for clientID := range o.clients {
-		o.send(clientID, msg)
-	}
-}
-
-func (o *Server) send(clientID int, message interface{}) {
-	for conn := range o.clients[clientID] {
-		if o.GetLogger().Level >= logrus.DebugLevel {
+		if o.GetLogger().IsLevelEnabled(logrus.DebugLevel) {
 			data, _ := json.Marshal(message)
 			o.GetLogger().Debugf("ws.Server.Send(to %d): %v", clientID, string(data))
 		}
 
-		if err := conn.WriteJSON(message); err != nil {
-			o.GetLogger().Error(errors.Wrap(err, "send"))
+		for conn := range o.clients[clientID] {
+			if err := conn.WriteJSON(msg); err != nil {
+				o.GetLogger().Error(errors.Wrap(err, "send"))
+			}
 		}
 	}
 }

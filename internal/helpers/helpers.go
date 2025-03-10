@@ -90,7 +90,7 @@ func CreateSession(deviceID int) (*model.Tokens, error) {
 		RefreshToken: refreshToken,
 	}
 
-	if err := store.I.Users().AddRefreshToken(deviceID, tokens.RefreshToken, refreshTokenTTL); err != nil {
+	if err := store.I.Users().AddRefreshToken(deviceID, refreshToken, refreshTokenTTL); err != nil {
 		return nil, errors.Wrap(err, "createSession")
 	}
 

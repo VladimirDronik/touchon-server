@@ -158,7 +158,6 @@ func (o *Server) authMiddleware(ctx *fasthttp.RequestCtx, next interfaces.Reques
 	}
 
 	tkn := string(ctx.Request.Header.Peek("Token"))
-
 	if tkn == "" {
 		return nil, http.StatusUnauthorized, errors.New("token not found")
 	}

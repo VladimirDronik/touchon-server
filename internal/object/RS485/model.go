@@ -362,7 +362,8 @@ func (o *RS485Impl) actionsHandler() {
 		// Обрабатываем задачу
 		result, err := func() (_ interface{}, e error) {
 			if err := o.open(); err != nil {
-				return nil, errors.Wrap(err, "RS485Impl.actionsHandler")
+				connString, _ := o.GetProps().GetStringValue("connection_string")
+				return nil, errors.Wrapf(err, "RS485Impl.actionsHandler(%s)", connString)
 			}
 
 			defer func() {
