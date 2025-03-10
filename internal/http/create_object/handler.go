@@ -66,9 +66,11 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 		}
 	}()
 
-	status, err := deviceConfiguration(*req, objectID)
-	if err != nil {
-		return nil, status, err
+	if req.Object.Category != model.CategoryController || req.Object.Category != model.CategoryRS485 {
+		status, err := deviceConfiguration(*req, objectID)
+		if err != nil {
+			return nil, status, err
+		}
 	}
 
 	// Если событий нет, то уходим
