@@ -3,9 +3,9 @@ package SensorValue
 import (
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
-	regulator "touchon-server/internal/object/Regulator"
 	"touchon-server/internal/objects"
 	"touchon-server/internal/store"
+	"touchon-server/internal/store/memstore"
 	"touchon-server/lib/models"
 )
 
@@ -133,28 +133,6 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 
 	obj := &SensorValueModel{ObjectModelImpl: impl}
 
-	if !withChildren {
-		return obj, nil
-	}
-
-	reg, err := regulator.MakeModel(withChildren)
-	if err != nil {
-		return nil, errors.Wrap(err, "SensorValue.MakeModel")
-	}
-
-	regProps := map[string]interface{}{
-		"type":             regulator.TypeSimple,
-		"sensor_value_ttl": "30s",
-	}
-
-	for k, v := range regProps {
-		if err := reg.GetProps().Set(k, v); err != nil {
-			return nil, errors.Wrap(err, "SensorValue.MakeModel")
-		}
-	}
-
-	impl.GetChildren().Add(reg)
-
 	return obj, nil
 }
 
@@ -218,13 +196,25 @@ func (o *SensorValueModel) getFloatValue(code string) (float32, error) {
 
 func (o *SensorValueModel) DeleteChildren() error {
 	for _, child := range o.GetChildren().GetAll() {
-		if err := child.DeleteChildren(); err != nil {
-			return errors.Wrap(err, "DeleteChildren")
+		// Удаляем всех кроме регулятора
+		// При удалении датчика, регулятор должен помечаться как "Отключенный" и оставаться без родителя.
+		if child.GetCategory() == model.CategoryRegulator && child.GetType() == "regulator" {
+			child.SetParentID(nil)
+			child.SetEnabled(false)
+
+			if err := child.Save(); err != nil {
+				return errors.Wrap(err, "DeleteChildren")
+			}
+
+			if err := memstore.I.SaveObject(child); err != nil {
+				return errors.Wrap(err, "DeleteChildren")
+			}
+
+			continue
 		}
 
-		// Удаляем только регулятор
-		if !(child.GetCategory() == model.CategoryRegulator && child.GetType() == "regulator") {
-			continue
+		if err := child.DeleteChildren(); err != nil {
+			return errors.Wrap(err, "DeleteChildren")
 		}
 
 		if err := store.I.ObjectRepository().DelObject(child.GetID()); err != nil {

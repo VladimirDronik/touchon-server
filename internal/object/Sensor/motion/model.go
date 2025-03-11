@@ -116,9 +116,6 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 		prop.CheckValue = nil
 	}
 
-	// Удаляем регулятор
-	m.GetChildren().DeleteAll()
-
 	obj.GetChildren().Add(m)
 
 	return obj, nil
