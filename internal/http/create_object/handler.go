@@ -250,18 +250,23 @@ func deviceConfiguration(req Request, objectID int) (_ int, e error) {
 	typeObject := req.Object.Type
 
 	//ищем контроллер, если опция быстрого конфига выключена, то не конфигурим порты на лету
-	objContr, err := objects.LoadObject(*req.Object.ParentID, model.CategoryController, "", false)
+
+	parentID := 0
+	if req.Object.ParentID != nil {
+		parentID = *req.Object.ParentID
+	}
+
+	objContr, err := objects.LoadObject(parentID, model.CategoryController, "", false)
 	if err != nil {
 		g.Logger.Error(err)
-	}
-	if objContr != nil {
+	} else {
 		fastConfig, err = objContr.GetProps().GetBoolValue("fast_config")
 		if err != nil {
 			g.Logger.Error(err)
 		}
 	}
 
-	if fastConfig == false {
+	if !fastConfig {
 		return 0, nil
 	}
 

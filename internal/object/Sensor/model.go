@@ -76,12 +76,11 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Description: "Интервал получения значения датчика",
 			Item: &models.Item{
 				Type:         models.DataTypeString,
-				DefaultValue: "5s",
+				DefaultValue: "30s",
 			},
-			Required:   objects.True(),
-			Editable:   objects.True(),
-			Visible:    objects.True(),
-			CheckValue: objects.AboveOrEqual1(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 	}
 

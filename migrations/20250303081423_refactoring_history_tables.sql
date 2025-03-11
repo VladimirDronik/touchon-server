@@ -26,6 +26,9 @@ create table monthly_history (
     datetime TEXT    not null default '',
     value TEXT not null default ''
 );
-
 -- +goose StatementEnd
 
+-- +goose Down
+-- +goose StatementBegin
+-- TODO ...
+-- +goose StatementEnd

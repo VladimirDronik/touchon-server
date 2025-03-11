@@ -1,14 +1,14 @@
 package regulator
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/g"
 	"touchon-server/internal/model"
+	"touchon-server/internal/object/Sensor"
 	"touchon-server/internal/objects"
-	"touchon-server/internal/store"
+	"touchon-server/internal/store/memstore"
 	"touchon-server/lib/events/object/regulator"
 	"touchon-server/lib/helpers"
 	"touchon-server/lib/interfaces"
@@ -64,7 +64,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Description: "Время, в течение которого данные датчика будут считаться актуальными",
 			Item: &models.Item{
 				Type:         models.DataTypeString,
-				DefaultValue: "30s",
+				DefaultValue: "120s",
 			},
 			Required:   objects.True(),
 			Editable:   objects.True(),
@@ -145,6 +145,18 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 			Editable: objects.True(),
 			Visible:  objects.True(),
 		},
+		{
+			Code:        "update_interval",
+			Name:        "Интервал (10s, 1m etc)",
+			Description: "Интервал опроса датчиков",
+			Item: &models.Item{
+				Type:         models.DataTypeString,
+				DefaultValue: "30s",
+			},
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
+		},
 	}
 
 	onBelow, err := regulator.NewOnBelow(0, 0)
@@ -206,86 +218,109 @@ type RegulatorModel struct {
 	*objects.ObjectModelImpl
 }
 
-func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ interfaces.Message) {
-	if !o.GetEnabled() {
-		return
-	}
+func (o *RegulatorModel) check() {
+	defer func() {
+		if o.GetTimer() != nil {
+			o.GetTimer().Reset()
+		}
+	}()
 
-	// Раз попали сюда, значит значение датчика обновилось
-	// o.timer будет nil, если не выполняли вызов метода Start
-	// Start вызывается в memstore, не вызывается в http эндпоинтах
-	if o.GetTimer() != nil {
-		o.GetTimer().Reset()
-	}
+	g.Logger.Debugf("Regulator (%d) check", o.GetID())
 
-	regTypeS, err := o.GetProps().GetStringValue("type")
+	regType, err := o.GetProps().GetStringValue("type")
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 		return
 	}
-	regType := Type(regTypeS)
 
 	fallbackSensorValueID, err := o.GetProps().GetIntValue("fallback_sensor_value_id")
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
+		return
+	}
+
+	sensorValueTTLs, err := o.GetProps().GetStringValue("sensor_value_ttl")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
+		return
+	}
+
+	sensorValueTTL, err := time.ParseDuration(sensorValueTTLs)
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 		return
 	}
 
 	//minSP, err := o.GetProps().GetFloatValue("min_sp")
 	//if err != nil {
-	//context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	//g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 	//return
 	//}
 	//
 	//maxSP, err := o.GetProps().GetFloatValue("max_sp")
 	//if err != nil {
-	//context.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	//g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 	//return
 	//}
 
 	targetSP, err := o.GetProps().GetFloatValue("target_sp")
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 		return
 	}
 
 	aboveTolerance, err := o.GetProps().GetFloatValue("above_tolerance")
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 		return
 	}
 
 	belowTolerance, err := o.GetProps().GetFloatValue("below_tolerance")
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 		return
 	}
 
 	complexTolerance, err := o.GetProps().GetFloatValue("complex_tolerance")
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 		return
 	}
 
 	parentID := o.GetParentID()
 	if parentID == nil {
-		g.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.check"))
 		return
 	}
 
 	// Запрос данных TargetSensor
-	sensorValue, err := o.requestSensorValue(*parentID)
+	sensorValue, valueUpdatedAt, err := o.requestSensorValue(*parentID)
 	if err != nil {
 		if fallbackSensorValueID < 1 {
-			g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 			return
 		}
 
-		sensorValue, err = o.requestSensorValue(fallbackSensorValueID)
+		sensorValue, valueUpdatedAt, err = o.requestSensorValue(fallbackSensorValueID)
 		if err != nil {
-			g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 			return
 		}
+	}
+
+	// Если значение датчика(ов) давно не обновлялось, генерируем событие и уходим
+	if time.Now().Sub(*valueUpdatedAt) > sensorValueTTL {
+		msg, err := regulator.NewOnStale(*parentID)
+		if err != nil {
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
+			return
+		}
+
+		if err := g.Msgs.Send(msg); err != nil {
+			g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
+		}
+
+		return
 	}
 
 	var msg interfaces.Message
@@ -293,9 +328,9 @@ func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ in
 	switch regType {
 	case TypeSimple:
 		switch {
-		case sensorValue < (targetSP - belowTolerance): // TODO minSP ???
+		case sensorValue < (targetSP - belowTolerance):
 			msg, err = regulator.NewOnBelow(*parentID, sensorValue)
-		case sensorValue > (targetSP + aboveTolerance): // TODO maxSP ???
+		case sensorValue > (targetSP + aboveTolerance):
 			msg, err = regulator.NewOnAbove(*parentID, sensorValue)
 		}
 
@@ -315,32 +350,62 @@ func (o *RegulatorModel) sensorOnCheckHandler(svc interfaces.MessageSender, _ in
 		err = errors.New("regulator(TypePID) logic not implemented")
 
 	default:
-		g.Logger.Error(errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(errors.Errorf("unexpected regulator type %q", regType), "RegulatorModel.check"))
 		return
 	}
 
 	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 		return
 	}
 
-	if err := svc.Send(msg); err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.sensorOnCheckHandler"))
+	if err := g.Msgs.Send(msg); err != nil {
+		g.Logger.Error(errors.Wrap(err, "RegulatorModel.check"))
 	}
 }
 
-func (o *RegulatorModel) requestSensorValue(sensorValueID int) (float32, error) {
-	s, err := store.I.ObjectRepository().GetProp(sensorValueID, "value")
+func (o *RegulatorModel) requestSensorValue(sensorValueID int) (float32, *time.Time, error) {
+	sensorValueObj, err := memstore.I.GetObject(sensorValueID)
 	if err != nil {
-		return 0, errors.Wrap(err, "requestSensorValue")
+		return 0, nil, errors.Wrap(err, "requestSensorValue")
 	}
 
-	value, err := strconv.ParseFloat(s, 32)
-	if err != nil {
-		return 0, errors.Wrap(err, "requestSensorValue")
+	// Проверяем, что датчик включен
+
+	if !sensorValueObj.GetEnabled() {
+		return 0, nil, errors.Wrap(errors.Errorf("sensor value %d is disabled", sensorValueID), "requestSensorValue")
 	}
 
-	return helpers.Round(float32(value)), nil
+	sensorID := sensorValueObj.GetParentID()
+	if sensorID == nil {
+		return 0, nil, errors.Wrap(errors.Errorf("sensor value %d parent_id is nil", sensorValueID), "requestSensorValue")
+	}
+
+	sensorObj, err := memstore.I.GetObject(*sensorID)
+	if err != nil {
+		return 0, nil, errors.Wrap(err, "requestSensorValue")
+	}
+
+	if !sensorObj.GetEnabled() {
+		return 0, nil, errors.Wrap(errors.Errorf("sensor %d is disabled", *sensorID), "requestSensorValue")
+	}
+
+	valueUpdatedAtS, err := sensorValueObj.GetProps().GetStringValue("value_updated_at")
+	if err != nil {
+		return 0, nil, errors.Wrap(err, "requestSensorValue")
+	}
+
+	valueUpdatedAt, err := time.Parse(Sensor.ValueUpdateAtFormat, valueUpdatedAtS)
+	if err != nil {
+		return 0, nil, errors.Wrap(err, "requestSensorValue")
+	}
+
+	value, err := sensorValueObj.GetProps().GetFloatValue("value")
+	if err != nil {
+		return 0, nil, errors.Wrap(err, "requestSensorValue")
+	}
+
+	return helpers.Round(value), &valueUpdatedAt, nil
 }
 
 func (o *RegulatorModel) Start() error {
@@ -348,69 +413,20 @@ func (o *RegulatorModel) Start() error {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	parentID := o.GetParentID()
-	if parentID == nil {
-		return errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.Start")
-	}
-
-	sensorValue, err := store.I.ObjectRepository().GetObject(*parentID)
+	updateIntervalS, err := o.GetProps().GetStringValue("update_interval")
 	if err != nil {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	err = o.Subscribe(
-		interfaces.MessageTypeEvent,
-		"object.sensor.on_check",
-		interfaces.TargetTypeObject,
-		sensorValue.ParentID,
-		o.sensorOnCheckHandler,
-	)
+	updateInterval, err := time.ParseDuration(updateIntervalS)
 	if err != nil {
 		return errors.Wrap(err, "RegulatorModel.Start")
 	}
 
-	sensorValueTTLs, err := o.GetProps().GetStringValue("sensor_value_ttl")
-	if err != nil {
-		return errors.Wrap(err, "RegulatorModel.Start")
-	}
-
-	sensorValueTTL, err := time.ParseDuration(sensorValueTTLs)
-	if err != nil {
-		return errors.Wrap(err, "RegulatorModel.Start")
-	}
-
-	o.SetTimer(sensorValueTTL, o.timerHandler)
+	o.SetTimer(updateInterval, o.check)
 	o.GetTimer().Start()
 
 	return nil
-}
-
-func (o *RegulatorModel) timerHandler() {
-	if !o.GetEnabled() {
-		return
-	}
-
-	g.Logger.Debugf("Regulator(%d): timerHandler(%s)", o.GetID(), o.GetTimer().GetDuration())
-
-	parentID := o.GetParentID()
-	if parentID == nil {
-		g.Logger.Error(errors.Wrap(errors.Errorf("parent_id of %d is nil", o.GetID()), "RegulatorModel.timerHandler"))
-		return
-
-	}
-
-	msg, err := regulator.NewOnStale(*parentID)
-	if err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
-		return
-	}
-
-	if err := g.Msgs.Send(msg); err != nil {
-		g.Logger.Error(errors.Wrap(err, "RegulatorModel.timerHandler"))
-		return
-	}
-
-	o.GetTimer().Reset()
 }
 
 func (o *RegulatorModel) Shutdown() error {
