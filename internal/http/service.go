@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/g"
@@ -11,10 +12,12 @@ import (
 	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 	"touchon-server/internal/store/memstore"
+	"touchon-server/internal/token"
 	"touchon-server/lib/info"
 )
 
 // Получить информацию о сервисе
+// @Security TokenAuth
 // @Summary Получить информацию о сервисе
 // @Tags Service
 // @Description Получить информацию о сервисе
@@ -33,6 +36,7 @@ func (o *Server) handleGetInfo(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 }
 
 // Получить логи
+// @Security TokenAuth
 // @Summary Получить логи
 // @Tags Service
 // @Description Получить логи
@@ -55,6 +59,7 @@ type SensorValues struct {
 }
 
 // Получение значений датчиков
+// @Security TokenAuth
 // @Summary Получение значений датчиков
 // @Tags Service
 // @Description Получение значений датчиков
@@ -150,4 +155,48 @@ func (o *Server) handleSwitchAuth(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	} else {
 		return "Авторизация включена", http.StatusOK, nil
 	}
+}
+
+// Создание не протухающего токена доступа (только в debug mode)
+// @Summary Создание не протухающего токена доступа (только в debug mode)
+// @Tags Service
+// @Description Создание не протухающего токена доступа (только в debug mode)
+// @ID ServiceMakeAccessToken
+// @Produce json
+// @Param device_id path int true "Device ID" default(10)
+// @Param ttl path string true "TTL" default(1000000h) // 114 Years
+// @Success      200 {object} http.Response[model.Tokens]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /_/make_access_token/{device_id}/{ttl} [get]
+func (o *Server) makeAccessToken(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	authOldTokenMU.Lock()
+	secret := authOldToken
+	if secret == "disable_auth" {
+		secret = g.Config["token_secret"]
+	}
+	authOldTokenMU.Unlock()
+
+	deviceID, err := helpers.GetUintPathParam(ctx, "device_id")
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	ttl, err := time.ParseDuration(helpers.GetPathParam(ctx, "ttl"))
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	tokenJWT := token.New(secret)
+
+	accessToken, err := tokenJWT.NewJWT(deviceID, ttl)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	tokens := &model.Tokens{
+		AccessToken: accessToken,
+	}
+
+	return tokens, http.StatusOK, nil
 }

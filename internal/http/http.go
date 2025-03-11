@@ -57,14 +57,16 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	// Служебные эндпоинты
 	svc := o.addMiddleware("/_", o.authMiddleware)
 	svc("GET", "/info", o.handleGetInfo)
-	svc("GET", "/sensors", o.handleGetSensors)                                            // получение значение датчиков
-	svc("GET", "/objects/example", create_object.GetExample)                              // получение примера json'а для создания объекта
+	svc("GET", "/sensors", o.handleGetSensors)               // получение значение датчиков
+	svc("GET", "/objects/example", create_object.GetExample) // получение примера json'а для создания объекта
 	svc("POST", "/kill", func(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) { // прибить сервис, если он хотя бы хттп-запрос может обработать
 		panic("kill by /_/kill endpoint")
 		return 0, 0, nil
 	})
+	
 	if g.Logger.IsLevelEnabled(logrus.DebugLevel) {
-		o.AddHandler("POST", "/_/switch_auth", o.handleSwitchAuth) // Включение/отключение авторизации (для удобства разработки)
+		o.AddHandler("POST", "/_/switch_auth", o.handleSwitchAuth)                       // Включение/отключение авторизации (для удобства разработки)
+		o.AddHandler("GET", "/_/make_access_token/{device_id}/{ttl}", o.makeAccessToken) // Создание непротухающего токена доступа
 	}
 
 	rawSvc := o.addRawMiddleware("/_", o.authMiddleware)
