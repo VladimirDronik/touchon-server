@@ -184,7 +184,7 @@ func (o *MemStore) GetObject(objectID int) (objects.Object, error) {
 func (o *MemStore) GetObjectUnsafe(objectID int) (objects.Object, error) {
 	obj, ok := o.objects[objectID]
 	if !ok {
-		return nil, errors.Wrap(errors.New("object not found"), "GetObjectUnsafe")
+		return nil, errors.Wrapf(errors.New("object not found"), "GetObjectUnsafe(%d)", objectID)
 	}
 
 	return obj, nil

@@ -273,7 +273,7 @@ func loadParents(m map[int]*GetObjectsResponseItem, items []*GetObjectsResponseI
 
 		obj, err := memStore.I.GetObject(*item.ParentID)
 		if err != nil {
-			return errors.Wrap(err, "loadParents")
+			return errors.Wrapf(err, "loadParents(ObjID: %d)", obj.GetID())
 		}
 
 		parent := NewGetObjectsResultItem(obj, true, true, withMethods, withTags, 0)
