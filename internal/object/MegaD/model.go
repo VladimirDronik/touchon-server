@@ -99,9 +99,9 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 				Type:         models.DataTypeBool,
 				DefaultValue: false,
 			},
-			Required: objects.False(),
-			Editable: objects.False(),
-			Visible:  objects.False(),
+			Required: objects.True(),
+			Editable: objects.True(),
+			Visible:  objects.True(),
 		},
 	}
 
