@@ -209,7 +209,9 @@ func (o *MotionSensorModel) onMotionOnHandler(svc interfaces.MessageSender, _ in
 	}
 
 	g.Logger.Debug("MotionSensorModel.onMotionOnHandler: reset periodTimer")
-	o.GetTimer().Reset()
+	if o.GetTimer() != nil {
+		o.GetTimer().Reset()
+	}
 
 	// Обрабатываем только переход OFF -> ON
 	if currState {
@@ -262,7 +264,9 @@ func (o *MotionSensorModel) periodTimerHandler() {
 
 	// если движение есть - перезапускаем таймер и уходим
 	if currState {
-		o.GetTimer().Reset()
+		if o.GetTimer() != nil {
+			o.GetTimer().Reset()
+		}
 		return
 	}
 

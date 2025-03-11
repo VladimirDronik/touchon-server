@@ -194,8 +194,8 @@ func (o *MemStore) SaveObject(obj objects.Object) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	if _, ok := o.objects[obj.GetID()]; ok {
-		errs := o.shutdownObjectTree(obj)
+	if oldObj, ok := o.objects[obj.GetID()]; ok && oldObj.GetEnabled() {
+		errs := o.shutdownObjectTree(oldObj)
 
 		// Выводим в лог все ошибки
 		for _, err := range errs {

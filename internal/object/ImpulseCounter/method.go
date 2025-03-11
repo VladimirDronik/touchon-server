@@ -53,8 +53,6 @@ func (o *ImpulseCounter) check() {
 			return
 		}
 	}
-
-	return
 }
 
 func (o *ImpulseCounter) megaRelease() (int, error) {

@@ -1,8 +1,9 @@
 package ImpulseCounter
 
 import (
-	"github.com/pkg/errors"
 	"time"
+
+	"github.com/pkg/errors"
 	"touchon-server/internal/g"
 	helpersObj "touchon-server/internal/helpers"
 	"touchon-server/internal/model"
@@ -315,7 +316,7 @@ func (o *ImpulseCounter) Start() error {
 
 	o.GetProps().Set("total", startValue)
 
-	o.Check(nil)
+	_, _ = o.Check(nil)
 	o.SetTimer(updateInterval, o.check)
 	o.GetTimer().Start()
 

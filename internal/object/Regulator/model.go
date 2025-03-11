@@ -418,7 +418,9 @@ func (o *RegulatorModel) Shutdown() error {
 		return errors.Wrap(err, "RegulatorModel.Shutdown")
 	}
 
-	o.GetTimer().Stop()
+	if o.GetTimer() != nil {
+		o.GetTimer().Stop()
+	}
 
 	return nil
 }

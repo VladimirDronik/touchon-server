@@ -2,6 +2,7 @@ package Sensor
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -113,7 +114,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 		ObjectModelImpl: impl,
 	}
 
-	check, err := objects.NewMethod("check", "Опрашивает датчик, обновляет показания датчика в БД", nil, obj.Check)
+	check, err := objects.NewMethod("check", "Опрашивает датчик, обновляет показания датчика в БД", nil, obj.check)
 	if err != nil {
 		return nil, errors.Wrap(err, "Sensor.MakeModel")
 	}
@@ -169,23 +170,29 @@ func (o *SensorModel) ParseI2CAddress() (sdaPortObjectID, sclPortObjectID int, _
 	return
 }
 
-func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error) {
+func (o *SensorModel) check(map[string]interface{}) ([]interfaces.Message, error) {
 	if o.getValues == nil {
-		return nil, errors.Wrap(ErrGetValuesFuncNotSet, "SensorModel.Check")
+		return nil, errors.Wrap(ErrGetValuesFuncNotSet, "SensorModel.check")
 	}
 
 	g.Logger.Debugf("Sensor %s (%d) check", o.GetType(), o.GetID())
 
+	defer func() {
+		if o.GetTimer() != nil {
+			o.GetTimer().Reset()
+		}
+	}()
+
 	values, err := o.getValues(time.Duration(timeout) * time.Second)
 	if err != nil {
-		return nil, errors.Wrap(err, "SensorModel.Check")
+		return nil, errors.Wrap(err, "SensorModel.check")
 	}
 
 	msgs := make([]interfaces.Message, 0, o.GetChildren().Len())
 	for _, child := range o.GetChildren().GetAll() {
 		msg, err := o.processChild(child, values)
 		if err != nil {
-			return nil, errors.Wrap(err, "SensorModel.Check")
+			return nil, errors.Wrap(err, "SensorModel.check")
 		}
 
 		if msg != nil {
@@ -203,30 +210,16 @@ func (o *SensorModel) Check(map[string]interface{}) ([]interfaces.Message, error
 
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {
-		return nil, errors.Wrap(err, "SensorModel.Check")
+		return nil, errors.Wrap(err, "SensorModel.check")
 	}
 
 	msgs = append(msgs, msg)
 
 	if err := g.Msgs.Send(msgs...); err != nil {
-		return nil, errors.Wrap(err, "SensorModel.Check")
+		return nil, errors.Wrap(err, "SensorModel.check")
 	}
 
 	return nil, nil
-}
-
-func (o *SensorModel) check(timerEnable bool) {
-	//Запускаем с таймером
-	if timerEnable {
-		defer o.GetTimer().Reset()
-	}
-
-	_, err := o.Check(nil)
-	// Игнорируем ошибку ErrGetValuesFuncNotSet при автоматическом обновлении датчика
-	if err != nil && !errors.Is(err, ErrGetValuesFuncNotSet) {
-		g.Logger.Error(errors.Wrap(err, "SensorModel.Start: Check func"))
-	}
-	return
 }
 
 func (o *SensorModel) Start() error {
@@ -246,15 +239,30 @@ func (o *SensorModel) Start() error {
 		return errors.Wrap(err, "SensorModel.Start")
 	}
 
-	//Опрос датчика сразу же после запуска
-	o.check(false)
+	handler := func() {
+		// Игнорируем ошибку ErrGetValuesFuncNotSet при автоматическом обновлении датчика
+		if _, err := o.check(nil); err != nil && !errors.Is(err, ErrGetValuesFuncNotSet) {
+			g.Logger.Error(errors.Wrap(err, "SensorModel.Start"))
+		}
+	}
 
-	//Запуск таймера для опроса датчика
-	o.SetTimer(updateInterval, func() {
-		o.check(true)
-	})
+	o.SetTimer(updateInterval, handler)
 
-	o.GetTimer().Start()
+	// Даем возможность запуститься всем объектам параллельно
+	go func() {
+		delay := 2000 + rand.Intn(3000) // wait 2-5 seconds
+
+		// Даем время на запуск всем объектам
+		time.Sleep(time.Duration(delay) * time.Millisecond)
+
+		// Запускаем опрос датчика, с автоматическим повтором через заданный интервал
+		handler()
+
+		// Запускаем таймер
+		if o.GetTimer() != nil {
+			o.GetTimer().Start()
+		}
+	}()
 
 	return nil
 }
