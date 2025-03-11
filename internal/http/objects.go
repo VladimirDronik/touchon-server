@@ -219,35 +219,16 @@ func (o *Server) handleDeleteObject(ctx *fasthttp.RequestCtx) (interface{}, int,
 }
 
 func (o *Server) DeleteObject(objectID int) (interface{}, int, error) {
-	//У порта обнуляем тип и режим
 	objModel, err := objects.LoadObject(objectID, "", "", true)
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
-	addressObject, _ := objModel.GetProps().GetIntValue("address")
-	addressObjectString := strconv.Itoa(addressObject)
-	if addressObject == 0 {
-		addressObjectString, _ = objModel.GetProps().GetStringValue("address")
-	}
-
-	interfaceObject, _ := objModel.GetProps().GetStringValue("interface")
-
-	//ищем другие объекты с таким же адресом
-	_, relatedObjects, err := objects.FindRelatedObjects(addressObjectString, interfaceObject, objectID, objModel.GetType())
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	var objectToReset = make(map[int]string)
-	objectToReset[objectID] = addressObjectString
-
-	objects.ResetPortToDefault(objectToReset, relatedObjects)
-
-	if err != nil {
-		//TODO: тут сформировать запись в лог, что не могли изменить состояние порта на дефолтное и убрать вывод ошибки, чтобы неуспешность действия не было критичным
-		return nil, http.StatusBadRequest, err
-	}
+	//Пока отключено, т.к. не используем механизм обновления портов
+	//err = o.configPort(objModel)
+	//if err != nil {
+	//	return nil, http.StatusInternalServerError, err
+	//}
 
 	if err := memStore.I.DeleteObject(objectID); err != nil {
 		return nil, http.StatusBadRequest, err
@@ -279,6 +260,46 @@ func (o *Server) DeleteObject(objectID int) (interface{}, int, error) {
 	}
 
 	return nil, http.StatusOK, nil
+}
+
+func (o *Server) configPort(objModel objects.Object) error {
+	objContr, err := objects.LoadObject(*objModel.GetParentID(), model.CategoryController, "", false)
+	if err != nil {
+		return err
+	}
+	fastConfig, err := objContr.GetProps().GetBoolValue("fast_config")
+	if err != nil {
+		return err
+	}
+	if fastConfig == false {
+		return nil
+	}
+
+	addressObject, _ := objModel.GetProps().GetIntValue("address")
+	addressObjectString := strconv.Itoa(addressObject)
+	if addressObject == 0 {
+		addressObjectString, _ = objModel.GetProps().GetStringValue("address")
+	}
+
+	interfaceObject, _ := objModel.GetProps().GetStringValue("interface")
+
+	//ищем другие объекты с таким же адресом
+	_, relatedObjects, err := objects.FindRelatedObjects(addressObjectString, interfaceObject, objModel.GetID(), objModel.GetType())
+	if err != nil {
+		return err
+	}
+
+	var objectToReset = make(map[int]string)
+	objectToReset[objModel.GetID()] = addressObjectString
+
+	objects.ResetPortToDefault(objectToReset, relatedObjects)
+
+	if err != nil {
+		//TODO: тут сформировать запись в лог, что не могли изменить состояние порта на дефолтное и убрать вывод ошибки, чтобы неуспешность действия не было критичным
+		return err
+	}
+
+	return nil
 }
 
 // Получение всех тегов
