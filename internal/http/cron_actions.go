@@ -12,6 +12,7 @@ import (
 )
 
 // Создание действия по расписанию
+// @Security TokenAuth
 // @Summary Создание действия по расписанию
 // @Tags CronTasks
 // @Description Создание действия по расписанию
@@ -55,6 +56,7 @@ func (o *Server) CreateCronTask(task *interfaces.CronTask) error {
 }
 
 // Изменение задачи CRON
+// @Security TokenAuth
 // @Summary Изменение задачи CRON
 // @Tags CronTasks
 // @Description Изменение задачи CRON
@@ -82,6 +84,7 @@ func (o *Server) handleUpdateTask(ctx *fasthttp.RequestCtx) (interface{}, int, e
 }
 
 // Удаление задание расписания
+// @Security TokenAuth
 // @Summary Удаление задание расписания
 // @Tags CronTasks
 // @Description Удаление задание расписания

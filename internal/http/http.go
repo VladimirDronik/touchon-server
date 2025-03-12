@@ -57,13 +57,13 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	// Служебные эндпоинты
 	svc := o.addMiddleware("/_", o.authMiddleware)
 	svc("GET", "/info", o.handleGetInfo)
-	svc("GET", "/sensors", o.handleGetSensors)               // получение значение датчиков
-	svc("GET", "/objects/example", create_object.GetExample) // получение примера json'а для создания объекта
+	svc("GET", "/sensors", o.handleGetSensors)                                            // получение значение датчиков
+	svc("GET", "/objects/example", create_object.GetExample)                              // получение примера json'а для создания объекта
 	svc("POST", "/kill", func(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) { // прибить сервис, если он хотя бы хттп-запрос может обработать
 		panic("kill by /_/kill endpoint")
 		return 0, 0, nil
 	})
-	
+
 	if g.Logger.IsLevelEnabled(logrus.DebugLevel) {
 		o.AddHandler("POST", "/_/switch_auth", o.handleSwitchAuth)                       // Включение/отключение авторизации (для удобства разработки)
 		o.AddHandler("GET", "/_/make_access_token/{device_id}/{ttl}", o.makeAccessToken) // Создание непротухающего токена доступа
@@ -78,17 +78,18 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	ctrl("GET", "/{id}/ports", o.handleGetControllerPorts) // получение портов контроллера
 
 	objects := o.addMiddleware("/objects", o.authMiddleware)
-	objects("GET", "/types", o.handleGetObjectsTypes)          // получение категорий и типов объектов
-	objects("GET", "/model", o.handleGetObjectModel)           // получение модели объекта
-	objects("GET", "/", o.handleGetObjects)                    // получение объектов
-	objects("GET", "/{id}", o.handleGetObject)                 // получение объекта
-	objects("POST", "/", create_object.Handler)                // добавление объекта с методами
-	objects("PUT", "/", update_object.Handler)                 // обновление объекта
-	objects("DELETE", "/{id}", o.handleDeleteObject)           // удаление объекта
-	objects("GET", "/tags", o.handleGetAllObjectsTags)         // получение всех тегов
-	objects("GET", "/by_props", o.handleGetObjectByProps)      // получение объекта по его свойствам
-	objects("GET", "/{id}/state", o.handleGetObjectState)      // Получение состояния объекта
-	objects("POST", "/{id}/exec/{method}", o.handleExecMethod) // Запуск метода объекта
+	objects("GET", "/types", o.handleGetObjectsTypes)                 // получение категорий и типов объектов
+	objects("GET", "/model", o.handleGetObjectModel)                  // получение модели объекта
+	objects("GET", "/", o.handleGetObjects)                           // получение объектов
+	objects("GET", "/{id}", o.handleGetObject)                        // получение объекта
+	objects("POST", "/", create_object.Handler)                       // добавление объекта с методами
+	objects("PUT", "/", update_object.Handler)                        // обновление объекта
+	objects("DELETE", "/{id}", o.handleDeleteObject)                  // удаление объекта
+	objects("GET", "/tags", o.handleGetAllObjectsTags)                // получение всех тегов
+	objects("GET", "/by_props", o.handleGetObjectByProps)             // получение объекта по его свойствам
+	objects("GET", "/{id}/state", o.handleGetObjectState)             // Получение состояния объекта
+	objects("POST", "/{id}/exec/{method}", o.handleExecMethod)        // Запуск метода объекта
+	objects("PUT", "/{id}/enable/{enableFlag}", o.handleEnableObject) // Включение или выключение объекта
 
 	scripts := o.addMiddleware("/scripts", o.authMiddleware)
 	scripts("GET", "/model", o.handleGetScriptModel)

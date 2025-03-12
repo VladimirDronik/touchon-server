@@ -60,7 +60,7 @@ type GroupRoom struct {
 // Zone Структура для вывода в помещений
 type Zone struct {
 	ID       int    `json:"id"`
-	ParentID int    `json:"parent_id"`
+	ParentID *int   `json:"parent_id"`
 	Name     string `json:"name"`
 	Style    string `json:"style"`
 	Sort     int    `json:"sort"`

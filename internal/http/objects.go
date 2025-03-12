@@ -25,6 +25,7 @@ type getObjectsTypesResponseItem struct {
 }
 
 // Получение категорий типов объектов
+// @Security TokenAuth
 // @Summary Получение категорий типов объектов
 // @Tags Objects
 // @Description Получение категорий типов объектов
@@ -88,6 +89,7 @@ func compareTags(inputsTags []string, objectTags []string) bool {
 }
 
 // Получение модели объекта
+// @Security TokenAuth
 // @Summary Получение модели объекта
 // @Tags Objects
 // @Description Получение модели объекта
@@ -124,6 +126,7 @@ func (o *Server) handleGetObjectModel(ctx *fasthttp.RequestCtx) (interface{}, in
 }
 
 // Получение объекта
+// @Security TokenAuth
 // @Summary Получение объекта
 // @Tags Objects
 // @Description Получение объекта
@@ -155,6 +158,7 @@ func (o *Server) handleGetObject(ctx *fasthttp.RequestCtx) (interface{}, int, er
 }
 
 // Получение объекта по его свойствам
+// @Security TokenAuth
 // @Summary Получение объекта по его свойствам
 // @Tags Objects
 // @Description Получение объекта по его свойствам
@@ -190,6 +194,7 @@ func (o *Server) handleGetObjectByProps(ctx *fasthttp.RequestCtx) (interface{}, 
 }
 
 // Удаление объекта
+// @Security TokenAuth
 // @Summary Удаление объекта
 // @Tags Objects
 // @Description Удаление объекта
@@ -303,6 +308,7 @@ func (o *Server) configPort(objModel objects.Object) error {
 }
 
 // Получение всех тегов
+// @Security TokenAuth
 // @Summary Получение всех тегов
 // @Tags Objects
 // @Description Получение всех тегов
@@ -341,6 +347,7 @@ func (o *Server) handleGetAllObjectsTags(ctx *fasthttp.RequestCtx) (interface{},
 }
 
 // Получение состояния объекта
+// @Security TokenAuth
 // @Summary Получение состояния объекта
 // @Tags Objects
 // @Description Получение состояния объекта
@@ -371,6 +378,7 @@ func (o *Server) handleGetObjectState(ctx *fasthttp.RequestCtx) (interface{}, in
 }
 
 // Запуск метода объекта
+// @Security TokenAuth
 // @Summary Запуск метода объекта
 // @Tags Objects
 // @Description Запуск метода объекта
@@ -415,4 +423,50 @@ func (o *Server) handleExecMethod(ctx *fasthttp.RequestCtx) (interface{}, int, e
 	}
 
 	return r, http.StatusOK, nil
+}
+
+// Включение/выключение объекта
+// @Security TokenAuth
+// @Summary Включение/выключение объекта
+// @Tags Objects
+// @Description Включение/выключение объекта
+// @ID EnableObject
+// @Produce json
+// @Param id path int true "ID объекта" default(391)
+// @Param enableFlag path bool true "Состояние объекта" enums(true, false)
+// @Success      200 {object} http.Response[any]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /objects/{id}/enable/{enableFlag} [put]
+func (o *Server) handleEnableObject(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	objectID, err := helpers.GetUintPathParam(ctx, "id")
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	enableFlag := helpers.GetPathParam(ctx, "enableFlag")
+
+	obj, err := memStore.I.GetObject(objectID)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	switch enableFlag {
+	case "true":
+		obj.SetStatus(model.StatusNA)
+		obj.SetEnabled(true)
+		break
+	case "false":
+		obj.SetStatus(model.StatusDisabled)
+		obj.SetEnabled(false)
+		break
+	default:
+		return nil, http.StatusBadRequest, nil
+	}
+
+	obj.Save()
+
+	//TODO: отправка в вебсокеты
+
+	return nil, http.StatusOK, nil
 }

@@ -15,6 +15,7 @@ import (
 )
 
 // Обновление объекта
+// @Security TokenAuth
 // @Summary Обновление объекта
 // @Tags Objects
 // @Description Обновление объекта

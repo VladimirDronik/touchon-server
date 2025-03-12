@@ -31,7 +31,7 @@ func (z *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone,
 	}
 
 	if typeZones == "groups_only" {
-		q = q.Where("is_group = true")
+		q = q.Where("is_group")
 	}
 
 	if err := q.Find(&rows).Error; err != nil {
@@ -49,7 +49,11 @@ func (z *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone,
 	}
 
 	for _, item := range m {
-		if parent, ok := m[item.ParentID]; ok {
+		if item.ParentID == nil {
+			continue
+		}
+
+		if parent, ok := m[*item.ParentID]; ok {
 			parent.Children = append(parent.Children, item)
 		}
 	}
@@ -67,14 +71,14 @@ func (z *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone,
 			})
 		}
 
-		if item.ParentID == 0 {
+		if item.ParentID == nil {
 			roots += 1
 		}
 	}
 
 	r := make([]*model.Zone, 0, roots)
 	for _, item := range m {
-		if item.ParentID == 0 {
+		if item.ParentID == nil {
 			r = append(r, item)
 		}
 	}
