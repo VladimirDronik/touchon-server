@@ -207,7 +207,7 @@ func MakeModel(withChildren bool) (objects.Object, error) {
 				Type:         models.DataTypeFloat,
 				DefaultValue: "",
 			},
-			Required: objects.True(),
+			Required: objects.False(),
 			Editable: objects.True(),
 			Visible:  objects.True(),
 		},
