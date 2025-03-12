@@ -43,6 +43,8 @@ func Handler(ctx *fasthttp.RequestCtx) (_ interface{}, _ int, e error) {
 	objModel.SetName(req.Name)
 	objModel.SetEnabled(req.Enabled)
 
+	// TODO не каждому объекту нужен родитель для работы, поэтому этот блок кода логически не корректен
+	// TODO например, при обновлении объекта server, у него выставится статус "disabled"
 	if req.ParentID == nil || *req.ParentID <= 0 {
 		objModel.SetStatus(model.StatusDisabled)
 	}

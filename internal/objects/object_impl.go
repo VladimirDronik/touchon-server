@@ -31,6 +31,7 @@ func NewObjectModelImpl(category model.Category, objType string, flags Flags, na
 		enabled:  true,
 		flags:    flags,
 	}
+	o.setStarted(false)
 
 	if err := o.GetProps().Add(props...); err != nil {
 		return nil, errors.Wrap(err, "NewObjectModelImpl")

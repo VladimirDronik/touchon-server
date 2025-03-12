@@ -24,6 +24,18 @@ func (o *Children) GetAll() []Object {
 	return o.items
 }
 
+func (o *Children) DeleteByID(objectID int) {
+	for i := 0; i < len(o.items); i++ {
+		if o.items[i].GetID() == objectID {
+			// Сдвигаем правую часть списка - влево на одну позицию
+			copy(o.items[i:], o.items[i+1:])
+			// Уменьшаем массив на один элемент
+			o.items = o.items[:len(o.items)-1]
+			return
+		}
+	}
+}
+
 func (o *Children) DeleteAll() {
 	o.items = o.items[:0]
 }

@@ -22,6 +22,10 @@ func (o *Events) Len() int {
 	return o.m.Len()
 }
 
+func (o *Events) GetAll() []interfaces.Event {
+	return o.m.GetValueList()
+}
+
 func (o *Events) Delete(eventNames ...string) {
 	for _, eventName := range eventNames {
 		o.m.Delete(eventName)

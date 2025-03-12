@@ -31,7 +31,7 @@ func New() (*MemStore, error) {
 
 	list := make(map[int]objects.Object, 10000)
 	for _, obj := range tree {
-		walk(obj, list)
+		addObjectsToList(obj, list)
 	}
 	g.Logger.Infof("Объекты: корневые %d, всего %d", len(tree), len(list))
 
@@ -41,133 +41,9 @@ func New() (*MemStore, error) {
 	}, nil
 }
 
-func walk(obj objects.Object, list map[int]objects.Object) {
-	list[obj.GetID()] = obj
-	for _, child := range obj.GetChildren().GetAll() {
-		walk(child, list)
-	}
-}
-
 type MemStore struct {
 	mu      sync.RWMutex
 	objects map[int]objects.Object
-}
-
-type treeItem struct {
-	Object   objects.Object
-	Children []*treeItem
-}
-
-func (o *MemStore) makeTree() ([]*treeItem, error) {
-	tree := make(map[int]*treeItem, len(o.objects))
-	for _, obj := range o.objects {
-		tree[obj.GetID()] = &treeItem{Object: obj}
-	}
-
-	for _, item := range tree {
-		if parentID := item.Object.GetParentID(); parentID != nil {
-			parent, ok := tree[*parentID]
-			if !ok {
-				return nil, errors.Wrap(errors.Errorf("parentID %d not found for item %d", *parentID, item.Object.GetID()), "Start")
-			}
-
-			parent.Children = append(parent.Children, item)
-		}
-	}
-
-	// Удаляем все элементы, кроме корневых
-	list := make([]*treeItem, 0, len(tree))
-	for _, item := range tree {
-		if parentID := item.Object.GetParentID(); parentID == nil {
-			list = append(list, item)
-		}
-	}
-
-	return list, nil
-}
-
-func (o *MemStore) Start() error {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	// Строим дерево, чтобы сначала запускались родительские объекты, и только после них дочерние
-	list, err := o.makeTree()
-	if err != nil {
-		return errors.Wrap(err, "Start")
-	}
-
-	startTree(list)
-
-	return nil
-}
-
-func startTree(items []*treeItem) {
-	for _, item := range items {
-		// Если объект выключен или уже запущен, пропускаем его
-		if !item.Object.GetEnabled() || item.Object.GetStarted() {
-			continue
-		}
-
-		if err := item.Object.Start(); err != nil {
-			// При старте сервиса неверно сконфигурированный объект не должен
-			// останавливать сервис или прекращать запуск других не дочерних объектов.
-			// Сервис должен запуститься, чтобы была возможность изменить св-ва объекта.
-			g.Logger.Error(errors.Wrap(err, "startTree"))
-			continue
-		}
-
-		if len(item.Children) > 0 {
-			startTree(item.Children)
-		}
-	}
-}
-
-func (o *MemStore) Shutdown() error {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	// Строим дерево, чтобы сначала останавливались дочерние объекты, и только после них родительские
-	list, err := o.makeTree()
-	if err != nil {
-		return errors.Wrap(err, "Shutdown")
-	}
-
-	errs := shutdownTree(list)
-
-	// Выводим в лог все ошибки
-	for _, err := range errs {
-		g.Logger.Error(errors.Wrap(err, "Shutdown"))
-	}
-
-	// Возвращаем первую
-	if len(errs) > 0 {
-		return errors.Wrap(errs[0], "Shutdown")
-	}
-
-	return nil
-}
-
-func shutdownTree(items []*treeItem) (errs []error) {
-	for _, item := range items {
-		// Останавливаем только запущенные объекты
-		if !item.Object.GetStarted() {
-			continue
-		}
-
-		// Сначала останавливаем дочерние объекты
-		if len(item.Children) > 0 {
-			if childrenErrs := shutdownTree(item.Children); len(childrenErrs) > 0 {
-				errs = append(errs, childrenErrs...)
-			}
-		}
-
-		// Затем останавливаем сам объект
-		if err := item.Object.Shutdown(); err != nil {
-			errs = append(errs, errors.Wrap(err, "shutdownTree"))
-		}
-	}
-
-	return errs
 }
 
 func (o *MemStore) GetObject(objectID int) (objects.Object, error) {
@@ -192,92 +68,47 @@ func (o *MemStore) GetObjectUnsafe(objectID int) (objects.Object, error) {
 	return obj, nil
 }
 
-func (o *MemStore) SaveObject(obj objects.Object) error {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	if oldObj, ok := o.objects[obj.GetID()]; ok {
-		errs := o.shutdownObjectTree(oldObj)
-
-		// Выводим в лог все ошибки
-		for _, err := range errs {
-			g.Logger.Error(errors.Wrap(err, "SaveObject"))
-		}
-
-		// Возвращаем первую
-		if len(errs) > 0 {
-			return errors.Wrap(errs[0], "SaveObject")
-		}
-	}
-
-	o.objects[obj.GetID()] = obj
-
-	if err := o.startObjectTree(obj); err != nil {
-		return errors.Wrap(err, "SaveObject")
-	}
-
-	return nil
-}
-
-func (o *MemStore) startObjectTree(obj objects.Object) error {
-	// Если объект выключен или уже запущен, уходим
-	if !obj.GetEnabled() || obj.GetStarted() {
-		return nil
-	}
-
-	if err := obj.Start(); err != nil {
-		return errors.Wrap(err, "startObjectTree")
-	}
-
-	for _, child := range obj.GetChildren().GetAll() {
-		if err := o.startObjectTree(child); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (o *MemStore) DeleteObject(objectID int) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	if obj, ok := o.objects[objectID]; ok {
-		delete(o.objects, objectID)
-
-		errs := o.shutdownObjectTree(obj)
-
-		// Выводим в лог все ошибки
-		for _, err := range errs {
-			g.Logger.Error(errors.Wrap(err, "DeleteObject"))
-		}
-
-		// Возвращаем первую
-		if len(errs) > 0 {
-			return errors.Wrap(errs[0], "DeleteObject")
-		}
+	// full=false - оставляем приемных детей (например, сенсоры у контроллера)
+	if err := o.deleteObject(objectID, false); err != nil {
+		return errors.Wrap(err, "DeleteObject")
 	}
 
 	return nil
 }
 
-func (o *MemStore) shutdownObjectTree(obj objects.Object) (errs []error) {
-	// Останавливаем только запущенные объекты
-	if !obj.GetStarted() {
-		return nil
-	}
+// Удаляет объект и его детей из хранилища, удаляем ссылку на него у родителя
+func (o *MemStore) deleteObject(objectID int, full bool) error {
+	if obj, ok := o.objects[objectID]; ok {
+		// Останавливаем объект с детьми
+		errs := o.shutdownObjectTree(obj)
 
-	for _, child := range obj.GetChildren().GetAll() {
-		if childrenErrs := o.shutdownObjectTree(child); len(childrenErrs) > 0 {
-			errs = append(errs, childrenErrs...)
+		// Удаляем его у родителя
+		if err := o.deleteFromParent(obj); err != nil {
+			errs = append(errs, err)
+		}
+
+		// Удаляем детей
+		o.deleteChildren(obj, full)
+
+		// Удаляем объект из общего списка
+		delete(o.objects, objectID)
+
+		// Выводим в лог все ошибки
+		for _, err := range errs {
+			g.Logger.Error(errors.Wrap(err, "deleteObject"))
+		}
+
+		// Возвращаем первую
+		if len(errs) > 0 {
+			return errors.Wrap(errs[0], "deleteObject")
 		}
 	}
 
-	if err := obj.Shutdown(); err != nil {
-		errs = append(errs, errors.Wrap(err, "shutdownObjectTree"))
-	}
-
-	return errs
+	return nil
 }
 
 // EnableObject включает объект и запускает его (метод Start())
@@ -329,4 +160,81 @@ func (o *MemStore) Search(f func(items map[int]objects.Object) ([]objects.Object
 	}
 
 	return rows, nil
+}
+
+func (o *MemStore) addToParent(obj objects.Object) error {
+	if obj.GetParentID() == nil {
+		return nil
+	}
+
+	parent, err := o.GetObjectUnsafe(*obj.GetParentID())
+	if err != nil {
+		return errors.Wrap(err, "deleteFromParent")
+	}
+
+	parent.GetChildren().Add(obj)
+
+	return nil
+}
+
+func (o *MemStore) deleteFromParent(obj objects.Object) error {
+	if obj.GetParentID() == nil {
+		return nil
+	}
+
+	parent, err := o.GetObjectUnsafe(*obj.GetParentID())
+	if err != nil {
+		return errors.Wrap(err, "deleteFromParent")
+	}
+
+	parent.GetChildren().DeleteByID(obj.GetID())
+
+	return nil
+}
+
+func (o *MemStore) deleteChildren(obj objects.Object, all bool) {
+	for _, child := range obj.GetChildren().GetAll() {
+		if child.GetChildren().Len() > 0 {
+			o.deleteChildren(child, all)
+		}
+
+		if !all {
+			// TODO удалять только родных детей (например, у контроллера удалять только порты)
+			// TODO у оставшихся детей выставлять enabled=false, parent_id=nil
+		}
+
+		// Удаляем объект из общего списка
+		delete(o.objects, child.GetID())
+	}
+
+	// Удаляем ссылки на объекты, для уменьшения вероятности утечки памяти
+	obj.GetChildren().DeleteAll()
+}
+
+func (o *MemStore) SaveObject(obj objects.Object) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	// Удаляем объект и его детей из хранилища, удаляем ссылку на него у родителя
+	if err := o.deleteObject(obj.GetID(), true); err != nil {
+		return errors.Wrap(err, "SaveObject")
+	}
+
+	// Добавляем объект в общий список
+	o.objects[obj.GetID()] = obj
+
+	// Добавляем объект к родителю
+	if err := o.addToParent(obj); err != nil {
+		return errors.Wrap(err, "SaveObject")
+	}
+
+	// Добавляем всех детей в общий список
+	addObjectsToList(obj, o.objects)
+
+	// Запускаем объект и его детей
+	if err := o.startObjectTree(obj); err != nil {
+		return errors.Wrap(err, "SaveObject")
+	}
+
+	return nil
 }

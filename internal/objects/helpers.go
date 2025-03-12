@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"log"
 	"strconv"
 	"strings"
 
@@ -340,4 +341,55 @@ func ResetPortToDefault(objectsToReset map[int]string, relatedObjects map[int]st
 			//return nil, http.StatusBadRequest, err
 		}
 	}
+}
+
+func DumpObject(obj Object) {
+	dumpObject(obj, 0, "========================================================================================")
+}
+
+func dumpObject(obj Object, level int, border string) {
+	offset := strings.Repeat("    ", level)
+
+	if border != "" {
+		log.Println(border)
+	}
+
+	parentID := "nil"
+	zoneID := "nil"
+	if v := obj.GetParentID(); v != nil {
+		parentID = strconv.Itoa(*v)
+	}
+
+	if v := obj.GetZoneID(); v != nil {
+		zoneID = strconv.Itoa(*v)
+	}
+
+	log.Printf("%sID:%d Cat:%s Type:%s Name:%s", offset, obj.GetID(), obj.GetCategory(), obj.GetType(), obj.GetName())
+	log.Printf("%sParent:%s Zone:%s Status:%s Enabled:%t Started:%t", offset, parentID, zoneID, obj.GetStatus(), obj.GetEnabled(), obj.GetStarted())
+	log.Printf("%sTags:  %v", offset, obj.GetTags())
+	log.Printf("%sFlags: %d", offset, obj.GetFlags())
+
+	for _, item := range obj.GetProps().GetAll().GetValueList() {
+		log.Printf("%sProps: %s = %v", offset, item.Code, item.GetValue())
+	}
+
+	events := make([]string, 0, obj.GetEvents().Len())
+	for _, item := range obj.GetEvents().GetAll() {
+		events = append(events, item.GetName())
+	}
+	log.Printf("%sEvents: %v", offset, events)
+
+	methods := make([]string, 0, obj.GetMethods().Len())
+	for _, item := range obj.GetMethods().GetAll() {
+		events = append(events, item.Name)
+	}
+	log.Printf("%sMethods: %v", offset, methods)
+
+	if obj.GetChildren().Len() > 0 {
+		for _, ch := range obj.GetChildren().GetAll() {
+			dumpObject(ch, level+1, "--------------------------------------------")
+		}
+	}
+
+	log.Println()
 }
