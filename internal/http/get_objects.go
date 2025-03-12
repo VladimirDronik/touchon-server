@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"golang.org/x/exp/slices"
 	"touchon-server/internal/helpers"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
@@ -199,7 +200,21 @@ func (o *Server) handleGetObjects(ctx *fasthttp.RequestCtx) (interface{}, int, e
 
 	rows := make([]*GetObjectsResponseItem, 0, len(items))
 	for _, item := range items {
-		rows = append(rows, NewGetObjectsResultItem(item, params.AllTypes, params.WithParents, params.WithMethods, params.WithTags, params.Generations))
+		rows = append(rows, NewGetObjectsResultItem(item, params.WithParents, params.WithMethods, params.WithTags, params.Generations))
+	}
+
+	if !params.AllTypes {
+		// Убираем с первого слоя все скрытые объекты
+		for i := 0; i < len(rows); i++ {
+			if rows[i].flags.Has(objects.Hidden) {
+				rows = slices.Delete(rows, i, i+1)
+			}
+		}
+
+		// Фильтруем остальные скрытые объекты
+		for _, row := range rows {
+			row.Children = append(row.Children, filterHiddenObjects(row)...)
+		}
 	}
 
 	// Если упрощенный вывод включен, то сразу выводим плоскую модель без вложенности
@@ -277,7 +292,7 @@ func loadParents(m map[int]*GetObjectsResponseItem, items []*GetObjectsResponseI
 			return errors.Wrapf(err, "loadParents(ObjID: %d)", obj.GetID())
 		}
 
-		parent := NewGetObjectsResultItem(obj, true, true, withMethods, withTags, 0)
+		parent := NewGetObjectsResultItem(obj, true, withMethods, withTags, 0)
 		parents = append(parents, parent)
 		m[parent.ID] = parent
 	}
@@ -311,7 +326,7 @@ func sortObjectsTree(items []*GetObjectsResponseItem) {
 	}
 }
 
-func NewGetObjectsResultItem(obj objects.Object, allTypes, withParents, withMethods, withTags bool, generations int) *GetObjectsResponseItem {
+func NewGetObjectsResultItem(obj objects.Object, withParents, withMethods, withTags bool, generations int) *GetObjectsResponseItem {
 	enabled := obj.GetEnabled()
 
 	r := &GetObjectsResponseItem{
@@ -322,6 +337,7 @@ func NewGetObjectsResultItem(obj objects.Object, allTypes, withParents, withMeth
 		Name:     obj.GetName(),
 		Status:   obj.GetStatus(),
 		Enabled:  &enabled,
+		flags:    obj.GetFlags(),
 	}
 
 	if withParents {
@@ -346,12 +362,7 @@ func NewGetObjectsResultItem(obj objects.Object, allTypes, withParents, withMeth
 	}
 
 	for _, child := range obj.GetChildren().GetAll() {
-		// Если нет флага получения всех объектов и объект имеет флаг "Скрытый", то его пропускаем
-		if !allTypes && child.GetFlags().Has(objects.Hidden) {
-			continue
-		}
-
-		r.Children = append(r.Children, NewGetObjectsResultItem(child, allTypes, true, withMethods, withTags, generations-1))
+		r.Children = append(r.Children, NewGetObjectsResultItem(child, true, withMethods, withTags, generations-1))
 	}
 
 	return r
@@ -368,6 +379,7 @@ type GetObjectsResponseItem struct {
 	Tags     []string                        `json:"tags,omitempty"`      //
 	Enabled  *bool                           `json:"enabled,omitempty"`   // Включает методы Start/Shutdown
 	Methods  []*GetObjectsResponseItemMethod `json:"methods,omitempty"`   //
+	flags    objects.Flags
 
 	Children []*GetObjectsResponseItem `json:"children,omitempty"` // Дочерние объекты
 }
@@ -375,4 +387,24 @@ type GetObjectsResponseItem struct {
 type GetObjectsResponseItemMethod struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+}
+
+// filterHiddenObjects убирает скрытые объекты, видимые объекты, являющиеся дочерними
+// для скрытых, поднимает выше до первого не скрытого объекта.
+func filterHiddenObjects(item *GetObjectsResponseItem) []*GetObjectsResponseItem {
+	toAncestor := make([]*GetObjectsResponseItem, 0, 10)
+
+	for i := 0; i < len(item.Children); i++ {
+		child := item.Children[i]
+		descendants := filterHiddenObjects(child)
+
+		if child.flags.Has(objects.Hidden) {
+			toAncestor = append(toAncestor, descendants...)
+			item.Children = slices.Delete(item.Children, i, i+1)
+		} else {
+			child.Children = descendants
+		}
+	}
+
+	return toAncestor
 }

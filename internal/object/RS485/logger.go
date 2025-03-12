@@ -238,7 +238,9 @@ func (o *Logger) ReadFromDevice(bytesCount int) ([]byte, error) {
 }
 
 func (o *Logger) log(funcName string, args []interface{}, result []interface{}) {
-	o.logger.Logf(o.logger.Level, "RS485.Client.%s(%v) -> %v", funcName, args, result)
+	if o.logger.IsLevelEnabled(logrus.DebugLevel) {
+		o.logger.Logf(o.logger.Level, "RS485.Client.%s(%v) -> %v", funcName, args, result)
+	}
 }
 
 func s(args ...interface{}) []interface{} {
