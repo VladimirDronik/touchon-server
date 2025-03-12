@@ -58,21 +58,8 @@ func (o *Devices) SaveSensor(sensor *model.Sensor) error {
 		return errors.Wrap(errors.New("sensor is nil"), "SaveSensor")
 	}
 
-	count := int64(0)
-	if err := o.store.db.Model(sensor).Where("id = ?", sensor.ID).Count(&count).Error; err != nil {
+	if err := o.store.db.Save(sensor).Error; err != nil {
 		return errors.Wrap(err, "SaveSensor")
-	}
-	objectIsExists := count == 1
-
-	if objectIsExists {
-		if err := o.store.db.Updates(sensor).Error; err != nil {
-			return errors.Wrap(err, "SaveSensor(update)")
-		}
-	} else {
-		result := o.store.db.Create(&sensor)
-		if result.Error != nil {
-			return errors.Wrap(result.Error, "SaveItem(create)")
-		}
 	}
 
 	return nil

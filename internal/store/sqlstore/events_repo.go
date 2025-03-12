@@ -53,20 +53,8 @@ func (o *EventsRepo) SaveEvent(event *interfaces.AREvent) error {
 		return errors.Wrap(errors.New("event is nil"), "SaveEvent")
 	}
 
-	count := int64(0)
-	if err := o.store.db.Model(event).Where("id = ?", event.ID).Count(&count).Error; err != nil {
+	if err := o.store.db.Save(event).Error; err != nil {
 		return errors.Wrap(err, "SaveEvent")
-	}
-	itemIsExists := count == 1
-
-	if itemIsExists {
-		if err := o.store.db.Updates(event).Error; err != nil {
-			return errors.Wrap(err, "SaveEvent(update)")
-		}
-	} else {
-		if err := o.store.db.Create(event).Error; err != nil {
-			return errors.Wrap(err, "SaveEvent(create)")
-		}
 	}
 
 	return nil

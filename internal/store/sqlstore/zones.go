@@ -12,19 +12,19 @@ type Zones struct {
 }
 
 // CreateZone Создание нового помещения
-func (z *Zones) CreateZone(zone *model.Zone) (int, error) {
-	if err := z.store.db.Create(zone).Error; err != nil {
+func (o *Zones) CreateZone(zone *model.Zone) (int, error) {
+	if err := o.store.db.Create(zone).Error; err != nil {
 		return 0, err
 	}
 	return zone.ID, nil
 }
 
 // GetZoneTrees получение всех помещений
-func (z *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone, error) {
+func (o *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone, error) {
 	m := make(map[int]*model.Zone, len(parentIDs))
 
 	var rows []*model.Zone
-	q := z.store.db
+	q := o.store.db
 
 	if parentIDs != nil {
 		q = q.Where("id in ?", parentIDs)
@@ -44,7 +44,7 @@ func (z *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone,
 		}
 	}
 
-	if err := z.getChildren(m, parentIDs); err != nil {
+	if err := o.getChildren(m, parentIDs); err != nil {
 		return nil, errors.Wrap(err, "GetZoneTrees")
 	}
 
@@ -95,10 +95,10 @@ func (z *Zones) GetZoneTrees(typeZones string, parentIDs ...int) ([]*model.Zone,
 	return r, nil
 }
 
-func (z *Zones) getChildren(m map[int]*model.Zone, parentIDs []int) error {
+func (o *Zones) getChildren(m map[int]*model.Zone, parentIDs []int) error {
 	var rows []*model.Zone
 
-	if err := z.store.db.Where("parent_id in ?", parentIDs).Find(&rows).Error; err != nil {
+	if err := o.store.db.Where("parent_id in ?", parentIDs).Find(&rows).Error; err != nil {
 		return errors.Wrap(err, "getChildren")
 	}
 
@@ -111,7 +111,7 @@ func (z *Zones) getChildren(m map[int]*model.Zone, parentIDs []int) error {
 	}
 
 	if len(parentIDs) > 0 {
-		if err := z.getChildren(m, parentIDs); err != nil {
+		if err := o.getChildren(m, parentIDs); err != nil {
 			return err
 		}
 	}
@@ -120,14 +120,14 @@ func (z *Zones) getChildren(m map[int]*model.Zone, parentIDs []int) error {
 }
 
 // UpdateZones сохранение модели комнат, например при изменении сортировки
-func (z *Zones) UpdateZones(zones []*model.Zone) error {
+func (o *Zones) UpdateZones(zones []*model.Zone) error {
 	for _, item := range zones {
-		if err := z.store.db.Table("zones").Updates(item).Error; err != nil {
+		if err := o.store.db.Save(item).Error; err != nil {
 			return errors.Wrap(err, "UpdateZones")
 		}
 
 		if len(item.Children) > 0 {
-			if err := z.UpdateZones(item.Children); err != nil {
+			if err := o.UpdateZones(item.Children); err != nil {
 				return err
 			}
 		}
@@ -137,9 +137,9 @@ func (z *Zones) UpdateZones(zones []*model.Zone) error {
 }
 
 // SetOrder задает порядок сортировки
-func (z *Zones) SetOrder(zoneIDs []int) error {
+func (o *Zones) SetOrder(zoneIDs []int) error {
 	for i, zoneID := range zoneIDs {
-		if err := z.SetFieldValue(zoneID, "sort", i+1); err != nil {
+		if err := o.SetFieldValue(zoneID, "sort", i+1); err != nil {
 			return errors.Wrap(err, "SetOrder")
 		}
 	}
@@ -147,8 +147,8 @@ func (z *Zones) SetOrder(zoneIDs []int) error {
 	return nil
 }
 
-func (z *Zones) SetFieldValue(zoneID int, field string, value interface{}) error {
-	err := z.store.db.
+func (o *Zones) SetFieldValue(zoneID int, field string, value interface{}) error {
+	err := o.store.db.
 		Table("zones").
 		Where("id = ?", zoneID).
 		Update(field, value).
@@ -162,8 +162,8 @@ func (z *Zones) SetFieldValue(zoneID int, field string, value interface{}) error
 }
 
 // DeleteZone Удаление помещения
-func (z *Zones) DeleteZone(zoneID int) error {
+func (o *Zones) DeleteZone(zoneID int) error {
 	zone := model.Zone{}
-	return z.store.db.Where("id = ?", zoneID).
+	return o.store.db.Where("id = ?", zoneID).
 		Or("parent_id = ?", zoneID).Delete(&zone).Error
 }

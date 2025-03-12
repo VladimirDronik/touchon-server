@@ -69,6 +69,10 @@ type Zone struct {
 	Children []*Zone `json:"rooms_in_group,omitempty" gorm:"-"`
 }
 
+func (o *Zone) TableName() string {
+	return "zones"
+}
+
 // Children Структура комнаты для вывода внутри группы
 // Когда пользователь нажимает кнопку настроек для помещения, то ему может вывестись список комнат, которые входят
 // в группу этого помещения

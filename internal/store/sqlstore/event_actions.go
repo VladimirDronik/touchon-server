@@ -73,12 +73,6 @@ func (o *EventActionsRepo) SaveAction(act *interfaces.EventAction) error {
 		return errors.Wrap(errors.New("act is nil"), "SaveAction")
 	}
 
-	count := int64(0)
-	if err := o.store.db.Model(act).Where("id = ?", act.ID).Count(&count).Error; err != nil {
-		return errors.Wrap(err, "SaveAction")
-	}
-	actIsExists := count == 1
-
 	type Row struct {
 		*interfaces.EventAction
 		Args string
@@ -94,14 +88,8 @@ func (o *EventActionsRepo) SaveAction(act *interfaces.EventAction) error {
 		Args:        string(args),
 	}
 
-	if actIsExists {
-		if err := o.store.db.Updates(row).Error; err != nil {
-			return errors.Wrap(err, "SaveAction(update)")
-		}
-	} else {
-		if err := o.store.db.Create(row).Error; err != nil {
-			return errors.Wrap(err, "SaveAction(create)")
-		}
+	if err := o.store.db.Save(row).Error; err != nil {
+		return errors.Wrap(err, "SaveAction")
 	}
 
 	return nil

@@ -65,20 +65,8 @@ func (o *ScriptRepository) SetScript(script *model.StoreScript) error {
 		return errors.Wrap(errors.New("script is nil"), "SetScript")
 	}
 
-	count := int64(0)
-	if err := o.store.db.Model(script).Where("id = ?", script.ID).Count(&count).Error; err != nil {
+	if err := o.store.db.Save(script).Error; err != nil {
 		return errors.Wrap(err, "SetScript")
-	}
-	scriptIsExists := count == 1
-
-	if scriptIsExists {
-		if err := o.store.db.Updates(script).Error; err != nil {
-			return errors.Wrap(err, "SetScript(update)")
-		}
-	} else {
-		if err := o.store.db.Create(&script).Error; err != nil {
-			return errors.Wrap(err, "SetScript(create)")
-		}
 	}
 
 	return nil
