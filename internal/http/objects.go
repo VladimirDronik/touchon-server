@@ -416,3 +416,48 @@ func (o *Server) handleExecMethod(ctx *fasthttp.RequestCtx) (interface{}, int, e
 
 	return r, http.StatusOK, nil
 }
+
+// Включение/выключение объекта
+// @Summary Включение/выключение объекта
+// @Tags Objects
+// @Description Включение/выключение объекта
+// @ID EnableObject
+// @Produce json
+// @Param id path int true "ID объекта" default(391)
+// @Param enableFlag path bool true "Состояние объекта" enums(true, false)
+// @Success      200 {object} http.Response[any]
+// @Failure      400 {object} http.Response[any]
+// @Failure      500 {object} http.Response[any]
+// @Router /objects/{id}/enable/{enableFlag} [put]
+func (o *Server) handleEnableObject(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	objectID, err := helpers.GetUintPathParam(ctx, "id")
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	enableFlag := helpers.GetPathParam(ctx, "enableFlag")
+
+	obj, err := memStore.I.GetObject(objectID)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	switch enableFlag {
+	case "true":
+		obj.SetStatus(model.StatusNA)
+		obj.SetEnabled(true)
+		break
+	case "false":
+		obj.SetStatus(model.StatusDisabled)
+		obj.SetEnabled(false)
+		break
+	default:
+		return nil, http.StatusBadRequest, nil
+	}
+
+	obj.Save()
+
+	//TODO: отправка в вебсокеты
+
+	return nil, http.StatusOK, nil
+}
