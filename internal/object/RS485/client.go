@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/simonvetter/modbus"
+	"touchon-server/internal/g"
 )
 
 var ErrBadUrlScheme = errors.New("bad url scheme")
@@ -26,7 +27,7 @@ func newClient(cfg *modbus.ClientConfiguration) (Client, error) {
 		o.devicePath = u.Path
 	}
 
-	return o, nil
+	return NewLogger(o, g.Logger), nil
 }
 
 // ClientImpl оборачивает modbus.ModbusClient для реализации собственных функций сырой записи/чтения в устройство.
