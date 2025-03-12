@@ -12,6 +12,7 @@ import (
 )
 
 // Получение количества действий для событий
+// @Security TokenAuth
 // @Summary Получение количества действий для событий
 // @Tags EventActions
 // @Description Получение количества действий для событий
@@ -59,6 +60,7 @@ func (o *Server) handleGetEventsActionsCount(ctx *fasthttp.RequestCtx) (interfac
 }
 
 // Получение действий для событий
+// @Security TokenAuth
 // @Summary Получение действий для событий
 // @Tags EventActions
 // @Description Получение действий для событий
@@ -111,6 +113,7 @@ func (o *Server) handleGetEventsActions(ctx *fasthttp.RequestCtx) (interface{}, 
 }
 
 // Создание действия
+// @Security TokenAuth
 // @Summary Создание действия
 // @Tags EventActions
 // @Description Создание действия
@@ -193,6 +196,7 @@ func (o *Server) CreateEventAction(targetType string, targetID int, eventName st
 }
 
 // Обновление действия
+// @Security TokenAuth
 // @Summary Обновление действия
 // @Tags EventActions
 // @Description Обновление действия
@@ -218,6 +222,7 @@ func (o *Server) handleUpdateEventAction(ctx *fasthttp.RequestCtx) (interface{},
 }
 
 // Удаление всех действий по фильтру
+// @Security TokenAuth
 // @Summary Удаление всех действий по фильтру
 // @Tags EventActions
 // @Description Удаление всех действий по фильтру
@@ -249,6 +254,7 @@ func (o *Server) handleDeleteAllEventActions(ctx *fasthttp.RequestCtx) (interfac
 }
 
 // Удаление действия
+// @Security TokenAuth
 // @Summary Удаление действия
 // @Tags EventActions
 // @Description Удаление действия
@@ -273,6 +279,7 @@ func (o *Server) handleDeleteEventAction(ctx *fasthttp.RequestCtx) (interface{},
 }
 
 // Смена порядка действий для события
+// @Security TokenAuth
 // @Summary Смена порядка действий для события
 // @Tags EventActions
 // @Description Смена порядка действий для события
@@ -298,6 +305,7 @@ func (o *Server) handleOrderEventActions(ctx *fasthttp.RequestCtx) (interface{},
 }
 
 // Удаление события с действиями
+// @Security TokenAuth
 // @Summary Удаление события с действиями
 // @Tags EventActions
 // @Description Удаление события с действиями

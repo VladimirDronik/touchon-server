@@ -13,6 +13,7 @@ import (
 )
 
 // Получение модели сценария
+// @Security TokenAuth
 // @Summary Получение модели сценария
 // @Tags Scripts
 // @Description Получение модели сценария
@@ -45,6 +46,7 @@ func (o *Server) handleGetScriptModel(ctx *fasthttp.RequestCtx) (interface{}, in
 }
 
 // Получение сценария
+// @Security TokenAuth
 // @Summary Получение сценария
 // @Tags Scripts
 // @Description Получение сценария
@@ -70,6 +72,7 @@ func (o *Server) handleGetScript(ctx *fasthttp.RequestCtx) (interface{}, int, er
 }
 
 // Создание сценария
+// @Security TokenAuth
 // @Summary Создание сценария
 // @Tags Scripts
 // @Description Создание сценария
@@ -86,6 +89,7 @@ func (o *Server) handleCreateScript(ctx *fasthttp.RequestCtx) (interface{}, int,
 }
 
 // Обновление сценария
+// @Security TokenAuth
 // @Summary Обновление сценария
 // @Tags Scripts
 // @Description Обновление сценария
@@ -138,6 +142,7 @@ type GetScriptsResponse struct {
 }
 
 // Получение списка сценариев
+// @Security TokenAuth
 // @Summary Получение сценариев
 // @Tags Scripts
 // @Description Получение всех сценариев
@@ -186,6 +191,7 @@ func (o *Server) handleGetScripts(ctx *fasthttp.RequestCtx) (interface{}, int, e
 }
 
 // Удаление сценария
+// @Security TokenAuth
 // @Summary Удаление сценария
 // @Tags Scripts
 // @Description Удаление сценария
@@ -210,6 +216,7 @@ func (o *Server) handleDeleteScript(ctx *fasthttp.RequestCtx) (interface{}, int,
 }
 
 // Запуск сценария
+// @Security TokenAuth
 // @Summary Запуск сценария
 // @Tags Scripts
 // @Description Запуск сценария

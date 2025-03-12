@@ -28,6 +28,7 @@ type Port struct {
 }
 
 // Получение портов контроллера
+// @Security TokenAuth
 // @Summary Получение портов контроллера
 // @Tags Devices
 // @Description Получение портов контроллера

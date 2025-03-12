@@ -19,6 +19,7 @@ import (
 )
 
 // Создание объекта (с действиями)
+// @Security TokenAuth
 // @Summary Создание объекта (с действиями)
 // @Tags Objects
 // @Description Создание объекта (с действиями)

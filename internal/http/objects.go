@@ -25,6 +25,7 @@ type getObjectsTypesResponseItem struct {
 }
 
 // Получение категорий типов объектов
+// @Security TokenAuth
 // @Summary Получение категорий типов объектов
 // @Tags Objects
 // @Description Получение категорий типов объектов
@@ -88,6 +89,7 @@ func compareTags(inputsTags []string, objectTags []string) bool {
 }
 
 // Получение модели объекта
+// @Security TokenAuth
 // @Summary Получение модели объекта
 // @Tags Objects
 // @Description Получение модели объекта
@@ -124,6 +126,7 @@ func (o *Server) handleGetObjectModel(ctx *fasthttp.RequestCtx) (interface{}, in
 }
 
 // Получение объекта
+// @Security TokenAuth
 // @Summary Получение объекта
 // @Tags Objects
 // @Description Получение объекта
@@ -155,6 +158,7 @@ func (o *Server) handleGetObject(ctx *fasthttp.RequestCtx) (interface{}, int, er
 }
 
 // Получение объекта по его свойствам
+// @Security TokenAuth
 // @Summary Получение объекта по его свойствам
 // @Tags Objects
 // @Description Получение объекта по его свойствам
@@ -190,6 +194,7 @@ func (o *Server) handleGetObjectByProps(ctx *fasthttp.RequestCtx) (interface{}, 
 }
 
 // Удаление объекта
+// @Security TokenAuth
 // @Summary Удаление объекта
 // @Tags Objects
 // @Description Удаление объекта
@@ -303,6 +308,7 @@ func (o *Server) configPort(objModel objects.Object) error {
 }
 
 // Получение всех тегов
+// @Security TokenAuth
 // @Summary Получение всех тегов
 // @Tags Objects
 // @Description Получение всех тегов
@@ -341,6 +347,7 @@ func (o *Server) handleGetAllObjectsTags(ctx *fasthttp.RequestCtx) (interface{},
 }
 
 // Получение состояния объекта
+// @Security TokenAuth
 // @Summary Получение состояния объекта
 // @Tags Objects
 // @Description Получение состояния объекта
@@ -371,6 +378,7 @@ func (o *Server) handleGetObjectState(ctx *fasthttp.RequestCtx) (interface{}, in
 }
 
 // Запуск метода объекта
+// @Security TokenAuth
 // @Summary Запуск метода объекта
 // @Tags Objects
 // @Description Запуск метода объекта
@@ -418,6 +426,7 @@ func (o *Server) handleExecMethod(ctx *fasthttp.RequestCtx) (interface{}, int, e
 }
 
 // Включение/выключение объекта
+// @Security TokenAuth
 // @Summary Включение/выключение объекта
 // @Tags Objects
 // @Description Включение/выключение объекта

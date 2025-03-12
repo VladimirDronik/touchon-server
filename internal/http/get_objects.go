@@ -149,6 +149,7 @@ type GetObjectsResponse struct {
 }
 
 // Получение списка объектов
+// @Security TokenAuth
 // @Summary Получение объектов
 // @Tags Objects
 // @Description Получение объектов
