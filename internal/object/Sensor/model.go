@@ -205,7 +205,10 @@ func (o *SensorModel) check(map[string]interface{}) ([]interfaces.Message, error
 	}
 
 	g.WSServer.Send("object", model.ObjectForWS{ID: o.GetID(), Value: vals})
-	helpers.SaveAndSendStatus(o, model.StatusAvailable, false)
+
+	if err := helpers.SaveAndSendStatus(o, model.StatusAvailable); err != nil {
+		return nil, errors.Wrap(err, "SensorModel.check")
+	}
 
 	msg, err := sensor.NewOnCheck(o.GetID(), vals)
 	if err != nil {

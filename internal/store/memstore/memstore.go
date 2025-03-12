@@ -103,7 +103,8 @@ func (o *MemStore) Start() error {
 
 func startTree(items []*treeItem) {
 	for _, item := range items {
-		if !item.Object.GetEnabled() {
+		// Если объект выключен или уже запущен, пропускаем его
+		if !item.Object.GetEnabled() || item.Object.GetStarted() {
 			continue
 		}
 
@@ -148,7 +149,8 @@ func (o *MemStore) Shutdown() error {
 
 func shutdownTree(items []*treeItem) (errs []error) {
 	for _, item := range items {
-		if !item.Object.GetEnabled() {
+		// Останавливаем только запущенные объекты
+		if !item.Object.GetStarted() {
 			continue
 		}
 
@@ -194,7 +196,7 @@ func (o *MemStore) SaveObject(obj objects.Object) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	if oldObj, ok := o.objects[obj.GetID()]; ok && oldObj.GetEnabled() {
+	if oldObj, ok := o.objects[obj.GetID()]; ok {
 		errs := o.shutdownObjectTree(oldObj)
 
 		// Выводим в лог все ошибки
@@ -218,7 +220,8 @@ func (o *MemStore) SaveObject(obj objects.Object) error {
 }
 
 func (o *MemStore) startObjectTree(obj objects.Object) error {
-	if !obj.GetEnabled() {
+	// Если объект выключен или уже запущен, уходим
+	if !obj.GetEnabled() || obj.GetStarted() {
 		return nil
 	}
 
@@ -259,7 +262,8 @@ func (o *MemStore) DeleteObject(objectID int) error {
 }
 
 func (o *MemStore) shutdownObjectTree(obj objects.Object) (errs []error) {
-	if !obj.GetEnabled() {
+	// Останавливаем только запущенные объекты
+	if !obj.GetStarted() {
 		return nil
 	}
 

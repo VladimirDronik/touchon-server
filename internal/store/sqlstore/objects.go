@@ -397,14 +397,16 @@ func (o *ObjectRepository) SetParent(objectID int, parentID *int) error {
 }
 
 func (o *ObjectRepository) SetEnabled(objectID int, enabled bool) error {
-	err := o.store.db.
-		Model(&model.StoreObject{}).
-		Where("id", objectID).
-		Update("enabled", enabled).
-		Error
+	if err := o.setObjectsField(objectID, "enabled", enabled); err != nil {
+		return errors.Wrap(err, "SetEnabled")
+	}
 
-	if err != nil {
-		return errors.Wrap(err, "SetParent")
+	return nil
+}
+
+func (o *ObjectRepository) SetStatus(objectID int, status string) error {
+	if err := o.setObjectsField(objectID, "status", status); err != nil {
+		return errors.Wrap(err, "SetStatus")
 	}
 
 	return nil
@@ -451,4 +453,18 @@ func (o *ObjectRepository) GetObjectIDByProps(props map[string]string, parentID 
 	default:
 		return 0, errors.Wrap(errors.Errorf("multiple records found (%d)", len(rows)), "GetObjectIDByProps")
 	}
+}
+
+func (o *ObjectRepository) setObjectsField(objectID int, field string, value interface{}) error {
+	err := o.store.db.
+		Model(&model.StoreObject{}).
+		Where("id", objectID).
+		Update(field, value).
+		Error
+
+	if err != nil {
+		return errors.Wrap(err, "setObjectsField")
+	}
+
+	return nil
 }

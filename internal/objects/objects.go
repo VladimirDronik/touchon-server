@@ -56,6 +56,9 @@ type Object interface {
 	GetEnabled() bool
 	SetEnabled(bool)
 
+	// GetStarted позволяет определить, запущен ли объект
+	GetStarted() bool
+
 	// CheckEnabled метод проверяет, включен ли объект.
 	// Вызывается в методах Start и Shutdown.
 	// Присутствует в интерфейсе для того, чтобы можно было

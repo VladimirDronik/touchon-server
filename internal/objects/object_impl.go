@@ -3,6 +3,7 @@ package objects
 import (
 	"encoding/json"
 	"sort"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -67,6 +68,7 @@ type ObjectModelImpl struct {
 
 	// Используется для выполнения периодических действий
 	intervalTimer *helpers.Timer
+	started       atomic.Bool
 }
 
 func (o *ObjectModelImpl) GetID() int {
@@ -360,6 +362,8 @@ func (o *ObjectModelImpl) Start() error {
 		return errors.Wrap(err, "ObjectModelImpl.Start")
 	}
 
+	o.setStarted(true)
+
 	return nil
 }
 
@@ -399,6 +403,8 @@ func (o *ObjectModelImpl) Shutdown() error {
 	if o.intervalTimer != nil {
 		o.intervalTimer.Stop()
 	}
+
+	o.setStarted(false)
 
 	return nil
 }
@@ -462,6 +468,14 @@ func (o *ObjectModelImpl) GetEnabled() bool {
 func (o *ObjectModelImpl) SetEnabled(v bool) {
 	o.enabled = v
 	o.methods.SetEnabled(v)
+}
+
+func (o *ObjectModelImpl) GetStarted() bool {
+	return o.started.Load()
+}
+
+func (o *ObjectModelImpl) setStarted(v bool) {
+	o.started.Store(v)
 }
 
 func (o *ObjectModelImpl) DeleteChildren() error {

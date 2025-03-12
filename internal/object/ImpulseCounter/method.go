@@ -147,7 +147,6 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 	o.GetProps().Set("last_update", time.Now().Format(ValueUpdateAtFormat))
 
 	if err := o.resetTo(0); err != nil {
-
 		o.GetProps().Set("current", 0)
 	}
 
@@ -156,7 +155,10 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 
 	o.SetStatus(model.StatusAvailable)
 	g.WSServer.Send("object", model.ObjectForWS{ID: o.GetID(), Value: total})
-	helpersObj.SaveAndSendStatus(o, model.StatusAvailable, false)
+
+	if err := helpersObj.SaveAndSendStatus(o, model.StatusAvailable); err != nil {
+		return errors.Wrap(err, "saveImpulses")
+	}
 
 	return err
 }

@@ -369,7 +369,11 @@ func (o *ImpulseCounter) handler(svc interfaces.MessageSender, msg interfaces.Me
 		return
 	}
 
-	helpersObj.SaveAndSendStatus(o, status, true)
+	if err := helpersObj.SaveAndSendStatus(o, status); err != nil {
+		g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler"))
+		return
+	}
+
 	if err := svc.Send(msg); err != nil {
 		g.Logger.Error(errors.Wrap(err, "ImpulseCounterModel.handler"))
 		return
