@@ -2,8 +2,9 @@ package sqlstore
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"sort"
+
+	"github.com/pkg/errors"
 	"touchon-server/internal/model"
 	"touchon-server/internal/objects"
 	"touchon-server/lib/interfaces"
@@ -157,14 +158,14 @@ func (o *Items) GetZones(withEmptyRooms bool) ([]*model.Zone, error) {
 
 	// Добавляем детей родителям
 	for _, row := range m {
-		if row.ParentID == 0 {
+		if row.ParentID == nil {
 			roots += 1
 			continue
 		}
 
-		parent, ok := m[row.ParentID]
+		parent, ok := m[*row.ParentID]
 		if !ok {
-			return nil, errors.Wrap(errors.Errorf("can't find parent with ID %d", row.ParentID), "GetZones")
+			return nil, errors.Wrap(errors.Errorf("can't find parent with ID %d", *row.ParentID), "GetZones")
 		}
 
 		parent.Children = append(parent.Children, row)
@@ -173,7 +174,7 @@ func (o *Items) GetZones(withEmptyRooms bool) ([]*model.Zone, error) {
 	// Собираем корневые эл-ты
 	items := make([]*getZonesRow, 0, roots)
 	for _, row := range m {
-		if row.ParentID == 0 {
+		if row.ParentID == nil {
 			items = append(items, row)
 		}
 	}
