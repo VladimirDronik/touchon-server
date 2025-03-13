@@ -1,7 +1,7 @@
 package model
 
 type ItemForWS struct {
-	ID        int     `json:"item_id"`
+	ID        int     `json:"id"`
 	Type      string  `json:"type,omitempty"`
 	Status    string  `json:"status,omitempty"`
 	Params    string  `json:"-"` // Используется для выборки из БД, но не для выдачи в ответе сервера

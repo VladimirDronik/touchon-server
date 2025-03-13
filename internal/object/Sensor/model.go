@@ -199,12 +199,15 @@ func (o *SensorModel) check(map[string]interface{}) ([]interfaces.Message, error
 		}
 	}
 
+	var valuesStruct []model.Value
+
 	vals := make(map[string]float32, len(values))
 	for k, v := range values {
 		vals[string(k)] = v
+		valuesStruct = append(valuesStruct, model.Value{Type: string(k), Value: v})
 	}
 
-	g.WSServer.Send("object", model.ObjectForWS{ID: o.GetID(), Value: vals})
+	g.WSServer.Send("object", model.ObjectForWS{ID: o.GetID(), Values: valuesStruct})
 
 	if err := helpers.SaveAndSendStatus(o, model.StatusAvailable); err != nil {
 		return nil, errors.Wrap(err, "SensorModel.check")

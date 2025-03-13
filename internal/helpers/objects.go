@@ -50,7 +50,7 @@ func SaveAndSendStatus(obj objects.Object, status model.ObjectStatus) error {
 		ID:     obj.GetID(),
 		Status: obj.GetStatus(),
 	}
-	g.WSServer.Send("object", wsMsg)
+	g.WSServer.Send("object_status", wsMsg)
 
 	return nil
 }

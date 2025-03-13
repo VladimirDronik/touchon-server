@@ -184,7 +184,7 @@ func (o *Service) processItemEvents(svc interfaces.MessageSender, msg interfaces
 		return
 	}
 
-	g.WSServer.Send("item", &model.ViewItem{ID: msg.GetTargetID(), Status: state})
+	g.WSServer.Send("item_status", &model.ItemForWS{ID: msg.GetTargetID(), Status: state})
 }
 
 func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interfaces.Message) {
@@ -214,7 +214,7 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 				return
 			}
 
-			g.WSServer.Send("item", item)
+			g.WSServer.Send("item_status", &model.ItemForWS{ID: item.ID, Status: item.Status})
 
 		case "sensor":
 			item.Value, _ = msg.GetFloatValue(args["param"].(string))
@@ -226,7 +226,7 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 			}
 
 			if sensor.Current != item.Value { //TODO: эта конструкция бесполезна, т.к. данные с датчика снимаем и сразу шлеём в сокет, убрать
-				g.WSServer.Send("item", item)
+				g.WSServer.Send("item_status", &model.ItemForWS{ID: item.ID, Status: item.Status})
 			}
 
 			// Обновление значения в таблице графиков для сенсора
@@ -270,7 +270,7 @@ func (o *Service) processNotification(svc interfaces.MessageSender, msg interfac
 	}
 
 	// Отправка сообщения через вебсокет
-	g.WSServer.Send("notification", notification)
+	g.WSServer.Send("send_notification", notification)
 
 	// Отправка критических сообщений в пуш уведомления
 	if notification.Type == interfaces.NotificationTypeCritical {

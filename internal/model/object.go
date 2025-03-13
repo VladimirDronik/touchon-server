@@ -87,7 +87,12 @@ func (o *StoreObject) TableName() string {
 }
 
 type ObjectForWS struct {
-	ID     int          `json:"item_id"`
+	ID     int          `json:"id"`
 	Status ObjectStatus `json:"status,omitempty"`
-	Value  interface{}  `json:"value,omitempty" gorm:"-"`
+	Values []Value      `json:"values,omitempty" gorm:"-"`
+}
+
+type Value struct {
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
 }

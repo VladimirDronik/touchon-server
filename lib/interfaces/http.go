@@ -30,7 +30,7 @@ type HttpServer interface {
 }
 
 type WSServer interface {
-	Send(sender string, message interface{})
+	Send(event string, data interface{})
 	Start(bindAddr string) error
 	Shutdown() error
 }

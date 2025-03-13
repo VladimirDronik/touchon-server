@@ -1,6 +1,7 @@
 package ImpulseCounter
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ const ValueUpdateAtFormat = "02.01.2006 15:04:05"
 func (o *ImpulseCounter) Check(params map[string]interface{}) ([]interfaces.Message, error) {
 	count, err := o.megaRelease()
 	if err != nil {
-		return []interfaces.Message{}, nil
+		//	return []interfaces.Message{}, nil
 	}
 
 	err = o.saveImpulses(count)
@@ -97,6 +98,7 @@ func (o *ImpulseCounter) getPort() (interfaces.Port, error) {
 
 // сохраняем количество импульсов в БД
 func (o *ImpulseCounter) saveImpulses(count int) error {
+	count = 5
 	current, err := o.GetProps().GetIntValue("current")
 	if err != nil {
 		return errors.Wrap(err, "Property 'current' not found for object")
@@ -146,6 +148,10 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 	o.GetProps().Set("today", today)
 	o.GetProps().Set("last_update", time.Now().Format(ValueUpdateAtFormat))
 
+	fmt.Println(total)
+	fmt.Println(hour)
+	fmt.Println(today)
+
 	if err := o.resetTo(0); err != nil {
 		o.GetProps().Set("current", 0)
 	}
@@ -154,7 +160,13 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 	err = o.saveGraph(lastUpdate, cur, today, hour)
 
 	o.SetStatus(model.StatusAvailable)
-	g.WSServer.Send("object", model.ObjectForWS{ID: o.GetID(), Value: total})
+
+	value := model.Value{
+		Type:  "total",
+		Value: total,
+	}
+
+	g.WSServer.Send("object_value", model.ObjectForWS{ID: o.GetID(), Values: append([]model.Value{}, value)})
 
 	if err := helpersObj.SaveAndSendStatus(o, model.StatusAvailable); err != nil {
 		return errors.Wrap(err, "saveImpulses")
@@ -164,13 +176,18 @@ func (o *ImpulseCounter) saveImpulses(count int) error {
 }
 
 func (o *ImpulseCounter) saveGraph(lastUpdate string, current float32, today float32, hour float32) error {
-	datetime, err := time.Parse("2006-01-02", lastUpdate)
+	datetime, err := time.Parse("01.02.2006 15:04:05", lastUpdate)
+	fmt.Println(lastUpdate)
 	if err != nil {
 		return err
 	}
 
 	now := time.Now()
 	//Если наступил новый час, то за предыдущий сохраняем данные в БД
+	fmt.Println(datetime.Hour())
+	fmt.Println(now.Hour())
+	fmt.Println(datetime.Minute())
+	fmt.Println(now.Minute())
 	if datetime.Hour() != now.Hour() {
 		dateTimeMinus := now.Add(time.Duration(-1) * time.Hour)
 		store.I.History().SetValue(o.GetID(), dateTimeMinus.Format("2006-01-02 15:04:05"), hour, model.TableDailyHistory)

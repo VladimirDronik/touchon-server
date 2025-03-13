@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"net/http"
 	"time"
 
@@ -128,18 +129,22 @@ func (o *Server) handler(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (o *Server) Send(sender string, message interface{}) {
+func (o *Server) Send(event string, data interface{}) {
 	msg := struct {
-		Sender  string      `json:"sender"`
-		Message interface{} `json:"data"`
+		Event     string      `json:"event"`
+		UUID      string      `json:"uuid"`
+		TimeStamp int64       `json:"time_stamp"`
+		Data      interface{} `json:"data"`
 	}{
-		Sender:  sender,
-		Message: message,
+		Event:     event,
+		UUID:      uuid.New().String(),
+		TimeStamp: time.Now().Unix(),
+		Data:      data,
 	}
 
 	for clientID := range o.clients {
 		if o.GetLogger().IsLevelEnabled(logrus.DebugLevel) {
-			data, _ := json.Marshal(message)
+			data, _ := json.Marshal(data)
 			o.GetLogger().Debugf("ws.Server.Send(to %d): %v", clientID, string(data))
 		}
 
