@@ -133,7 +133,7 @@ func (o *Server) Send(event string, data interface{}) {
 	msg := struct {
 		Event     string      `json:"event"`
 		UUID      string      `json:"uuid"`
-		TimeStamp int64       `json:"time_stamp"`
+		TimeStamp int64       `json:"timestamp"`
 		Data      interface{} `json:"data"`
 	}{
 		Event:     event,
