@@ -217,7 +217,7 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 			g.WSServer.Send("item_status", &model.ItemForWS{ID: item.ID, Status: item.Status})
 
 		case "sensor":
-			item.Value, _ = msg.GetFloatValue(args["param"].(string))
+			valueSensor, _ := msg.GetFloatValue(args["param"].(string))
 
 			sensor, err := store.I.Devices().GetSensor(item.ID)
 			if err != nil {
@@ -225,13 +225,17 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 				return
 			}
 
-			if sensor.Current != item.Value { //TODO: эта конструкция бесполезна, т.к. данные с датчика снимаем и сразу шлеём в сокет, убрать
-				g.WSServer.Send("item_status", &model.ItemForWS{ID: item.ID, Status: item.Status})
+			if sensor.Current != valueSensor { //TODO: эта конструкция бесполезна, т.к. данные с датчика снимаем и сразу шлеём в сокет, убрать
+
+				g.WSServer.Send("item_value", &model.ItemForWS{
+					ID:     item.ID,
+					Values: append([]model.Value{}, model.Value{Type: sensor.Type, Value: valueSensor}),
+				})
 			}
 
 			// Обновление значения в таблице графиков для сенсора
 			t := time.Now().Format("2006-01-02T15:04")
-			if err := store.I.History().SetValue(item.ID, t, item.Value, model.TableDailyHistory); err != nil {
+			if err := store.I.History().SetValue(item.ID, t, valueSensor, model.TableDailyHistory); err != nil {
 				g.Logger.Error(errors.Wrap(err, "processObjectEvent"))
 				return
 			}

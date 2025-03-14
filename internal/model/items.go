@@ -5,7 +5,7 @@ type ItemForWS struct {
 	Type      string  `json:"type,omitempty"`
 	Status    string  `json:"status,omitempty"`
 	Params    string  `json:"-"` // Используется для выборки из БД, но не для выдачи в ответе сервера
-	Value     float32 `json:"value,omitempty" gorm:"-"`
+	Values    []Value `json:"values,omitempty" gorm:"-"`
 	EventArgs []byte  `json:"-"` // Параметры, в которых содержатся дополнительные аргументы, которые можно использовать для обработки логики при возникновении события
 }
 
