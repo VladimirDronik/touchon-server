@@ -3,10 +3,10 @@ package model
 // ConditionerParams модель параметров кондиционера
 type ConditionerParams struct {
 	CondParams
-	OperatingModes       []string `json:"operating_modes"`
-	FanSpeeds            []string `json:"fan_speeds"`
-	VerticalDirections   []string `json:"vertical_directions"`
-	HorizontalDirections []string `json:"horizontal_directions"`
+	OperatingModes       map[string]string `json:"operating_modes"`
+	FanSpeeds            []string          `json:"fan_speeds"`
+	VerticalDirections   []string          `json:"vertical_directions"`
+	HorizontalDirections []string          `json:"horizontal_directions"`
 }
 
 type StoreConditionerParams struct {

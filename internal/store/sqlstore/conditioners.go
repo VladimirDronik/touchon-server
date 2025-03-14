@@ -1,6 +1,7 @@
 package sqlstore
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"touchon-server/internal/objects"
@@ -56,14 +57,14 @@ func (o *Conditioners) SetConditionerMode(itemID int, mode string, value bool) e
 
 // SetConditionerOperatingMode указать режим работы для кондиционера
 func (o *Conditioners) SetConditionerOperatingMode(itemID int, mode string) error {
-	params, err := o.GetParams(itemID)
-	if err != nil {
-		return errors.Wrap(err, "SetConditionerOperatingMode")
-	}
+	//params, err := o.GetParams(itemID)
+	//if err != nil {
+	//	return errors.Wrap(err, "SetConditionerOperatingMode")
+	//}
 
-	if !slices.Contains(params.OperatingModes, mode) {
-		return errors.Wrap(errors.Errorf("unknown mode %q", mode), "SetConditionerOperatingMode")
-	}
+	//if !slices.Contains(params.OperatingModes, mode) {
+	//	return errors.Wrap(errors.Errorf("unknown mode %q", mode), "SetConditionerOperatingMode")
+	//}
 
 	if err := o.SetFieldValue(itemID, "operating_mode", mode); err != nil {
 		return errors.Wrap(err, "SetConditionerOperatingMode")
@@ -149,7 +150,7 @@ func (o *Conditioners) SetFieldValue(conditionerID int, field string, value inte
 }
 
 func (o *Conditioners) GetParams(itemID int) (*model.ConditionerParams, error) {
-	//row := &model.StoreConditionerParams{}
+	condParams := &model.ConditionerParams{}
 
 	conditioner, err := objects.LoadObject(391, "", "", false)
 	if err != nil {
@@ -160,7 +161,11 @@ func (o *Conditioners) GetParams(itemID int) (*model.ConditionerParams, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "GetParams")
 	}
-	fmt.Println(opModes.Values)
+
+	condParams.OperatingModes = opModes.Values
+	jsondata, err := json.Marshal(condParams)
+	fmt.Println(string(jsondata))
+
 	//r.OperatingModes =
 	//
 	//
