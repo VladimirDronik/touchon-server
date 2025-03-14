@@ -49,6 +49,7 @@ type Message interface {
 	SetPayload(map[string]interface{})
 	GetValue(k string) interface{}
 	SetValue(k string, v interface{})
+	SetState(state string)
 	GetFloatValue(name string) (float32, error)
 	GetStringValue(name string) (string, error)
 	GetIntValue(name string) (int, error)

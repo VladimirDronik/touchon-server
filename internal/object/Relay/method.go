@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"touchon-server/internal/model"
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/objects"
@@ -31,12 +32,20 @@ func (o *RelayModel) On(args map[string]interface{}) ([]interfaces.Message, erro
 	//Отправляем стандартное сообщение по смене состояния для объекта
 	relayStateMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), "on", "")
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Toggle")
+		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
 	portMsg, err := portObj.On(nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.On")
+		relayMsg, err = events.NewOnError(interfaces.TargetTypeObject, o.GetID(), "relay not available")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.On")
+		}
+
+		relayStateMsg, err = events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), model.StatusUnavailable, "")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.On")
+		}
 	}
 
 	//TODO:: сделать тут сохранение статуса объекта в БД
@@ -68,7 +77,15 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]interfaces.Message, err
 
 	portMsg, err := portObj.Off(nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Off")
+		relayMsg, err = events.NewOnError(interfaces.TargetTypeObject, o.GetID(), "relay not available")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.Off")
+		}
+
+		relayStateMsg, err = events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), model.StatusUnavailable, "")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.Off")
+		}
 	}
 
 	//TODO:: сделать тут сохранение статуса объекта в БД
@@ -77,6 +94,8 @@ func (o *RelayModel) Off(args map[string]interface{}) ([]interfaces.Message, err
 }
 
 func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, error) {
+	var relayStateMsg, relayMsg interfaces.Message
+
 	portObjectID, err := o.GetProps().GetIntValue("address")
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
@@ -90,7 +109,15 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 	//Отправляем стандартное сообщение по смене состояния для объекта
 	portMsg, err := portObj.Toggle(nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Toggle")
+		relayMsg, err = events.NewOnError(interfaces.TargetTypeObject, o.GetID(), "relay not available")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.Toggle")
+		}
+
+		relayStateMsg, err = events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), model.StatusUnavailable, "")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.Toggle")
+		}
 	}
 
 	var state string
@@ -104,21 +131,20 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 
 	state = strings.ToLower(state)
 
-	relayMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), state, "")
+	relayMsg, err = events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), state, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "RelayModel.Toggle")
 	}
 
-	var relayStateMsq interfaces.Message
 	switch state {
 	case "on":
-		relayStateMsq, err = relay.NewOnStateOn(o.GetID())
+		relayStateMsg, err = relay.NewOnStateOn(o.GetID())
 		if err != nil {
 			return nil, errors.Wrap(err, "RelayModel.On")
 		}
 		break
 	case "off":
-		relayStateMsq, err = relay.NewOnStateOff(o.GetID())
+		relayStateMsg, err = relay.NewOnStateOff(o.GetID())
 		if err != nil {
 			return nil, errors.Wrap(err, "RelayModel.Off")
 		}
@@ -129,7 +155,7 @@ func (o *RelayModel) Toggle(args map[string]interface{}) ([]interfaces.Message, 
 
 	//TODO:: сделать тут сохранение статуса объекта в БД
 
-	return append(portMsg, relayMsg, relayStateMsq), nil
+	return append(portMsg, relayMsg, relayStateMsg), nil
 }
 
 func (o *RelayModel) Check(args map[string]interface{}) ([]interfaces.Message, error) {
