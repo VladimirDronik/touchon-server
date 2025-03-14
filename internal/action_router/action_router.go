@@ -214,7 +214,10 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 				return
 			}
 
-			g.WSServer.Send("item_status", &model.ItemForWS{ID: item.ID, Status: item.Status})
+			g.WSServer.Send("item_status", &model.ItemForWS{
+				ID:     item.ID,
+				Values: append([]model.Value{}, model.Value{Type: "status", Value: item.Status}),
+			})
 
 		case "sensor":
 			valueSensor, _ := msg.GetFloatValue(args["param"].(string))
