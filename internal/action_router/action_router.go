@@ -187,6 +187,8 @@ func (o *Service) processItemEvents(svc interfaces.MessageSender, msg interfaces
 	g.WSServer.Send("item_status", &model.ItemForWS{ID: msg.GetTargetID(), Status: state})
 }
 
+// Выполняется независимо от тасок в action-router для объекта.
+// Ищет итемы, которые соответсвуют условиям для того, чтобы отправить им данные по вебсокетам
 func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interfaces.Message) {
 	// Ищем в таблице событие, которое пришло в топике
 	items, err := store.I.Items().GetItemsForChange(msg.GetTargetType(), msg.GetTargetID(), msg.GetName())
