@@ -133,12 +133,12 @@ func (o *Server) Send(event string, data interface{}) {
 	msg := struct {
 		Event     string      `json:"event"`
 		UUID      string      `json:"uuid"`
-		TimeStamp int64       `json:"timestamp"`
+		Timestamp int64       `json:"timestamp"`
 		Data      interface{} `json:"data"`
 	}{
 		Event:     event,
 		UUID:      uuid.New().String(),
-		TimeStamp: time.Now().Unix(),
+		Timestamp: time.Now().UnixMilli(),
 		Data:      data,
 	}
 
