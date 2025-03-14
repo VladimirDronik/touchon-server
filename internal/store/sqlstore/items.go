@@ -349,6 +349,11 @@ func (o *Items) GetZone(roomID int) (*model.GroupRoom, error) {
 		Style: row.Style,
 	}
 
+	zone.Scenarios, err = o.GetScenarios(false)
+	if err != nil {
+		return nil, errors.Wrap(err, "GetScenarios")
+	}
+
 	zone.Sensors, err = o.getSensors(false, roomID)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetZoneSensors")

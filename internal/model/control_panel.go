@@ -53,8 +53,9 @@ type GroupRoom struct {
 	Sort     int    `json:"sort"`
 	IsGroup  bool   `json:"is_group"`
 
-	Sensors []*SensorItem `json:"sensors,omitempty"`
-	Items   []*ViewItem   `json:"items,omitempty"`
+	Scenarios []*ViewItem   `json:"scenario,omitempty"`
+	Sensors   []*SensorItem `json:"sensors,omitempty"`
+	Items     []*ViewItem   `json:"items,omitempty"`
 }
 
 // Zone Структура для вывода в помещений
