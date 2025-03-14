@@ -1,8 +1,9 @@
 package sqlstore
 
 import (
-	"encoding/json"
+	"fmt"
 	"slices"
+	"touchon-server/internal/objects"
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/model"
@@ -148,29 +149,45 @@ func (o *Conditioners) SetFieldValue(conditionerID int, field string, value inte
 }
 
 func (o *Conditioners) GetParams(itemID int) (*model.ConditionerParams, error) {
-	row := &model.StoreConditionerParams{}
+	//row := &model.StoreConditionerParams{}
 
-	if err := o.store.db.Table("conditioner_params").First(row, "view_item_id = ?", itemID).Error; err != nil {
+	conditioner, err := objects.LoadObject(391, "", "", false)
+	if err != nil {
 		return nil, errors.Wrap(err, "GetParams")
 	}
 
-	r := &model.ConditionerParams{CondParams: row.CondParams}
-
-	if err := json.Unmarshal([]byte(row.OperatingModes), &r.OperatingModes); err != nil {
+	opModes, err := conditioner.GetProps().Get("operating_mode")
+	if err != nil {
 		return nil, errors.Wrap(err, "GetParams")
 	}
+	fmt.Println(opModes.Values)
+	//r.OperatingModes =
+	//
+	//
+	//if err := o.store.db.Table("conditioner_params").First(row, "view_item_id = ?", itemID).Error; err != nil {
+	//	return nil, errors.Wrap(err, "GetParams")
+	//}
+	//
+	//
+	//
+	//	r := &model.ConditionerParams{CondParams: row.CondParams}
+	//
+	//if err := json.Unmarshal([]byte(row.OperatingModes), &r.OperatingModes); err != nil {
+	//	return nil, errors.Wrap(err, "GetParams")
+	//}
+	//
+	//if err := json.Unmarshal([]byte(row.FanSpeeds), &r.FanSpeeds); err != nil {
+	//	return nil, errors.Wrap(err, "GetParams")
+	//}
+	//
+	//if err := json.Unmarshal([]byte(row.VerticalDirections), &r.VerticalDirections); err != nil {
+	//	return nil, errors.Wrap(err, "GetParams")
+	//}
+	//
+	//if err := json.Unmarshal([]byte(row.HorizontalDirections), &r.HorizontalDirections); err != nil {
+	//	return nil, errors.Wrap(err, "GetParams")
+	//}
+	//
 
-	if err := json.Unmarshal([]byte(row.FanSpeeds), &r.FanSpeeds); err != nil {
-		return nil, errors.Wrap(err, "GetParams")
-	}
-
-	if err := json.Unmarshal([]byte(row.VerticalDirections), &r.VerticalDirections); err != nil {
-		return nil, errors.Wrap(err, "GetParams")
-	}
-
-	if err := json.Unmarshal([]byte(row.HorizontalDirections), &r.HorizontalDirections); err != nil {
-		return nil, errors.Wrap(err, "GetParams")
-	}
-
-	return r, nil
+	return nil, nil
 }

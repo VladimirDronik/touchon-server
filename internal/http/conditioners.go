@@ -6,7 +6,6 @@ import (
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/helpers"
-	"touchon-server/internal/model"
 	"touchon-server/internal/store"
 )
 
@@ -18,26 +17,28 @@ import (
 // @ID GetConditioner
 // @Produce json
 // @Param itemId query int true "ID" Format(int) default(16)
-// @Success      200 {object} Response[model.ViewItem]
+// @Success      200 {object} Response[model.CobditionerParams]
 // @Failure      400 {object} Response[any]
 // @Failure      500 {object} Response[any]
 // @Router /private/conditioner [get]
 // getConditioner
 func (o *Server) getConditioner(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
-	id, err := helpers.GetUintParam(ctx, "itemId")
+	itemID, err := helpers.GetUintParam(ctx, "itemId")
 	if err != nil {
 		return nil, http.StatusBadRequest, err
 	}
 
-	conditioner, err := store.I.Conditioners().GetConditioner(id)
-	if err != nil {
-		return nil, http.StatusBadRequest, err
-	}
+	conditioner, err := store.I.Conditioners().GetParams(itemID)
 
-	conditioner.History, err = store.I.History().GetHistory(id, model.HistoryItemTypeDeviceObject, "")
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
+	//conditioner, err := store.I.Conditioners().GetConditioner(itemId)
+	//if err != nil {
+	//	return nil, http.StatusBadRequest, err
+	//}
+
+	//conditioner.History, err = store.I.History().GetHistory(id, model.HistoryItemTypeDeviceObject, "")
+	//if err != nil {
+	//	return nil, http.StatusInternalServerError, err
+	//}
 
 	return conditioner, http.StatusOK, nil
 }
