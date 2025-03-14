@@ -111,6 +111,14 @@ func (o *MessageImpl) SetValue(k string, v interface{}) {
 	o.payload[k] = v
 }
 
+func (o *MessageImpl) SetState(state string) {
+	if o.payload == nil {
+		o.payload = make(map[string]interface{})
+	}
+
+	o.payload["state"] = state
+}
+
 func (o *MessageImpl) GetPayload() map[string]interface{} {
 	return o.payload
 }

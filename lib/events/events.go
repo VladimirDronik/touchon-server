@@ -19,9 +19,9 @@ func NewOnChangeState(targetType interfaces.TargetType, targetID int, state, val
 			Title:       "on_change_state",
 			Description: "Изменение состояния",
 		},
-		State: state,
-		Value: value,
 	}
+
+	o.SetState(state)
 
 	return o, nil
 }

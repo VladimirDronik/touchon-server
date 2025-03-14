@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"touchon-server/internal/model"
 
 	"github.com/pkg/errors"
 	"touchon-server/internal/objects"
@@ -31,12 +32,21 @@ func (o *RelayModel) On(args map[string]interface{}) ([]interfaces.Message, erro
 	//Отправляем стандартное сообщение по смене состояния для объекта
 	relayStateMsg, err := events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), "on", "")
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.Toggle")
+		return nil, errors.Wrap(err, "RelayModel.On")
 	}
 
 	portMsg, err := portObj.On(nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "RelayModel.On")
+		//return nil, errors.Wrap(err, "RelayModel.On")
+		relayMsg, err = events.NewOnError(interfaces.TargetTypeObject, o.GetID(), "relay not available")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.On")
+		}
+
+		relayStateMsg, err = events.NewOnChangeState(interfaces.TargetTypeObject, o.GetID(), model.StatusUnavailable, "")
+		if err != nil {
+			return nil, errors.Wrap(err, "RelayModel.On")
+		}
 	}
 
 	//TODO:: сделать тут сохранение статуса объекта в БД
