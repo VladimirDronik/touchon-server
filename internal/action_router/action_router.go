@@ -225,8 +225,7 @@ func (o *Service) processObjectEvent(svc interfaces.MessageSender, msg interface
 				return
 			}
 
-			if sensor.Current != valueSensor { //TODO: эта конструкция бесполезна, т.к. данные с датчика снимаем и сразу шлеём в сокет, убрать
-
+			if sensor.Current != valueSensor {
 				g.WSServer.Send("item_value", &model.ItemForWS{
 					ID:     item.ID,
 					Values: append([]model.Value{}, model.Value{Type: sensor.Type, Value: valueSensor}),
