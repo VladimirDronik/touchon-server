@@ -671,3 +671,24 @@ func (o *Server) setItemsOrder(ctx *fasthttp.RequestCtx) (interface{}, int, erro
 
 	return nil, http.StatusOK, nil
 }
+
+// Получение сценариев
+// @Security TokenAuth
+// @Summary Получение сценариев
+// @Tags Scenarios
+// @Description Получение сценариев
+// @ID GetScenarios
+// @Produce json
+// @Success      200 {object} Response[[]model.ViewItem]
+// @Failure      400 {object} Response[any]
+// @Failure      500 {object} Response[any]
+// @Router /private/item/scenarios [get]
+func (o *Server) getScenarios(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+
+	scenarios, err := store.I.Items().GetScenarios(false)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	return scenarios, http.StatusOK, nil
+}

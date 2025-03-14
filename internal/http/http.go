@@ -184,6 +184,9 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("GET", "/notifications", o.getNotifications)
 	private("PATCH", "/notification", o.setNotificationIsRead)
 
+	// Итемы сценариев
+	private("GET", "/item/scenarios", o.getScenarios)
+
 	// Items
 	// Получение элементов, которые требуют дополнительных данных
 	//private("GET", "/item/dimer", o.getDimmer)          // Получение димера, убрать
