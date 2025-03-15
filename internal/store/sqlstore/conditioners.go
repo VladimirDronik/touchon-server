@@ -1,9 +1,7 @@
 package sqlstore
 
 import (
-	"encoding/json"
-	"fmt"
-	"slices"
+	"touchon-server/internal/g"
 	"touchon-server/internal/objects"
 
 	"github.com/pkg/errors"
@@ -75,48 +73,48 @@ func (o *Conditioners) SetConditionerOperatingMode(itemID int, mode string) erro
 
 // SetConditionerDirection указать направление ламелей для кондиционера
 func (o *Conditioners) SetConditionerDirection(itemID int, plane string, direction string) error {
-	params, err := o.GetParams(itemID)
-	if err != nil {
-		return errors.Wrap(err, "SetConditionerDirection")
-	}
-
-	var directions []string
-
-	switch plane {
-	case "vertical":
-		directions = params.VerticalDirections
-	case "horizontal":
-		directions = params.HorizontalDirections
-	default:
-		return errors.Wrap(errors.Errorf("unknown plane %q", plane), "SetConditionerDirection")
-	}
-
-	if !slices.Contains(directions, direction) {
-		return errors.Wrap(errors.Errorf("unknown direction %q", direction), "SetConditionerDirection")
-	}
-
-	if err := o.SetFieldValue(itemID, plane+"_direction", direction); err != nil {
-		return errors.Wrap(err, "SetConditionerDirection")
-	}
-
+	//params, err := o.GetParams(itemID)
+	//if err != nil {
+	//	return errors.Wrap(err, "SetConditionerDirection")
+	//}
+	//
+	//var directions []string
+	//
+	//switch plane {
+	//case "vertical":
+	//	directions = params.VerticalDirections
+	//case "horizontal":
+	//	directions = params.HorizontalDirections
+	//default:
+	//	return errors.Wrap(errors.Errorf("unknown plane %q", plane), "SetConditionerDirection")
+	//}
+	//
+	//if !slices.Contains(directions, direction) {
+	//	return errors.Wrap(errors.Errorf("unknown direction %q", direction), "SetConditionerDirection")
+	//}
+	//
+	//if err := o.SetFieldValue(itemID, plane+"_direction", direction); err != nil {
+	//	return errors.Wrap(err, "SetConditionerDirection")
+	//}
+	//
 	return nil
 }
 
 // SetConditionerFanSpeed указать скорость вентилятора для кондиционера
 func (o *Conditioners) SetConditionerFanSpeed(itemID int, speed string) error {
-	params, err := o.GetParams(itemID)
-	if err != nil {
-		return errors.Wrap(err, "SetConditionerFanSpeed")
-	}
-
-	if !slices.Contains(params.FanSpeeds, speed) {
-		return errors.Wrap(errors.Errorf("unknown speed %q", speed), "SetConditionerFanSpeed")
-	}
-
-	if err := o.SetFieldValue(itemID, "fan_speed", speed); err != nil {
-		return errors.Wrap(err, "SetConditionerFanSpeed")
-	}
-
+	//params, err := o.GetParams(itemID)
+	//if err != nil {
+	//	return errors.Wrap(err, "SetConditionerFanSpeed")
+	//}
+	//
+	//if !slices.Contains(params.FanSpeeds, speed) {
+	//	return errors.Wrap(errors.Errorf("unknown speed %q", speed), "SetConditionerFanSpeed")
+	//}
+	//
+	//if err := o.SetFieldValue(itemID, "fan_speed", speed); err != nil {
+	//	return errors.Wrap(err, "SetConditionerFanSpeed")
+	//}
+	//
 	return nil
 }
 
@@ -149,50 +147,125 @@ func (o *Conditioners) SetFieldValue(conditionerID int, field string, value inte
 	return nil
 }
 
-func (o *Conditioners) GetParams(itemID int) (*model.ConditionerParams, error) {
-	condParams := &model.ConditionerParams{}
+func (o *Conditioners) GetParams(itemID int) (*model.Conditioner, error) {
+	conditioner := &model.Conditioner{}
+	var objectID int
 
-	conditioner, err := objects.LoadObject(391, "", "", false)
+	o.store.db.Debug().Table("conditioner").Select("object_id").
+		Where("view_item_id = ?", itemID).Find(&objectID)
+
+	conditioner.CondParams.ID = objectID
+	conditioner.CondParams.ViewItemID = itemID
+
+	condObj, err := objects.LoadObject(objectID, "", "", false)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetParams")
 	}
 
-	opModes, err := conditioner.GetProps().Get("operating_mode")
+	opModes, err := condObj.GetProps().Get("operating_mode")
 	if err != nil {
-		return nil, errors.Wrap(err, "GetParams")
+		g.Logger.Error(errors.Wrap(err, "GetParams: operating_mode"))
 	}
 
-	condParams.OperatingModes = opModes.Values
-	jsondata, err := json.Marshal(condParams)
-	fmt.Println(string(jsondata))
+	fanSpeeds, err := condObj.GetProps().Get("fan_speed")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: fan_speed"))
+	}
 
-	//r.OperatingModes =
-	//
-	//
-	//if err := o.store.db.Table("conditioner_params").First(row, "view_item_id = ?", itemID).Error; err != nil {
-	//	return nil, errors.Wrap(err, "GetParams")
-	//}
-	//
-	//
-	//
-	//	r := &model.ConditionerParams{CondParams: row.CondParams}
-	//
-	//if err := json.Unmarshal([]byte(row.OperatingModes), &r.OperatingModes); err != nil {
-	//	return nil, errors.Wrap(err, "GetParams")
-	//}
-	//
-	//if err := json.Unmarshal([]byte(row.FanSpeeds), &r.FanSpeeds); err != nil {
-	//	return nil, errors.Wrap(err, "GetParams")
-	//}
-	//
-	//if err := json.Unmarshal([]byte(row.VerticalDirections), &r.VerticalDirections); err != nil {
-	//	return nil, errors.Wrap(err, "GetParams")
-	//}
-	//
-	//if err := json.Unmarshal([]byte(row.HorizontalDirections), &r.HorizontalDirections); err != nil {
-	//	return nil, errors.Wrap(err, "GetParams")
-	//}
-	//
+	horizontalDir, err := condObj.GetProps().Get("horizontal_slats_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: horizontal_slats_mode"))
+	}
 
-	return nil, nil
+	verticalDir, err := condObj.GetProps().Get("vertical_slats_mode")
+	if err != nil {
+		return nil, errors.Wrap(err, "GetParams: vertical_slats_mode")
+	}
+
+	conditioner.OperatingModes = opModes.Values
+	conditioner.FanSpeeds = fanSpeeds.Values
+	conditioner.HorizontalDirections = horizontalDir.Values
+	conditioner.VerticalDirections = verticalDir.Values
+
+	conditioner.CondParams.FanSpeed, err = condObj.GetProps().GetIntValue("fan_speed")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: fan_speed"))
+	}
+
+	conditioner.CondParams.OperatingMode, err = condObj.GetProps().GetIntValue("operating_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: operating_mode"))
+	}
+
+	conditioner.CondParams.HorizontalDirection, err = condObj.GetProps().GetIntValue("horizontal_slats_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: horizontal_slats_mode"))
+	}
+
+	conditioner.CondParams.VerticalDirection, err = condObj.GetProps().GetIntValue("vertical_slats_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: vertical_slats_mode"))
+	}
+
+	conditioner.CondParams.DisplayBacklight, err = condObj.GetProps().GetBoolValue("display_backlight")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: display_backlight"))
+	}
+
+	conditioner.CondParams.EcoMode, err = condObj.GetProps().GetBoolValue("eco_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: eco_mode"))
+	}
+
+	conditioner.CondParams.OutsideTemp, err = condObj.GetProps().GetFloatValue("external_temperature")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: external_temperature"))
+	}
+
+	conditioner.CondParams.InsideTemp, err = condObj.GetProps().GetFloatValue("internal_temperature")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: internal_temperature"))
+	}
+
+	conditioner.CondParams.Ionisation, err = condObj.GetProps().GetBoolValue("ionisation")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: ionisation"))
+	}
+
+	conditioner.CondParams.PowerStatus, err = condObj.GetProps().GetBoolValue("power_status")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: power_status"))
+	}
+
+	conditioner.CondParams.SelfCleaning, err = condObj.GetProps().GetBoolValue("self_cleaning")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: self_cleaning"))
+	}
+
+	conditioner.CondParams.SilentMode, err = condObj.GetProps().GetBoolValue("silent_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: silent_mode"))
+	}
+
+	conditioner.CondParams.SleepMode, err = condObj.GetProps().GetBoolValue("sleep_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: sleep_mode"))
+	}
+
+	conditioner.CondParams.Sound, err = condObj.GetProps().GetBoolValue("sounds")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: sounds"))
+	}
+
+	conditioner.CondParams.TargetTemp, err = condObj.GetProps().GetFloatValue("target_temperature")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: target_temperature"))
+	}
+
+	conditioner.CondParams.TurboMode, err = condObj.GetProps().GetBoolValue("turbo_mode")
+	if err != nil {
+		g.Logger.Error(errors.Wrap(err, "GetParams: turbo_mode"))
+	}
+
+	return conditioner, nil
 }

@@ -213,7 +213,7 @@ type Conditioners interface {
 	SetConditionerFanSpeed(itemID int, speed string) error
 	SetConditionerExtraMode(itemID int, mode string, value bool) error
 	SetFieldValue(itemID int, field string, value interface{}) error
-	GetParams(itemID int) (*model.ConditionerParams, error)
+	GetParams(itemID int) (*model.Conditioner, error)
 }
 
 type Curtains interface {

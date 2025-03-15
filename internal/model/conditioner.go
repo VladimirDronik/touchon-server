@@ -1,12 +1,12 @@
 package model
 
-// ConditionerParams модель параметров кондиционера
-type ConditionerParams struct {
+// Conditioner модель параметров кондиционера
+type Conditioner struct {
 	CondParams
 	OperatingModes       map[string]string `json:"operating_modes"`
-	FanSpeeds            []string          `json:"fan_speeds"`
-	VerticalDirections   []string          `json:"vertical_directions"`
-	HorizontalDirections []string          `json:"horizontal_directions"`
+	FanSpeeds            map[string]string `json:"fan_speeds"`
+	VerticalDirections   map[string]string `json:"vertical_directions"`
+	HorizontalDirections map[string]string `json:"horizontal_directions"`
 }
 
 type StoreConditionerParams struct {
@@ -23,7 +23,7 @@ type CondParams struct {
 	InsideTemp  float32 `json:"inside_temp"`
 	OutsideTemp float32 `json:"outside_temp"`
 	CurrentTemp float32 `json:"current_temp,omitempty"`
-	OptimalTemp float32 `json:"optimal_temp"`
+	TargetTemp  float32 `json:"target_temp"`
 
 	MinThreshold float32 `json:"min_threshold"`
 	MaxThreshold float32 `json:"max_threshold"`
@@ -33,15 +33,17 @@ type CondParams struct {
 	TurboMode  bool `json:"turbo_mode,omitempty"`
 	SleepMode  bool `json:"sleep_mode,omitempty"`
 
-	OperatingMode       string `json:"operating_mode,omitempty"`
-	FanSpeed            string `json:"fan_speed,omitempty"`
-	VerticalDirection   string `json:"vertical_direction,omitempty"`
-	HorizontalDirection string `json:"horizontal_direction,omitempty"`
+	OperatingMode       int `json:"operating_mode,omitempty"`
+	FanSpeed            int `json:"fan_speed,omitempty"`
+	VerticalDirection   int `json:"vertical_direction,omitempty"`
+	HorizontalDirection int `json:"horizontal_direction,omitempty"`
 
-	Ionisation    bool `json:"ionisation,omitempty"`
-	SelfCleaning  bool `json:"self_cleaning,omitempty"`
-	AntiMold      bool `json:"anti_mold,omitempty"`
-	Sound         bool `json:"sound,omitempty"`
-	OnDutyHeating bool `json:"on_duty_heating,omitempty"`
-	SoftTop       bool `json:"soft_top,omitempty"`
+	Ionisation       bool `json:"ionisation,omitempty"`
+	SelfCleaning     bool `json:"self_cleaning,omitempty"`
+	AntiMold         bool `json:"anti_mold,omitempty"`
+	Sound            bool `json:"sound,omitempty"`
+	OnDutyHeating    bool `json:"on_duty_heating,omitempty"`
+	SoftTop          bool `json:"soft_top,omitempty"`
+	DisplayBacklight bool `json:"display_backlight,omitempty"`
+	PowerStatus      bool `json:"power_status,omitempty"`
 }
