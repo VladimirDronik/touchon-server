@@ -74,3 +74,15 @@ func (o *Devices) DeleteSensor(itemID int) error {
 
 	return nil
 }
+
+func (o *Devices) SaveConditioner(conditioner *model.ConditionerItem) error {
+	if conditioner == nil {
+		return errors.Wrap(errors.New("conditioner is nil"), "SaveConditioner")
+	}
+
+	if err := o.store.db.Table("conditioner").Create(conditioner).Error; err != nil {
+		return errors.Wrap(err, "SaveConditioner")
+	}
+
+	return nil
+}

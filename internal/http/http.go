@@ -159,15 +159,6 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("GET", "/curtain", o.getCurtain)
 	private("PATCH", "/curtain/open-percent", o.setCurtainOpenPercent)
 
-	// Кондиционер
-	private("GET", "/conditioner", o.getConditioner)
-	private("PATCH", "/conditioner/temp", o.setConditionerTemperature)
-	private("PATCH", "/conditioner/mode", o.setConditionerMode)
-	private("PATCH", "/conditioner/operating-mode", o.setConditionerOperatingMode)
-	private("PATCH", "/conditioner/fan-speed", o.setConditionerFanSpeed)
-	private("PATCH", "/conditioner/air-direction", o.setConditionerDirection)
-	private("PATCH", "/conditioner/extra-mode", o.setConditionerExtraMode)
-
 	// Котел
 	private("GET", "/boiler", o.getBoiler)
 	private("PATCH", "/boiler/outline-status", o.setBoilerOutlineStatus)
@@ -206,6 +197,16 @@ func New(ringBuffer fmt.Stringer) (*Server, error) {
 	private("PATCH", "/item/sensor", o.handleUpdateSensor)
 	private("DELETE", "/item/sensor", o.handleDeleteSensor)
 	private("PATCH", "/item/sensor/value", o.handleSetTargetSensor) //Установка значение target для датчика
+
+	// Итемы кондиционеров
+	private("POST", "/item/conditioner", o.handleCreateConditioner) // Создание итема кондиционера
+	private("GET", "/item/conditioner", o.getConditioner)
+	private("PATCH", "/conditioner/temp", o.setConditionerTemperature)
+	private("PATCH", "/conditioner/mode", o.setConditionerMode)
+	private("PATCH", "/conditioner/operating-mode", o.setConditionerOperatingMode)
+	private("PATCH", "/conditioner/fan-speed", o.setConditionerFanSpeed)
+	private("PATCH", "/conditioner/air-direction", o.setConditionerDirection)
+	private("PATCH", "/conditioner/extra-mode", o.setConditionerExtraMode)
 
 	// Загрузка меню
 	private("GET", "/menu", o.getMenu)

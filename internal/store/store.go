@@ -177,6 +177,7 @@ type Devices interface {
 	SetFieldValue(table string, itemID int, field string, value interface{}) error
 	SaveSensor(sensor *model.Sensor) error
 	DeleteSensor(itemID int) error
+	SaveConditioner(conditioner *model.ConditionerItem) error
 }
 
 type History interface {
@@ -205,7 +206,6 @@ type Boilers interface {
 }
 
 type Conditioners interface {
-	GetConditioner(objectID int) (*model.ViewItem, error)
 	SetConditionerTemperature(itemID int, value float32) error
 	SetConditionerMode(itemID int, mode string, value bool) error
 	SetConditionerOperatingMode(itemID int, mode string) error
@@ -213,7 +213,7 @@ type Conditioners interface {
 	SetConditionerFanSpeed(itemID int, speed string) error
 	SetConditionerExtraMode(itemID int, mode string, value bool) error
 	SetFieldValue(itemID int, field string, value interface{}) error
-	GetParams(itemID int) (*model.Conditioner, error)
+	GetConditioner(itemID int) (*model.Conditioner, error)
 }
 
 type Curtains interface {

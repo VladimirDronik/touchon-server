@@ -3,6 +3,8 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"touchon-server/internal/model"
+	memStore "touchon-server/internal/store/memstore"
 
 	"github.com/valyala/fasthttp"
 	"touchon-server/internal/helpers"
@@ -20,7 +22,7 @@ import (
 // @Success      200 {object} Response[model.CobditionerParams]
 // @Failure      400 {object} Response[any]
 // @Failure      500 {object} Response[any]
-// @Router /private/conditioner [get]
+// @Router /private/item/conditioner [get]
 // getConditioner
 func (o *Server) getConditioner(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
 	itemID, err := helpers.GetUintParam(ctx, "itemId")
@@ -28,7 +30,7 @@ func (o *Server) getConditioner(ctx *fasthttp.RequestCtx) (interface{}, int, err
 		return nil, http.StatusBadRequest, err
 	}
 
-	conditioner, err := store.I.Conditioners().GetParams(itemID)
+	conditioner, err := store.I.Conditioners().GetConditioner(itemID)
 
 	//conditioner, err := store.I.Conditioners().GetConditioner(itemId)
 	//if err != nil {
@@ -260,4 +262,75 @@ func (o *Server) setConditionerExtraMode(ctx *fasthttp.RequestCtx) (interface{},
 	}
 
 	return nil, http.StatusOK, nil
+}
+
+// Создание итема кондиционера
+// @Security TokenAuth
+// @Summary Создание итема кондиционера
+// @Tags Conditioners
+// @Description Создание итема кондиционера
+// @ID CreateConditioner
+// @Accept json
+// @Produce json
+// @Param item body model.ConditionerItem true "Кондиционер"
+// @Success      200 {object} Response[model.ConditionerItem]
+// @Failure      400 {object} Response[any]
+// @Failure      500 {object} Response[any]
+// @Router /private/item/conditioner [post]
+func (o *Server) handleCreateConditioner(ctx *fasthttp.RequestCtx) (interface{}, int, error) {
+	conditioner := &model.ConditionerItem{}
+
+	if err := json.Unmarshal(ctx.Request.Body(), conditioner); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	condObj, err := memStore.I.GetObject(conditioner.ObjectID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	item := &model.ViewItem{
+		Type:    "sensor",
+		Enabled: true,
+		ZoneID:  condObj.GetZoneID(),
+		Title:   conditioner.Title,
+		Icon:    conditioner.Icon,
+		Params:  "{}",
+		Auth:    "",
+		Sort:    0,
+	}
+
+	if err := store.I.Items().SaveItem(item); err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	conditioner.ViewItemID = item.ID
+
+	event := &model.TrEvent{
+		EventName:  "on_change_state",
+		TargetType: "object",
+		TargetID:   condObj.GetID(),
+		Enabled:    true,
+	}
+
+	eventID, err := store.I.Events().AddEvent(event)
+	if err != nil || eventID == 0 {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	eventAction := &model.EventActions{
+		EventID:    eventID,
+		TargetType: "item",
+		TargetID:   item.ID,
+		Type:       "method",
+		Name:       "set_state",
+		Args:       "{\"param\":\"state\"}",
+		Enabled:    true,
+	}
+
+	_, err = store.I.Events().AddEventAction(eventAction)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	return conditioner, http.StatusOK, store.I.Devices().SaveConditioner(conditioner)
 }

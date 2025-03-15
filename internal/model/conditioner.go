@@ -47,3 +47,13 @@ type CondParams struct {
 	DisplayBacklight bool `json:"display_backlight,omitempty"`
 	PowerStatus      bool `json:"power_status,omitempty"`
 }
+
+type ConditionerItem struct {
+	ViewItemID   int     `json:"view_item_id"`
+	ObjectID     int     `json:"object_id" gorm:"object_id"`
+	MinThreshold float32 `json:"min_threshold" gorm:"min_threshold"`
+	MaxThreshold float32 `json:"max_threshold" gorm:"max_threshold"`
+	Title        string  `json:"title" gorm:"-"`
+	Icon         string  `json:"icon" gorm:"-"`
+	Auth         string  `json:"auth" gorm:"-"`
+}

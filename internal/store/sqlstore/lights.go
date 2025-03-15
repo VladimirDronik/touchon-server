@@ -67,7 +67,7 @@ func (o *Lights) GetParams(itemID int) (*model.LightParams, error) {
 	r := &model.LightParams{}
 
 	if err := o.store.db.Table("light_params").First(r, "view_item_id = ?", itemID).Error; err != nil {
-		return nil, errors.Wrap(err, "GetParams")
+		return nil, errors.Wrap(err, "GetConditioner")
 	}
 
 	return r, nil

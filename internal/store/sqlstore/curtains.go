@@ -62,7 +62,7 @@ func (o *Curtains) GetParams(itemID int) (*model.CurtainParams, error) {
 	r := &model.CurtainParams{}
 
 	if err := o.store.db.Table("curtain_params").First(r, "view_item_id = ?", itemID).Error; err != nil {
-		return nil, errors.Wrap(err, "GetParams")
+		return nil, errors.Wrap(err, "GetConditioner")
 	}
 
 	return r, nil
